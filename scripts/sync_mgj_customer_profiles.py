@@ -30,11 +30,12 @@ API调用：
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 import copy
 import hashlib
 import fcntl
 import json
+import math
 import os
 import re
 import socket
@@ -57,6 +58,11 @@ try:
     import mgj_customer_history_resume as history_resume
 except ModuleNotFoundError:
     from scripts import mgj_customer_history_resume as history_resume
+
+try:
+    import mgj_source_turns as source_turns
+except ModuleNotFoundError:
+    from scripts import mgj_source_turns as source_turns
 
 # ── 配置 ──
 CONFIG_PATH = "/Users/a1/.hermes/meiguanjia-config.json"
@@ -150,7 +156,7 @@ def record_deferred(phones, reason, attempted_at=None):
     value = load_deferred()
     items = {item["phone"]: dict(item) for item in value["items"]}
     now = datetime.now().astimezone().isoformat(timespec="seconds")
-    allowed = {"daily_due_or_cooling", "booking_active", "priority_state_unavailable", "source_budget", "source_busy", "source_transport_incomplete", "source_http_incomplete", "session_scope_changed", "session_scope_unverified", "source_response_incomplete"}
+    allowed = {"daily_due_or_cooling", "booking_active", "priority_state_unavailable", "source_turn_unsafe", "source_budget", "source_busy", "source_transport_incomplete", "source_http_incomplete", "session_scope_changed", "session_scope_unverified", "source_response_incomplete"}
     code = reason if reason in allowed else "source_rate_limited" if "429" in reason else "source_deferred"
     for phone in phones:
         item = items.setdefault(phone, {"phone": phone, "deferred_since": now, "deferrals": 0})
@@ -214,29 +220,28 @@ def finish_deferred(mode, reason):
 def source_priority_reason():
     try:
         import sync_mgj_daily_electronic_sources as daily_priority
-        if daily_priority.daily_sync_due(daily_priority.read_daily_sync_state()):
+        state = daily_priority.read_daily_sync_state()
+        if (not daily_wait_is_safe(state=state, daily=daily_priority)
+                or daily_priority.daily_sync_due(state)):
             return "daily_due_or_cooling"
-        with open(BOOKING_LOCK, "a") as booking:
-            try:
-                fcntl.flock(booking, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError:
-                return "booking_active"
-            fcntl.flock(booking, fcntl.LOCK_UN)
-    except (OSError, ValueError, ImportError):
+        if not source_turns.booking_protocol_verified():
+            return "source_turn_unsafe"
+        if source_turns.booking_pending():
+            return "booking_active"
+    except source_turns.TurnUnsafe:
+        return "source_turn_unsafe"
+    except (OSError, ValueError, TypeError, AttributeError, OverflowError, ImportError):
         return "priority_state_unavailable"
     return ""
 
 COORDINATOR_LOCK = "/tmp/mgj_customer_coordinator.lock"
 SESSION_LOCK = LOCK_PATH
 CACHE_RESERVE_SECONDS = 20
-WAIT_STEP_SECONDS = 2
-WAIT_TOTAL_SECONDS = 20
-WAIT_MAX_EPISODES = 2
+WAIT_STEP_SECONDS = 1
+# Diagnostic counters only; the sole wait ceiling is the batch deadline below.
 WAIT_USED = 0
 WAIT_EPISODES = 0
 SESSION_SCOPES = {}
-INITIAL_READY_CHECKED = True  # CLI opts in once per batch.
-INITIAL_READY_WAIT_SECONDS = 60
 HISTORY_RESUME_ROOT = os.path.expanduser("~/.hermes/mgj_customer_history_resume")
 
 
@@ -272,14 +277,27 @@ def request_budget_ready(extra_wait=0):
 
 
 @contextmanager
+def customer_turn_guard():
+    try:
+        with source_turns.customer_request():
+            yield
+    except source_turns.TurnUnsafe:
+        # Unsafe entry OR cleanup is a closed deferral, never a business failure
+        # or a reason to replay an already-sent source read.
+        raise SourceDeferred("source_turn_unsafe") from None
+
+
+@contextmanager
 def source_slot():
     global SOURCE_LAST_END, WAIT_USED, WAIT_EPISODES
     waiting = False
     while True:
         if not request_budget_ready(): raise SourceDeferred("source_budget")
         reason = source_priority_reason()
-        if reason and reason not in ("booking_active",):
-            # Daily stale/cooling/unavailable is not a short-readiness assumption.
+        if reason == "daily_due_or_cooling" and not daily_wait_is_safe():
+            # A failed, unknown or cooling daily task must never be waited past.
+            raise SourceDeferred(reason)
+        if reason and reason not in ("booking_active", "daily_due_or_cooling"):
             raise SourceDeferred(reason)
         handles = []
         try:
@@ -294,9 +312,20 @@ def source_slot():
                 gap = max(0, SOURCE_LAST_END + SOURCE_MIN_GAP_SECONDS-time.monotonic()) if SOURCE_LAST_END is not None else 0
                 if not gap:
                     if not request_budget_ready(): raise SourceDeferred("source_budget")
-                    try: yield
-                    finally: SOURCE_LAST_END = time.monotonic()
-                    return
+                    with ExitStack() as turn:
+                        try:
+                            turn.enter_context(customer_turn_guard())
+                        except source_turns.TurnBusy:
+                            reason = "source_busy"
+                        if not reason:
+                            # Recheck daily state and new booking intent after
+                            # acquiring the actual cross-worker request gate.
+                            reason = source_priority_reason()
+                        if not reason:
+                            if not request_budget_ready(): raise SourceDeferred("source_budget")
+                            try: yield
+                            finally: SOURCE_LAST_END = time.monotonic()
+                            return
             else: gap = 0
         finally:
             for handle in reversed(handles): handle.close()
@@ -305,48 +334,38 @@ def source_slot():
             if not request_budget_ready(gap): raise SourceDeferred("source_budget")
             time.sleep(gap)
             continue
-        if reason not in ("booking_active", "source_busy"): raise SourceDeferred(reason)
+        if reason == "daily_due_or_cooling" and not daily_wait_is_safe(): raise SourceDeferred(reason)
+        if reason not in ("booking_active", "source_busy", "daily_due_or_cooling"): raise SourceDeferred(reason)
         if not waiting:
-            if WAIT_EPISODES >= WAIT_MAX_EPISODES: raise SourceDeferred(reason)
             WAIT_EPISODES += 1; waiting = True
-        if WAIT_USED + WAIT_STEP_SECONDS > WAIT_TOTAL_SECONDS or not request_budget_ready(WAIT_STEP_SECONDS):
-            raise SourceDeferred(reason)
+        if not request_budget_ready(WAIT_STEP_SECONDS): raise SourceDeferred("source_budget")
         WAIT_USED += WAIT_STEP_SECONDS
         time.sleep(WAIT_STEP_SECONDS)
 
 
-def daily_wait_is_safe():
+def daily_wait_is_safe(state=None, daily=None):
     # Read local state only. A failed/cooling daily task is not transient readiness.
     try:
-        import sync_mgj_daily_electronic_sources as daily
-        state = daily.read_daily_sync_state()
+        if daily is None:
+            import sync_mgj_daily_electronic_sources as daily
+            state = daily.read_daily_sync_state()
         if not isinstance(state, dict) or state.get("status") != "healthy": return False
         now = time.time()
-        if float(state.get("cooldown_until") or 0) > now: return False
+        cooldown = float(state.get("cooldown_until") or 0)
+        if not math.isfinite(cooldown) or cooldown < 0 or cooldown > now: return False
         today = datetime.now(daily.TZ).date().isoformat()
         for shop in daily.SHOPS:
             pair = state.get("pairs", {}).get(shop + ":" + today)
-            if not isinstance(pair, dict) or float(pair.get("retry_after") or 0) > now: return False
+            if not isinstance(pair, dict): return False
+            retry_after = float(pair.get("retry_after") or 0)
+            success_at = float(pair.get("success_at") or 0)
+            if (not math.isfinite(retry_after) or retry_after < 0 or retry_after > now
+                    or not math.isfinite(success_at) or success_at <= 0 or success_at > now + 5): return False
         return True
-    except (OSError, ValueError, TypeError, ImportError, AttributeError):
+    except (OSError, ValueError, TypeError, ImportError, AttributeError, OverflowError):
         return False
 
-def wait_initial_daily_readiness():
-    global INITIAL_READY_CHECKED
-    if INITIAL_READY_CHECKED: return
-    INITIAL_READY_CHECKED = True
-    waited = 0
-    while source_priority_reason() == "daily_due_or_cooling":
-        if not daily_wait_is_safe(): raise SourceDeferred("daily_due_or_cooling")
-        if waited + WAIT_STEP_SECONDS > INITIAL_READY_WAIT_SECONDS:
-            raise SourceDeferred("daily_due_or_cooling")
-        if not request_budget_ready(WAIT_STEP_SECONDS): raise SourceDeferred("source_budget")
-        # Coordinator only: no source/session/booking/daily lock is held here.
-        time.sleep(WAIT_STEP_SECONDS)
-        waited += WAIT_STEP_SECONDS
-
 def bounded_source_curl(factory):
-    wait_initial_daily_readiness()
     with source_slot():
         # Factory rereads approved session and constructs frozen-target request
         # only after current session/source locks and priority have been checked.
@@ -2060,7 +2079,6 @@ if __name__ == "__main__":
         RUN_DEADLINE = time.monotonic() + RUN_BUDGET_SECONDS
         WAIT_USED = 0
         WAIT_EPISODES = 0
-        INITIAL_READY_CHECKED = False
         SESSION_SCOPES = {}
         run_lock = acquire_run_lock()
         if run_lock is None:
