@@ -1,3 +1,11 @@
+## 2026-11-20 · Daily report actions and temporary update notices (App version: v670; local candidate)
+
+- Owner: Codex. Isolated fix/daily-actions-20261120 based on protected github/main dd5c8bae (v669), including the November20 academy publication. Version/integrity/handoff checks and the November20 recovery archive completed before edits.
+- Make ready, failed and delayed shell notices temporary. Keep the same-tab dismissal and natural worker activation. Already-open pre-v669 documents keep their old behavior until closed and reopened.
+- Expose batch void at the top of the monthly original archive. Select recorded originals and verified upload receipts by scoped request ID, review the selection, then use the existing audited transactional void. Uncertain responses reconcile by readback.
+- Add explicit daily draft autofill for the selected store/date/revision using the existing synchronized projections and immutable audit. Preserve manual, recognized and posted data. Missing or conflicting source yields an actionable result, and the new RPC requires the existing finance write grant. Scheduled projection behavior remains covered by regression.
+- Verify the final protected commit, scoped SQL/Edge release and public Pages files separately. No real report mutation or archive deletion is part of acceptance.
+
 <!-- academy-reviewed-inputs:8724d84e3df655532d155eaffb9da8b0f0070950541785bbf833f50f346d9c67 -->
 ## 2026-11-20 · Reviewed academy publication candidate (App version: v669 unchanged)
 

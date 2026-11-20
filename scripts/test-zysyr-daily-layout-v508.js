@@ -110,6 +110,17 @@ async function run() {
             if (window.fixtureReadFailure && (!window.fixtureLostReply || window.confirmDailyPayloads.length)) throw new Error('read unavailable');
             return structuredClone(source);
           }
+          if (operation === 'daily_sheet_fill_blanks') {
+            if (payload.report_date !== source.draft.report_date || payload.expected_revision !== source.draft.edit_revision) throw new Error('Autofill scope mismatch');
+            const result = { store, report_date: payload.report_date, draft_id: payload.draft_id };
+            if (window.fixtureAutofillUnavailable) return { ...result, status: 'source_unavailable_or_changed' };
+            const cell = source.cells.find(c => c.section_code === 'payment' && c.column_code === 'cash');
+            if (cell.ocr_numeric != null || cell.manual_override) throw new Error('Autofill would overwrite a cell');
+            cell.ocr_numeric = 67.89;
+            cell.source_method = 'frontdesk_autofill';
+            source.draft.edit_revision++;
+            return { ...result, status: 'draft_filled', revision: source.draft.edit_revision, filled_value_count: 1 };
+          }
           if (operation === 'daily_sheet_confirm') {
             window.confirmDailyPayloads.push(payload);
             if (Number(payload.expected_revision) !== Number(source.draft.edit_revision)) throw new Error('Confirmation did not bind reviewed revision');
@@ -478,6 +489,40 @@ async function run() {
         await page.evaluate(() => confirmDailyReportDetail());
         assert.deepEqual(await page.evaluate(() => dailyOperations), [], 'non-finance account must not post');
       }
+      await page.evaluate(() => {
+        state.user.role = 'finance';
+        fixtureSource.draft.status = 'draft';
+        fixtureSource.permissions.write = true;
+        fixtureSource.locked = false;
+        const cash = fixtureSource.cells.find(c => c.section_code === 'payment' && c.column_code === 'cash');
+        Object.assign(cash, { ocr_numeric: null, manual_override: false, corrected_numeric: null });
+        state.imports.sheet = structuredClone(fixtureSource);
+        state.imports.dirty = {}; state.imports.dirtyLabels = {};
+        window.fixtureAutofillUnavailable = true;
+        window.fixturePostFailure = window.fixtureSaveFailure = window.fixtureReadFailure = window.fixtureSaveReadFailure = false;
+        window.dailyOperations = [];
+        renderDailySheetDetail();
+      });
+      const autofill = page.getByRole('button', { name: '自动填写报表' });
+      const cash = page.locator('#daily-detail-grid [data-section="payment"][data-column-code="cash"]');
+      const manual = page.locator('#daily-detail-grid [data-section="summary"][data-column-code="treatment_card"]');
+      const manualValue = await manual.inputValue();
+      await actual.fill('345');
+      assert.equal(await autofill.isDisabled(), true);
+      assert.equal(await actual.inputValue(), '345');
+      await page.evaluate(() => { state.imports.dirty = {}; renderDailySheetDetail(); });
+      await autofill.click();
+      await page.waitForFunction(() => document.getElementById('daily-detail-note').textContent.includes('明细尚未同步齐全'));
+      assert.equal(await cash.inputValue(), '');
+      await page.evaluate(() => { window.fixtureAutofillUnavailable = false; });
+      await autofill.click();
+      await page.waitForFunction(() => document.getElementById('daily-detail-note').textContent.includes('已补填 1 格并保存草稿'));
+      assert.equal(await cash.inputValue(), '67.89');
+      assert.equal(await manual.inputValue(), manualValue);
+      assert.equal(await page.evaluate(() => dailyOperations.filter(x => x === 'daily_sheet_fill_blanks').length), 2);
+      assert.equal(await page.evaluate(() => dailyOperations.some(x => x === 'daily_sheet_confirm')), false);
+      await page.evaluate(() => { state.imports.sheet.draft.status = 'confirmed'; renderDailyDetailControls(); });
+      assert.equal(await autofill.isVisible(), false);
       assert.deepEqual(errors, []);
       await page.close();
     }
