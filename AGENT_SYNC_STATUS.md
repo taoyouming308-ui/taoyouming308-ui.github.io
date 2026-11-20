@@ -1,3 +1,9 @@
+## 2026-11-20 · Monthly voucher release compatibility (App version: v678; approved release candidate)
+
+- User explicitly approved production publication after backup and checks. Scope remains monthly voucher category/detail choices only; no financial data, original images, amounts, approval or posting changes.
+- Pre-publication independent review identified an old eager workspace module plus new lazy evidence module race. Capability-gate the new monthly evidence actions so old open pages continue to render existing transaction controls and ask for a safe user-chosen update before using new monthly evidence actions. Do not force-refresh.
+- v677 passed the full local gate and reached only the repair branch. It was not merged or deployed. This v678 follow-up preserves normal non-force publication and must pass the full gate and protected exact-head CI again before deployment. Deploy the backward-compatible operations-api first, then normal Pages publication; verify both live outputs separately.
+
 ## 2026-11-20 · Restore electronic monthly voucher targets (App version: v677; local candidate)
 
 - Owner: Codex. Isolated fix/voucher-monthly-targets-20261120 from protected f14cf9c0/v676. Start gates and daily recovery archive passed; unrelated worktrees preserved. User requested repair; publication remains a separate confirmation.

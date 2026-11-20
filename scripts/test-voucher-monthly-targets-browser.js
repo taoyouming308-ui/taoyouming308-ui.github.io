@@ -93,11 +93,12 @@ const server = http.createServer((request, response) => {
 async function harness(browser, baseURL, width, options = {}) {
   const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 900 } });
   const page = await context.newPage();
-  const calls = [], errors = [], external = [];
+  const calls = [], errors = [], external = [], navigations = [];
   const data = fixture(options);
   let attached = false, releaseList = null;
   page.setDefaultTimeout(6000);
   page.on('pageerror', error => errors.push(error.message));
+  page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations.push(frame.url()); });
   await context.route('**/*', route => {
     if (new URL(route.request().url()).origin === baseURL) return route.continue();
     external.push(route.request().url());
@@ -172,11 +173,44 @@ async function harness(browser, baseURL, width, options = {}) {
     window.renderPettyCashReport = () => {};
     window.loadPettyCashReport = async () => {};
   }, { store, reportId });
-  for (const script of source) await page.addScriptTag({ content: script.content });
+  for (const script of source) {
+    await page.addScriptTag({ content: script.content });
+    if (options.legacyWorkspace && script.file === 'operations-expense-voucher-workspace.js') {
+      await page.evaluate(() => {
+        // Self-contained v676 protocol facade, not a dependency on Git history.
+        // A long-open page can keep the old workspace while its lazy module is new.
+        const workspace = window.ZysyrExpenseVoucherWorkspace;
+        const currentOptions = workspace.options;
+        delete workspace.canAttachMonthlyCell;
+        delete workspace.attachMonthlyCell;
+        workspace.options = (targets, selected, suggestions) => currentOptions(
+          targets.filter(target => target.target_kind !== 'monthly_cell'), selected, suggestions);
+        window.syntheticLegacyAutoCalls = 0;
+        window.syntheticLegacyAutoInputs = [];
+        workspace.autoMatch = async (data, scope, isCurrent, isDirty, includeExisting) => {
+          window.syntheticLegacyAutoCalls++;
+          window.syntheticLegacyAutoInputs.push((data.items || []).map(item => ({
+            kind: item.match && item.match.target_kind,
+            evidenceCount: (item.monthly_cell_evidence || []).length,
+            manualOnly: (data.targets || []).some(target => item.match && target.target_kind === item.match.target_kind
+              && target.id === item.match.target_id && target.manual_only),
+          })));
+          const items = (data.items || []).filter(item => !item.confirmed_target_id && item.match && item.match.auto_eligible
+            && (includeExisting || item.automate_on_read) && !isDirty(item.id)).slice(0, 20);
+          if (!items.length || !isCurrent()) return 0;
+          const result = await window.api('expense_voucher_match_apply', { ...scope, mode: 'auto',
+            items: items.map(item => ({ voucher_id: item.source_voucher_id || item.id,
+              component_index: item.component_index || 0, task_id: item.latest_ocr_task && item.latest_ocr_task.id,
+              target_kind: item.match.target_kind, target_id: item.match.target_id })) });
+          return Number(result.saved && result.saved.inserted || 0);
+        };
+      });
+    }
+  }
   await page.evaluate(() => renderPettyCashReport());
   await page.locator('[data-petty-batch-item]').first().waitFor();
   return {
-    page, data, calls, errors, external,
+    page, data, calls, errors, external, navigations,
     card: () => page.locator('[data-petty-batch-item="' + id(10) + '"]'),
     release: () => { assert.equal(typeof releaseList, 'function', 'the controlled readback must have started'); releaseList(); },
     close: async () => {
@@ -330,7 +364,43 @@ async function runWidth(browser, baseURL, width) {
       assert.equal(await h.page.locator('[data-monthly-cell-evidence]').count(), 0);
     } finally { await h.close(); }
   }
-  console.log('Monthly target browser ' + width + ': grouped/manual-only choices, disabled blanks, cancel, empty OCR fields, verified evidence-only attach, split isolation, failed/toxic readbacks, auto exclusion and late-month isolation passed.');
+  {
+    const h = await harness(browser, baseURL, width, { legacyWorkspace: true, auto: true });
+    try {
+      const warning = h.page.locator('[data-monthly-evidence-update-required]');
+      await warning.waitFor();
+      assert.match(await warning.innerText(), /更新/);
+      const select = h.card().locator('[data-batch-target]');
+      const monthlyOptions = await select.locator('option[value^="monthly_cell:"]').evaluateAll(nodes => nodes.map(node => ({ value: node.value, disabled: node.disabled })));
+      assert.equal(monthlyOptions.length, h.data.targets.filter(target => target.target_kind === 'monthly_cell').length,
+        'a mixed-version page keeps every monthly target visible but read-only');
+      assert.ok(monthlyOptions.every(option => option.disabled), 'missing helpers disable all monthly evidence choices');
+      for (const kind of ['draft', 'formal', 'history']) {
+        const options = await select.locator('option[value^="' + kind + ':"]').evaluateAll(nodes => nodes.map(node => node.disabled));
+        assert.ok(options.length > 0 && options.every(disabled => !disabled), 'legacy ' + kind + ' choices remain selectable');
+      }
+      await h.page.evaluate(() => ZysyrPettyReloadBatch());
+      const legacyAuto = await h.page.evaluate(() => ({ calls: window.syntheticLegacyAutoCalls, inputs: window.syntheticLegacyAutoInputs }));
+      assert.ok(legacyAuto.calls > 0, 'compatibility keeps the established legacy automatic flow available');
+      assert.ok(legacyAuto.inputs.every(items => items.every(item => item.kind !== 'monthly_cell' && !item.manualOnly && item.evidenceCount === 0)),
+        'every legacy auto call excludes manual-only monthly candidates and existing whole-image evidence');
+      assert.equal(h.calls.some(call => call.operation === 'monthly_voucher_library'), false);
+      assert.equal(h.calls.some(call => call.operation === 'expense_voucher_match_apply'), false);
+      await select.evaluate((node, value) => {
+        const option = [...node.options].find(option => option.value === value);
+        option.disabled = false;
+        node.value = value;
+        node.dispatchEvent(new Event('change', { bubbles: true }));
+      }, targetValue);
+      await h.card().locator('[data-petty-batch-confirm]').evaluate(node => { node.disabled = false; node.click(); });
+      await waitForToast(h, /更新/);
+      assert.equal(h.calls.some(call => call.operation === 'monthly_voucher_library' || call.operation === 'expense_voucher_match_apply'), false,
+        'forcing the DOM selection must still fail closed before either writer');
+      assert.equal(await h.card().locator('[data-monthly-cell-evidence]').count(), 0);
+      assert.equal(h.navigations.length, 1, 'compatibility recovery cannot force-refresh an active page');
+    } finally { await h.close(); }
+  }
+  console.log('Monthly target browser ' + width + ': grouped/manual-only choices, disabled blanks, cancel, empty OCR fields, verified evidence-only attach, split isolation, failed/toxic readbacks, auto exclusion, late-month isolation and mixed-version fail-closed behavior passed.');
 }
 
 (async () => {

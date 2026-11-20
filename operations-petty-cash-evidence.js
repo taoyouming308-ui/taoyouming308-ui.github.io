@@ -3,6 +3,13 @@
   'use strict';
   if (typeof renderPettyCashReport !== 'function') return;
   function expenseWorkspace(){return window.ZysyrExpenseVoucherWorkspace&&state.user&&state.user.can_match_expense_vouchers===true?window.ZysyrExpenseVoucherWorkspace:null;}
+  function monthlyEvidenceReady(){var workspace=expenseWorkspace();return !!workspace&&typeof workspace.canAttachMonthlyCell==='function'&&typeof workspace.attachMonthlyCell==='function';}
+  function monthlyEvidenceAllowed(target){return monthlyEvidenceReady()&&window.ZysyrExpenseVoucherWorkspace.canAttachMonthlyCell(target);}
+  function monthlyEvidenceUpdateMessage(){return '当前页面的月报佐证组件版本较旧，月报挂证已暂时禁用，原逐笔明细仍可使用。请先保存未提交内容，再关闭并重新打开报表 App 完成安全更新。';}
+  function automaticWorkspaceData(data){
+    var manual=new Set((data.targets||[]).filter(function(t){return t.target_kind==='monthly_cell'||t.manual_only;}).map(function(t){return t.target_kind+':'+t.id;}));
+    return Object.assign({},data,{items:(data.items||[]).filter(function(item){return !(item.monthly_cell_evidence||[]).length&&!(item.match&&(item.match.target_kind==='monthly_cell'||manual.has(item.match.target_kind+':'+item.match.target_id)));})});
+  }
 
   var originalRender = renderPettyCashReport;
   var uploadGeneration = 0;
@@ -330,8 +337,16 @@
         return '<option value="' + esc(value) + '" ' + (value === selected ? 'selected' : '') + '>' + esc(text) + '</option>';
       }).join('');
     }
+    // An already-open document may have the older eager workspace module while
+    // its lazy evidence module comes from the new release without a SW cache.
+    var legacyMonthlyOptions='';
+    if(expenseWorkspace()&&!monthlyEvidenceReady()){
+      var monthlyRows=targets.filter(function(target){return target.target_kind==='monthly_cell';});
+      if(monthlyRows.length)legacyMonthlyOptions='<optgroup label="当前月报开支栏目/明细（需安全更新）">'+monthlyRows.map(function(target){var value=batchTargetValue(target.target_kind,target.id);return '<option disabled value="'+esc(value)+'" '+(value===selected?'selected':'')+'>'+esc((target.period_month||'')+' · '+target.summary+' · 需保存后重新打开页面')+'</option>';}).join('')+'</optgroup>';
+    }
     return '<option value="">请选择对应明细</option>'
-      + (expenseWorkspace()?window.ZysyrExpenseVoucherWorkspace.options(targets,selected,suggestions):'')
+      + (expenseWorkspace()?window.ZysyrExpenseVoucherWorkspace.options(monthlyEvidenceReady()?targets:targets.filter(function(target){return target.target_kind!=='monthly_cell';}),selected,suggestions):'')
+      + legacyMonthlyOptions
       + (formal.length ? '<optgroup label="当前电子备用金明细">' + options(formal) + '</optgroup>' : '')
       + (drafts.length ? '<optgroup label="已导入待核对明细（未入账）">'+options(drafts)+'</optgroup>' : '')
       + (history.length ? '<optgroup label="历史正式备用金明细">' + options(history) + '</optgroup>' : '');
@@ -359,7 +374,7 @@
       batchDrafts[item.id] = draft;
       var selectedTarget=targets.find(function(target){return batchTargetValue(target.target_kind,target.id)===draft.target;});
       var monthlyCell=selectedTarget&&selectedTarget.target_kind==='monthly_cell';
-      var monthlyCellDisabled=monthlyCell&&(!expenseWorkspace()||!window.ZysyrExpenseVoucherWorkspace.canAttachMonthlyCell(selectedTarget));
+      var monthlyCellDisabled=monthlyCell&&!monthlyEvidenceAllowed(selectedTarget);
       var monthlyEvidence=Array.isArray(item.monthly_cell_evidence)?item.monthly_cell_evidence:[];
       var status = batchStatusText(item), disabled = (item.confirmed_target_id||item.expense_association) ? 'disabled' : '';
       var recognizing = item.task_status === 'queued' || item.task_status === 'processing';
@@ -409,6 +424,9 @@
     status.querySelectorAll('[data-monthly-targets-status]').forEach(function(node){node.remove();});
     if(expenseWorkspace()&&monthlyStatus&&monthlyStatus!=='ready'){
       var warning=document.createElement('div');warning.dataset.monthlyTargetsStatus=monthlyStatus;warning.textContent=monthlyMessage||'当前月报栏目列表尚不完整，请刷新或核对月报来源；逐笔明细仍保留。';status.appendChild(warning);
+    }
+    if(expenseWorkspace()&&!monthlyEvidenceReady()&&((data.targets||[]).some(function(t){return t.target_kind==='monthly_cell';})||(data.items||[]).some(function(item){return (item.monthly_cell_evidence||[]).length;}))){
+      var updateWarning=document.createElement('div');updateWarning.dataset.monthlyEvidenceUpdateRequired='true';updateWarning.textContent=monthlyEvidenceUpdateMessage();status.appendChild(updateWarning);
     }
     summary.innerHTML = '<span>已上传 ' + Number(stats.total || 0) + '</span><span>识别中 ' + Number(stats.recognizing || 0)
       + '</span><span>明确匹配 ' + Number(stats.ready || 0) + '</span><span>待人工核对 ' + Number(stats.needs_review || 0)
@@ -462,7 +480,7 @@
       scheduleBatchPoll(data);
       if(expenseWorkspace()){
         var stillCurrent=function(){return generation===batchLoadGeneration&&scopeKey===currentBatchKey();};
-        try{var matched=await window.ZysyrExpenseVoucherWorkspace.autoMatch(data,readPayload,stillCurrent,function(id){return Object.keys(batchDirtyFields[id]||{}).length>0;},false);
+        try{var matched=await window.ZysyrExpenseVoucherWorkspace.autoMatch(automaticWorkspaceData(data),readPayload,stillCurrent,function(id){return Object.keys(batchDirtyFields[id]||{}).length>0;},false);
           if(matched&&stillCurrent())loadBatchStatus(batchId);
         }catch(e){if(stillCurrent()&&status)status.textContent='自动匹配结果暂未确认：'+e.message+'。原件保留，请刷新核验。';}
       }
@@ -592,7 +610,8 @@
     var draft = batchItemDraft(item.id);
     if(draft&&draft.target_kind==='monthly_cell'){
       var monthlyTarget=(batchStatusData.targets||[]).find(function(row){return row.target_kind==='monthly_cell'&&row.id===draft.target_id;});
-      if(quiet||!expenseWorkspace()||!monthlyTarget||!window.ZysyrExpenseVoucherWorkspace.canAttachMonthlyCell(monthlyTarget)){if(!quiet)toast('当前月报栏目不可关联，请刷新后核对');return false;}
+      if(!monthlyEvidenceReady()){if(!quiet)toast(monthlyEvidenceUpdateMessage());return false;}
+      if(quiet||!monthlyTarget||!monthlyEvidenceAllowed(monthlyTarget)){if(!quiet)toast('当前月报栏目不可关联，请刷新后核对');return false;}
       var monthlyScope={store:currentStore(),month:document.getElementById('month').value},monthlyKey=currentBatchKey();
       if(!window.confirm('请核对原图，确认整份原图属于 '+monthlyScope.store+' · '+monthlyScope.month+' 月报栏目「'+monthlyTarget.summary+'」。仅补充月报佐证，不确认图内每笔付款，不改金额或入账状态，旧关联保留。'))return false;
       var monthlyButton=draft.card.querySelector('[data-petty-batch-confirm]');if(monthlyButton){monthlyButton.disabled=true;monthlyButton.textContent='正在关联并回读…';}
@@ -637,7 +656,7 @@
     rememberBatchDrafts();
     if(expenseWorkspace()){
       var key=currentBatchKey();batchUploadBusy=true;
-      try{var count=await window.ZysyrExpenseVoucherWorkspace.autoMatch(batchStatusData,{store:currentStore(),month:document.getElementById('month').value},function(){return key===currentBatchKey();},function(id){return Object.keys(batchDirtyFields[id]||{}).length>0;},true);
+      try{var count=await window.ZysyrExpenseVoucherWorkspace.autoMatch(automaticWorkspaceData(batchStatusData),{store:currentStore(),month:document.getElementById('month').value},function(){return key===currentBatchKey();},function(id){return Object.keys(batchDirtyFields[id]||{}).length>0;},true);
         if(key===currentBatchKey()){toast('已匹配 '+count+' 项开支凭证，未入账');await loadBatchStatus();}
       }catch(e){if(key===currentBatchKey())toast('匹配结果未确认：'+e.message+'，请刷新核验');}
       finally{batchUploadBusy=false;}return;
