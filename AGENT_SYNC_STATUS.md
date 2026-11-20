@@ -1,8 +1,14 @@
-## 2026-11-20 · Batch voucher source confirmation (App version: v672)
+## 2026-11-20 · Batch voucher source confirmation (App version: v674)
 
-- Owner: Codex. Isolated fix/upload-store-dialog-20261120 from protected main 0aa2d212; starting checks and daily backup passed.
+- Owner: Codex. Isolated fix/upload-store-dialog-20261120 from protected main 0aa2d212; starting checks and daily backup passed. Reconciled protected main83ce6ce3/v673 without changing its daily-original module; initial690763ac passed the complete local publication gate; revalidate the merged head before release.
 - One explicit, non-default source-store choice covers the displayed exact batch file list. Scoped closure authorizes only original file objects, one send each, original batch/store/month/session; wrong store, cancellation and stale scope fail closed. Ordinary per-record uploads keep their existing per-file proof. No database, OCR, financial amount, matching or posting changes.
 - Synthetic browser checks at390/1280 cover20-file single confirmation, wrong store, foreign file, repeated send, cancellation and stale month plus existing session/account isolation. Full release gates and protected publication/readback required before calling live.
+
+## 2026-11-20 · Void archived originals in daily detail (App version: v673; local candidate)
+
+- Owner: Codex. Isolated branch from protected github/main 6b9a4469. Baseline and daily recovery archive verified before edits.
+- Add single-photo void next to the archived original in daily detail. Reuse the scoped and audited archive operation. Reconcile the result for that original and refresh the current date without rebuilding the editable draft.
+- Verify finance/read-only views, cancellation and uncertain responses on synthetic data before protected publication. No real report or original is changed by release verification.
 
 ## 2026-11-20 · Source-store checks for daily reports and expense evidence (App version: v671; local candidate)
 
