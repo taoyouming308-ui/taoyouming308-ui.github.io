@@ -3,6 +3,7 @@ import base64
 import io
 import json
 import pathlib
+import tempfile
 import unittest
 import urllib.error
 from unittest import mock
@@ -14,6 +15,18 @@ SCRIPT_PATH = pathlib.Path(__file__).with_name("sync_mgj_bookings.py")
 SPEC = importlib.util.spec_from_file_location("sync_mgj_bookings", SCRIPT_PATH)
 SYNC = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SYNC)
+
+
+def setUpModule():
+    global TURN_DIRECTORY, TURN_PATCH
+    TURN_DIRECTORY = tempfile.TemporaryDirectory()
+    TURN_PATCH = mock.patch.object(SYNC.source_turns, 'ROOT', pathlib.Path(TURN_DIRECTORY.name) / 'turns')
+    TURN_PATCH.start()
+
+
+def tearDownModule():
+    TURN_PATCH.stop()
+    TURN_DIRECTORY.cleanup()
 
 
 class BookingNormalizationTests(unittest.TestCase):

@@ -20,6 +20,10 @@ try:
     from mgj_booking_source import complete_reservations
 except ModuleNotFoundError:
     from scripts.mgj_booking_source import complete_reservations
+try:
+    import mgj_source_turns as source_turns
+except ModuleNotFoundError:
+    from scripts import mgj_source_turns as source_turns
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -193,12 +197,15 @@ def request_json(url, cookie="", data=None, timeout=20):
         headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
     request = urllib.request.Request(url, data=data, headers=headers)
     def perform():
-        remaining = remaining_run_seconds()
-        if remaining is not None and remaining < 1:
-            raise TimeoutError("预约同步运行时间已到本轮上限")
-        effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
-        with source_urlopen(request, timeout=effective_timeout) as response:
-            return json.loads(response.read().decode("utf-8", errors="replace"))
+        # The batch lock still protects cadence/v2 ordering. Only real source
+        # HTTP/body reads hold this narrow turn; retries sleep outside it.
+        with source_turns.booking_request(deadline=RUN_DEADLINE):
+            remaining = remaining_run_seconds()
+            if remaining is not None and remaining < 1:
+                raise TimeoutError("预约同步运行时间已到本轮上限")
+            effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
+            with source_urlopen(request, timeout=effective_timeout) as response:
+                return json.loads(response.read().decode("utf-8", errors="replace"))
     return with_network_retries(perform)
 
 
@@ -241,8 +248,14 @@ def login(server, username, password):
             "User-Agent": USER_AGENT,
         },
     )
-    with opener.open(request, timeout=20) as response:
-        result = json.loads(response.read().decode("utf-8", errors="replace"))
+    with source_turns.booking_request(deadline=RUN_DEADLINE):
+        # A preceding customer read may consume part of the existing deadline.
+        remaining = remaining_run_seconds()
+        if remaining is not None and remaining < 1:
+            raise TimeoutError("预约同步运行时间已到本轮上限")
+        effective_timeout = 20 if remaining is None else max(1, min(20, int(remaining)))
+        with opener.open(request, timeout=effective_timeout) as response:
+            result = json.loads(response.read().decode("utf-8", errors="replace"))
     if result.get("code") != 7:
         raise RuntimeError(f"Meiguanjia login code={result.get('code')}")
     parts = [f"{cookie.name}={cookie.value}" for cookie in cookie_jar]

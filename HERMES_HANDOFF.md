@@ -1,3 +1,11 @@
+## 2026-11-20 approved request-scoped source coordination candidate
+
+PR163 is normally merged as `0aa2d212`. Its customer main SHA `7abffe237c5e8dc4b54109ed05af913c65fa8f9f96abc8a967474219f7a8169f` and resume module SHA `04c5c88d01d7d4e4ae583992343ae05d28c26001120e8a27dacb274f2e6228b7` were installed at14:29; later bounded and natural customer attempts still deferred behind the whole booking batch. Those live checks supersede the earlier preparation snapshots below, but are not evidence of complete backlog recovery.
+
+User now approved queue optimization. Candidate changes only booking actual source HTTP exchanges, customer readiness, and the new private common module. Booking RUN_LOCK remains the whole-batch duplicate guard; customers no longer interpret Supabase begin/commit waiting as source activity. Actual book/customer source reads are mutually exclusive; booking intent prevents the next customer read from overtaking it. An already-started customer read remains bounded by10s. Schedules,90s booking/105s customer budgets, original data,110 existing manual-review entries, source safety, resume cache and disabled automatic outbound must remain intact.
+
+Deploy only after protected final-head checks and normal merge, using `scripts/install_mgj_source_turns.py` with all three frozen hashes. The source module binds the exact approved booking SHA; deploying a different booking script later requires reviewed coordinated compatibility, otherwise customer reads fail closed. Do not run the broad core deployer, pause/alter schedulers, reset queues or replace the resume module. See `docs/operations/mgj-source-turns.md` for lock order, cutover and real acceptance. This is a candidate preparation record; verify private installation receipt and live cloud readback before describing it as deployed or recovered.
+
 ## 2026-11-20 verified customer runtime and approved backlog repair
 
 Concurrent protected main `4fa790a6`/v670 was incorporated after the initial v669 gate; customer runtime targets keep the reviewed hashes. Repeat the final-head gate. This task does not deploy the unrelated finance migration or Edge function.

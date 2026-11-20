@@ -1,4 +1,5 @@
 import os,sys,fcntl,tempfile,unittest,copy,subprocess
+from contextlib import nullcontext
 from unittest import mock
 from datetime import datetime,timedelta
 import importlib.util
@@ -10,14 +11,16 @@ spec.loader.exec_module(s)
 
 class Tests(unittest.TestCase):
  def setUp(self):
-  self.tmp=tempfile.TemporaryDirectory();self.path=self.tmp.name+'/source'
-  self.patches=[mock.patch.object(s,'SOURCE_LOCK',self.path),mock.patch.object(s,'SOURCE_LAST_END',None),mock.patch.object(s,'SESSION_LOCK',self.tmp.name+'/session'),mock.patch.object(s,'WAIT_TOTAL_SECONDS',0),mock.patch.object(s,'locked_session',return_value={'cookies':'fixture','shop':'fixture','employee':'123'}),mock.patch.object(s,'RUN_DEADLINE',s.time.monotonic()+105),mock.patch.object(s,'source_priority_reason',return_value=''),mock.patch.object(s,'log'),mock.patch.object(s,'DEFERRED_PATH',self.tmp.name+'/deferred.json'),mock.patch.object(s.subprocess,'check_output',side_effect=AssertionError('unmocked source command forbidden'))]
+  self.tmp=tempfile.TemporaryDirectory();self.path=self.tmp.name+'/source';self.now=0
+  self.patches=[mock.patch.object(s,'SOURCE_LOCK',self.path),mock.patch.object(s,'SOURCE_LAST_END',None),mock.patch.object(s,'SESSION_LOCK',self.tmp.name+'/session'),mock.patch.object(s,'locked_session',return_value={'cookies':'fixture','shop':'fixture','employee':'123'}),mock.patch.object(s,'RUN_DEADLINE',105),mock.patch.object(s.time,'monotonic',side_effect=lambda:self.now),mock.patch.object(s.time,'sleep',side_effect=self.sleep),mock.patch.object(s,'source_priority_reason',return_value=''),mock.patch.object(s.source_turns,'customer_request',side_effect=nullcontext),mock.patch.object(s,'log'),mock.patch.object(s,'DEFERRED_PATH',self.tmp.name+'/deferred.json'),mock.patch.object(s.subprocess,'check_output',side_effect=AssertionError('unmocked source command forbidden'))]
   for p in self.patches:p.start()
  def tearDown(self):
   for p in reversed(self.patches):p.stop()
   self.tmp.cleanup()
  def unlocked(self):
   with open(self.path,'a') as f:fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
+ def sleep(self,seconds):
+  self.now+=seconds
  def queue(self):return {'version':1,'items':[{'phone':'fixture','attempts':5,'status':'needs_review','first_failed_at':(datetime.now().astimezone()-timedelta(days=2)).isoformat()}]}
  def test_service_deferred_keeps_completed_counts_without_identifiers(self):
   exc=s.SourceDeferred('source_budget')
@@ -50,27 +53,31 @@ class Tests(unittest.TestCase):
    state['pairs']=[];self.assertFalse(s.daily_wait_is_safe())
    state=None;self.assertFalse(s.daily_wait_is_safe())
  def test_initial_wait_local_only_then_booking_priority(self):
-  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',side_effect=['daily_due_or_cooling','booking_active','booking_active']),mock.patch.object(s.time,'sleep') as sleep,mock.patch.object(s.subprocess,'check_output') as send:
+  with mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',side_effect=lambda:'daily_due_or_cooling' if self.now<1 else 'booking_active'),mock.patch.object(s.subprocess,'check_output') as send:
    with self.assertRaises(s.SourceDeferred):s.bounded_source_curl(lambda: (['fixture'],b''))
-   self.assertEqual(sleep.call_count,1);send.assert_not_called()
+   self.assertEqual(self.now,75);send.assert_not_called()
  def test_initial_wait_bounded_and_once(self):
-  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s.time,'sleep') as sleep:
-   with self.assertRaises(s.SourceDeferred):s.wait_initial_daily_readiness()
-   self.assertEqual(sum(x.args[0] for x in sleep.call_args_list),60)
-   s.wait_initial_daily_readiness();self.assertEqual(sleep.call_count,30)
+  with mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s.subprocess,'check_output') as send:
+   with self.assertRaises(s.SourceDeferred):s.bounded_source_curl(lambda: (['fixture'],b''))
+   self.assertEqual(self.now,75)
+   with self.assertRaises(s.SourceDeferred):s.bounded_source_curl(lambda: (['fixture'],b''))
+   self.assertEqual(self.now,75);send.assert_not_called()
  def test_initial_wait_failed_daily_no_sleep(self):
-  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=False),mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s.time,'sleep') as sleep:
-   with self.assertRaises(s.SourceDeferred):s.wait_initial_daily_readiness()
-   sleep.assert_not_called()
+  with mock.patch.object(s,'daily_wait_is_safe',return_value=False),mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s.subprocess,'check_output') as send:
+   with self.assertRaises(s.SourceDeferred):s.bounded_source_curl(lambda: (['fixture'],b''))
+   self.assertEqual(self.now,0);send.assert_not_called()
  def test_initial_wait_reserves_request_and_persistence_budget(self):
-  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s,'remaining_run_seconds',return_value=31),mock.patch.object(s.time,'sleep') as sleep:
-   with self.assertRaisesRegex(s.SourceDeferred,'source_budget'):s.wait_initial_daily_readiness()
-   sleep.assert_not_called()
+  self.now=75
+  with mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s.subprocess,'check_output') as send:
+   with self.assertRaisesRegex(s.SourceDeferred,'source_budget'):s.bounded_source_curl(lambda: (['fixture'],b''))
+   self.assertEqual(self.now,75);send.assert_not_called()
  def test_initial_wait_releases_all_priority_locks(self):
   def check_unheld(_):
    for path in [s.SOURCE_LOCK,s.SESSION_LOCK]:
     with open(path,'a') as f:fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
-  with mock.patch.object(s,'INITIAL_READY_CHECKED',False),mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',side_effect=['daily_due_or_cooling','']),mock.patch.object(s.time,'sleep',side_effect=check_unheld):s.wait_initial_daily_readiness()
+  def sleep(seconds):check_unheld(seconds);self.now+=seconds
+  with mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s,'source_priority_reason',side_effect=lambda:'daily_due_or_cooling' if self.now<1 else ''),mock.patch.object(s.time,'sleep',side_effect=sleep),mock.patch.object(s.subprocess,'check_output',return_value=b'fixture'):
+   self.assertEqual(s.bounded_source_curl(lambda: (['fixture'],b'')),b'fixture')
  def test_attempt_timestamp_validation_and_absolute_order(self):
   s.record_deferred(['fixture-a','fixture-b'],'source_budget')
   s.mark_deferred_attempt('fixture-a','2026-11-17T08:00:00+08:00')
@@ -132,7 +139,7 @@ class Tests(unittest.TestCase):
    self.assertEqual(run.call_args.kwargs['timeout'],10)
   self.unlocked()
  def test_daily_due_does_not_acquire_or_send(self):
-  with mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s.subprocess,'check_output') as run:
+  with mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s,'daily_wait_is_safe',return_value=False),mock.patch.object(s.subprocess,'check_output') as run:
    with self.assertRaises(s.SourceDeferred):s.bounded_source_curl(lambda: (['fixture'],b''))
    run.assert_not_called();self.assertFalse(os.path.exists(self.path))
  def test_booking_priority_no_send(self):
@@ -145,7 +152,7 @@ class Tests(unittest.TestCase):
   with open(self.path,'a') as f:
    fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
    with self.assertRaises(s.SourceDeferred):s.bounded_source_curl(lambda: (['fixture'],b''))
-  with mock.patch.object(s.subprocess,'check_output',return_value=b'ok'):
+  with mock.patch.object(s,'RUN_DEADLINE',self.now+105),mock.patch.object(s.subprocess,'check_output',return_value=b'ok'):
    self.assertEqual(s.bounded_source_curl(lambda: (['fixture'],b'')),b'ok')
   self.unlocked()
  def test_actual_priority_adapter_booking_lock(self):
@@ -154,10 +161,11 @@ class Tests(unittest.TestCase):
   # Restore actual function just for this adapter check; no connectors imported.
   next(p for p in self.patches if p.attribute=='source_priority_reason').stop()
   booking=self.tmp.name+'/booking'
-  with mock.patch.dict(sys.modules,{'sync_mgj_daily_electronic_sources':daily}),mock.patch.object(s,'BOOKING_LOCK',booking):
+  with mock.patch.dict(sys.modules,{'sync_mgj_daily_electronic_sources':daily}),mock.patch.object(s,'BOOKING_LOCK',booking),mock.patch.object(s,'daily_wait_is_safe',return_value=True),mock.patch.object(s.source_turns,'booking_protocol_verified',return_value=True),mock.patch.object(s.source_turns,'booking_pending',return_value=False):
    with open(booking,'a') as f:
     fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB)
-    self.assertEqual(s.source_priority_reason(),'booking_active')
+    self.assertEqual(s.source_priority_reason(),'')
+    with mock.patch.object(s.source_turns,'booking_pending',return_value=True):self.assertEqual(s.source_priority_reason(),'booking_active')
    self.assertEqual(s.source_priority_reason(),'')
  def test_actual_priority_adapter_daily_due(self):
   import types

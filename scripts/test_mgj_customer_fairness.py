@@ -1,4 +1,5 @@
 import sys,unittest,tempfile,fcntl,json,subprocess
+from contextlib import nullcontext
 from pathlib import Path
 from unittest import mock
 import importlib.util
@@ -8,7 +9,7 @@ s=importlib.util.module_from_spec(spec);spec.loader.exec_module(s)
 class Tests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.now=0;self.paths={k:self.tmp.name+'/'+k for k in ['SOURCE_LOCK','SESSION_LOCK','COORDINATOR_LOCK']}
-  self.patches=[mock.patch.object(s,k,v) for k,v in self.paths.items()]+[mock.patch.object(s,'RUN_DEADLINE',105),mock.patch.object(s,'SOURCE_LAST_END',None),mock.patch.object(s,'WAIT_USED',0),mock.patch.object(s,'WAIT_EPISODES',0),mock.patch.object(s,'SESSION_SCOPES',{}),mock.patch.object(s,'DEFERRED_PATH',self.tmp.name+'/deferred.json'),mock.patch.object(s.time,'monotonic',side_effect=lambda:self.now),mock.patch.object(s.time,'sleep',side_effect=self.sleep),mock.patch.object(s,'source_priority_reason',return_value=''),mock.patch.object(s,'load_config',return_value={'server':s.SERVER,'shop_id':'fixture','emp_id':'123','cookies':'userId=fixture; JSESSIONID=old;'}),mock.patch.object(s.subprocess,'check_output',side_effect=AssertionError('unmocked source forbidden'))]
+  self.patches=[mock.patch.object(s,k,v) for k,v in self.paths.items()]+[mock.patch.object(s,'RUN_DEADLINE',105),mock.patch.object(s,'SOURCE_LAST_END',None),mock.patch.object(s,'WAIT_USED',0),mock.patch.object(s,'WAIT_EPISODES',0),mock.patch.object(s,'SESSION_SCOPES',{}),mock.patch.object(s,'DEFERRED_PATH',self.tmp.name+'/deferred.json'),mock.patch.object(s.time,'monotonic',side_effect=lambda:self.now),mock.patch.object(s.time,'sleep',side_effect=self.sleep),mock.patch.object(s,'source_priority_reason',return_value=''),mock.patch.object(s.source_turns,'customer_request',side_effect=nullcontext),mock.patch.object(s,'load_config',return_value={'server':s.SERVER,'shop_id':'fixture','emp_id':'123','cookies':'userId=fixture; JSESSIONID=old;'}),mock.patch.object(s.subprocess,'check_output',side_effect=AssertionError('unmocked source forbidden'))]
   for p in self.patches:p.start()
  def tearDown(self):
   for p in reversed(self.patches):p.stop()
@@ -32,14 +33,15 @@ class Tests(unittest.TestCase):
   with mock.patch.object(s,'source_priority_reason',return_value='booking_active'),self.response() as call:
    for _ in range(3):
     with self.assertRaises(s.SourceDeferred):self.source()
-   self.assertEqual(s.WAIT_USED,20);call.assert_not_called();self.assertLessEqual(s.WAIT_EPISODES,2)
- def test_two_episodes_shared_across_customers(self):
+   self.assertEqual(s.WAIT_USED,75);call.assert_not_called();self.assertEqual(self.now,75)
+ def test_multiple_episodes_share_one_batch_deadline(self):
   for _ in range(2):
    until=self.now+2
    with mock.patch.object(s,'source_priority_reason',side_effect=lambda:'booking_active' if self.now<until else ''),self.response():self.source()
-  with mock.patch.object(s,'source_priority_reason',return_value='booking_active'),self.response() as call:
-   with self.assertRaises(s.SourceDeferred):self.source()
-   call.assert_not_called();self.assertEqual(s.WAIT_EPISODES,2)
+  until=self.now+2
+  with mock.patch.object(s,'source_priority_reason',side_effect=lambda:'booking_active' if self.now<until else ''),self.response() as call:
+   self.source()
+   self.assertEqual(call.call_count,1);self.assertEqual(s.WAIT_EPISODES,3)
  def test_budget_reserves_request_and_write(self):
   self.now=76
   with self.response() as call:
@@ -55,7 +57,7 @@ class Tests(unittest.TestCase):
    with self.assertRaises(s.SourceRateLimitError):self.source()
    self.assertEqual(call.call_count,1);self.assertEqual(s.WAIT_USED,0)
  def test_daily_due_not_polled(self):
-  with mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),self.response() as call:
+  with mock.patch.object(s,'source_priority_reason',return_value='daily_due_or_cooling'),mock.patch.object(s,'daily_wait_is_safe',return_value=False),self.response() as call:
    with self.assertRaises(s.SourceDeferred):self.source()
    self.assertEqual(s.WAIT_USED,0);call.assert_not_called()
  def test_all_customer_modes_share_new_coordinator(self):
