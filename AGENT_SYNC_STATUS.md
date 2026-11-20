@@ -28,6 +28,14 @@
 - Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
 - A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
+## 2026-11-19 · Appointment sync recovery (App version: v669 unchanged)
+
+- Owner: Codex, isolated fix/booking-sync-recovery-20261119 based on main 8c1d38cc and integrated with main dd5c8bae. Daily source backup created before edits; unrelated worktrees and v669 shell fixes preserved.
+- The scheduled booking-only budget is 90s (supersedes 55s); the two-phase protocol includes lease acquisition before each source read. macOS Python 3.9 parses PostgreSQL fractional timestamp precision explicitly.
+- Canonical v2 client requires an explicit complete source list, safe IDs/status/date/store, obtains a server lease before source read, and commits exact store/day atomically. Signed endpoint rejects legacy v1; service-role direct booking writes revoked while SELECT remains. RPC concurrency fences and idempotent receipts prevent stale replay; private trigger preserves changed/deleted old rows with reasons. Protocol receipts retain only hashes and expire after one day; business audit rows are retained.
+- Targeted installer preflights known runtime hashes and duplicate schedulers, backs up four booking-only files, converts legacy entrypoint to same guarded runner, and installs com.hermes.booking-sync every 60s under gui/501. Existing independent daily-consumption launchd, credentials, cadence, customer jobs and business originals remain untouched. No full core installer run.
+- Candidate checks: 61 Python sync/installer/keepalive/customer tests, 20 mocked signature/edge assertions, 34 isolated PG16 protocol/permissions/atomic-rollback assertions, actual edge-runtime offline compilation, booking UI and employee data-scope tests. Production migration, signed Edge function and canonical runtime were deployed and read back. Complete source-to-mirror field digests matched, and natural scheduled runs continued healthy on the following day. Final protected merge remains pending; real device UI acceptance was not observed.
+
 ## 2026-11-19 · Dismissible and truthful shell update notices (App version: v669; local candidate)
 
 - Owner: Codex. Isolated fix/update-notice-lifecycle-20261119 from protected github/main d256efa0 / published v668. Start version/integrity/handoff checks and the existing November19 daily backup passed before edits; prior worktrees and acceptance artifacts preserved.
