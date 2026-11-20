@@ -48,10 +48,10 @@ class SignedRequestTests(unittest.TestCase):
     @mock.patch.object(SYNC.urllib.request, "urlopen")
     def test_request_is_signed_and_reports_pair_result(self, urlopen):
         signing_key = Ed25519PrivateKey.generate()
-        result = {"shop_id": "1009951", "date": "2026-09-25", "upserted": 1, "deleted": 2}
+        result = {"shop_id": "1009951", "date": "2026-09-25", "upserted": 1, "deleted": 2, "protocol": 2, "operation": "commit", "lease_id": "test"}
         urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(result).encode()
         bookings = [{"id": 7, "shop_id": "1009951", "date": "2026-09-25"}]
-        self.assertEqual(SYNC.signed_pair_request("1009951", "2026-09-25", bookings, signing_key), result)
+        self.assertEqual(SYNC.signed_protocol_request({"protocol": 2, "operation": "commit", "shop_id": "1009951", "date": "2026-09-25", "lease_id": "test", "bookings": bookings}, signing_key), result)
         request = urlopen.call_args.args[0]
         timestamp = request.get_header("X-booking-sync-ts")
         signature = request.get_header("X-booking-sync-signature")
@@ -66,7 +66,7 @@ class SignedRequestTests(unittest.TestCase):
         error = urllib.error.HTTPError(SYNC.SYNC_FUNCTION, 401, "Unauthorized", {}, io.BytesIO())
         urlopen.side_effect = error
         with self.assertRaises(urllib.error.HTTPError):
-            SYNC.signed_pair_request("1009951", "2026-09-25", [], Ed25519PrivateKey.generate())
+            SYNC.signed_protocol_request({"protocol": 2, "operation": "commit", "shop_id": "1009951", "date": "2026-09-25", "lease_id": "test", "bookings": []}, Ed25519PrivateKey.generate())
         self.assertEqual(urlopen.call_count, 1)
         error.close()
 
@@ -75,7 +75,7 @@ class SignedRequestTests(unittest.TestCase):
         result = {"shop_id": "1837032", "date": "2026-09-25", "upserted": 0, "deleted": 0}
         urlopen.return_value.__enter__.return_value.read.return_value = json.dumps(result).encode()
         with self.assertRaisesRegex(RuntimeError, "返回异常"):
-            SYNC.signed_pair_request("1009951", "2026-09-25", [], Ed25519PrivateKey.generate())
+            SYNC.signed_protocol_request({"protocol": 2, "operation": "commit", "shop_id": "1009951", "date": "2026-09-25", "lease_id": "test", "bookings": []}, Ed25519PrivateKey.generate())
 
 
 class NetworkRetryTests(unittest.TestCase):
@@ -121,14 +121,14 @@ class CadenceTests(unittest.TestCase):
         state = {"dates": {}}
         with mock.patch.object(SYNC, "ensure_session", return_value=("host", "cookie")), \
              mock.patch.object(SYNC, "load_signing_key", return_value=object()), \
-             mock.patch.object(SYNC, "fetch_reservation_pair", side_effect=[[], [], TimeoutError("offline"), []]), \
-             mock.patch.object(SYNC, "signed_pair_request", return_value={"upserted": 0, "deleted": 0}) as write, \
+             mock.patch.object(SYNC, "fetch_reservation_snapshot", side_effect=[{"raw_rows":[],"bookings":[]}, {"raw_rows":[],"bookings":[]}, TimeoutError("offline")]), \
+             mock.patch.object(SYNC, "signed_protocol_request", return_value={"upserted": 0, "deleted": 0, "lease_id":"test", "generation":1}) as write, \
              mock.patch.object(SYNC, "atomic_write_json"), mock.patch.object(SYNC, "write_status"), \
              mock.patch.object(SYNC, "reservation_date_keys", return_value=["today", "future"]):
             self.assertEqual(SYNC.sync_bookings(["today", "future"], state), 1)
             self.assertIn("success_at", state["dates"]["today"])
             self.assertNotIn("success_at", state["dates"]["future"])
-            self.assertNotIn((shops[0]["shopId"], "future"), [c.args[:2] for c in write.call_args_list])
+            self.assertNotIn((shops[0]["shopId"], "future"), [(c.args[0]["shop_id"], c.args[0]["date"]) for c in write.call_args_list if c.args[0]["operation"] == "commit"])
 
 
 if __name__ == "__main__":
@@ -171,3 +171,9 @@ class BookingSourceTransportTests(unittest.TestCase):
             open_source.return_value.__enter__.return_value.read.return_value = b'{"code":0}'
             self.assertEqual(SYNC.request_json("https://vip12.meiguanjia.net/shair/metedata!reservationMetadata.action"), {"code":0})
             self.assertEqual(open_source.call_count, 1)
+
+
+def load_tests(loader, tests, pattern):
+    for name in ("scripts.test_mgj_booking_source", "scripts.test_mgj_booking_protocol", "scripts.test_mgj_booking_receipts", "scripts.test_install_mgj_booking_sync"):
+        tests.addTests(loader.loadTestsFromName(name))
+    return tests

@@ -2,7 +2,7 @@
 
 Scope: customer archive cache synchronization only. No Meiguanjia business writes,
 schema migration, financial posting, inventory enablement, new recurring job or
-frontend release. App retains the concurrent protected main's v670.
+frontend release. App retains the current protected main's version unchanged.
 
 ## Verified baseline and cause
 
