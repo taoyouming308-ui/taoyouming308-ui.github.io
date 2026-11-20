@@ -1,3 +1,10 @@
+## 2026-11-20 · Green monthly evidence completion (App version: v679; approved release candidate)
+
+- User requested the same green card treatment as existing completed voucher associations and explicitly approved publication after checks. Isolated from protected f75932e0/v678; clean tracked baseline, starting gates and daily recovery archive passed.
+- Current authoritative monthly-cell links display a separate monthly-evidenced green state and an explicit already-linked label; whole-original evidence remains distinct from transaction confirmation, approval and posting. The selected linked report/cell cannot be submitted again; another target remains an explicit manual action. Preserve historical links, fields and split-payment review status.
+- After the existing exact-original readback returns its four strict success flags, project only that verified link into the current scope and fence earlier workspace reads. Do not wait on unrelated petty report loading, force-refresh, retain a permanent evidence overlay, or turn an uncertain write acknowledgement green. A later fresh authoritative response remains the source of truth.
+- Browser coverage checks actual green styles, reload restoration, strict success/uncertainty, duplicate/no replay, split originals, target changes, scope races and old-module compatibility with synthetic data. No Edge, schema, worker or financial-data update is required. Full local and protected exact-head checks plus Pages byte readback are required before reporting live.
+
 ## 2026-11-20 · Monthly voucher release compatibility (App version: v678; approved release candidate)
 
 - User explicitly approved production publication after backup and checks. Scope remains monthly voucher category/detail choices only; no financial data, original images, amounts, approval or posting changes.

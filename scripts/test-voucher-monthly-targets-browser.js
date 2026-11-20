@@ -48,6 +48,15 @@ function fixture(options = {}) {
   if (options.split) items.push({ ...copy(item), id: id(11), component_index: 1,
     candidate_fields: { document_kind: 'receipt', document_type: 'chat_transfers' },
     latest_ocr_task: { id: id(302) } });
+  if (options.existingTransactions) {
+    items.push({ ...copy(item), id: id(20), source_voucher_id: id(120), component_count: 1,
+      confirmed_target_kind: 'formal', confirmed_target_id: id(403),
+      corrected_fields: { document_date: month + '-06', amount: 15, counterparty: '原逐笔收款方' } });
+    items.push({ ...copy(item), id: id(21), source_voucher_id: id(121), component_count: 1,
+      confirmed_target_kind: 'monthly_source', confirmed_target_id: id(400) + '~C17',
+      expense_association: { id: id(500), mode: 'auto' },
+      corrected_fields: { document_date: month + '-07', amount: 300, counterparty: '原人工核对保留' } });
+  }
   const data = {
     month, items, summary: { total: 1, recognizing: 0, ready: options.auto ? 1 : 0,
       needs_review: 1, confirmed: 0, auto_matched: 0, failed: 0 },
@@ -78,6 +87,13 @@ function fixture(options = {}) {
     data.monthly_targets_status = 'missing';
     data.monthly_targets_message = '当前电子月报尚未载入，请先核对本月月报；逐笔明细仍保留';
   }
+  if (options.existingTransactions) { data.summary.total = 3; data.summary.confirmed = 2; }
+  if (options.seededEvidence) {
+    data.targets[0].linked_vouchers = [originalId];
+    for (const entry of data.items) if ((entry.source_voucher_id || entry.id) === originalId) entry.monthly_cell_evidence = [{
+      target_id: targetId, report_id: reportId, cell_id: cellId, summary: target.summary, source_locator: target.source_locator,
+    }];
+  }
   return data;
 }
 
@@ -95,7 +111,7 @@ async function harness(browser, baseURL, width, options = {}) {
   const page = await context.newPage();
   const calls = [], errors = [], external = [], navigations = [];
   const data = fixture(options);
-  let attached = false, releaseList = null;
+  let attached = false, releaseList = null, releasePreWorkspace = null, workspaceReads = 0, workspaceFailure = Boolean(options.workspaceRefreshFails);
   page.setDefaultTimeout(6000);
   page.on('pageerror', error => errors.push(error.message));
   page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations.push(frame.url()); });
@@ -107,7 +123,10 @@ async function harness(browser, baseURL, width, options = {}) {
   await page.exposeFunction('backend', async (operation, payload = {}) => {
     calls.push({ operation, payload: copy(payload) });
     if (operation === 'expense_voucher_workspace') {
+      workspaceReads++;
+      if (attached && workspaceFailure) throw Error('合成月报佐证状态刷新失败，请稍后重试');
       const result = copy(data);
+      if (options.holdPreAttachWorkspace && workspaceReads === 2 && !attached) await new Promise(resolve => { releasePreWorkspace = resolve; });
       result.month = payload.month;
       if (payload.month !== month) {
         result.items = [];
@@ -120,22 +139,23 @@ async function harness(browser, baseURL, width, options = {}) {
       assert.equal(payload.store, store);
       assert.equal(payload.month, month);
       assert.equal(payload.report_id, reportId);
-      assert.equal(payload.cell_id, cellId);
+      const target = data.targets.find(row => row.target_kind === 'monthly_cell' && row.report_id === payload.report_id && row.cell_id === payload.cell_id);
+      assert.ok(target, 'the evidence-only route retains the exact selected report/cell');
       assert.equal(payload.context, 'expense_workspace');
       if (payload.action === 'attach') {
         assert.equal(payload.voucher_id, originalId, 'split component must use its original voucher id');
         assert.equal(payload.confirmed, true);
-        assert.match(payload.reason, /房租/);
+        assert.ok(payload.reason.includes(target.summary));
         for (const forbidden of ['amount', 'document_date', 'corrected_fields', 'target_snapshot', 'items']) {
           assert.equal(Object.hasOwn(payload, forbidden), false, 'evidence-only attach must not send ' + forbidden);
         }
         if (options.toxicAck) return copy(options.toxicAck);
         attached = true;
-        const evidence = { target_id: targetId, report_id: reportId, cell_id: cellId,
-          summary: data.targets[0].summary, source_locator: data.targets[0].source_locator };
-        data.targets[0].linked_vouchers = [originalId];
+        const evidence = { target_id: target.id, report_id: target.report_id, cell_id: target.cell_id,
+          summary: target.summary, source_locator: target.source_locator };
+        target.linked_vouchers = [...new Set([...(target.linked_vouchers || []), originalId])];
         for (const item of data.items) if ((item.source_voucher_id || item.id) === originalId) {
-          item.monthly_cell_evidence = [copy(evidence)];
+          item.monthly_cell_evidence = [...(item.monthly_cell_evidence || []).filter(link => link.target_id !== evidence.target_id), copy(evidence)];
         }
         return { cell_linked: true, already_linked: false, amount_changed: false, posted: false };
       }
@@ -143,7 +163,7 @@ async function harness(browser, baseURL, width, options = {}) {
         if (options.holdList) await new Promise(resolve => { releaseList = resolve; });
         if (options.listFails) throw Error('合成回读暂不可用');
         return { items: [{ id: originalId, source_voucher_id: originalId,
-          original_filename: '合成多笔原图.png', already_linked: options.unlinkedRead ? false : attached }], truncated: false };
+          original_filename: '合成多笔原图.png', already_linked: options.unlinkedRead ? false : target.linked_vouchers.includes(originalId) }], truncated: false };
       }
       throw Error('Unexpected monthly library action: ' + payload.action);
     }
@@ -151,7 +171,8 @@ async function harness(browser, baseURL, width, options = {}) {
     throw Error('Forbidden synthetic writer/operation: ' + operation);
   });
   await page.goto(baseURL);
-  await page.evaluate(({ store, reportId }) => {
+  async function mount() {
+  await page.evaluate(({ store, reportId, holdPettyReport }) => {
     window.syntheticStore = store;
     window.currentStore = () => window.syntheticStore;
     window.state = { session: 'synthetic-session-not-real', view: 'voucher-center',
@@ -171,8 +192,9 @@ async function harness(browser, baseURL, width, options = {}) {
     window.openPrivate = (operation, payload) => window.backend(operation, payload);
     window.openCellTrace = () => {};
     window.renderPettyCashReport = () => {};
-    window.loadPettyCashReport = async () => {};
-  }, { store, reportId });
+    window.syntheticPettyReads = 0;
+    window.loadPettyCashReport = async () => { window.syntheticPettyReads++; if (holdPettyReport) await new Promise(() => {}); };
+  }, { store, reportId, holdPettyReport: Boolean(options.holdPettyReport) });
   for (const script of source) {
     await page.addScriptTag({ content: script.content });
     if (options.legacyWorkspace && script.file === 'operations-expense-voucher-workspace.js') {
@@ -209,9 +231,14 @@ async function harness(browser, baseURL, width, options = {}) {
   }
   await page.evaluate(() => renderPettyCashReport());
   await page.locator('[data-petty-batch-item]').first().waitFor();
+  }
+  await mount();
   return {
     page, data, calls, errors, external, navigations,
     card: () => page.locator('[data-petty-batch-item="' + id(10) + '"]'),
+    reload: async () => { await page.reload(); await mount(); },
+    recoverWorkspace: () => { workspaceFailure = false; },
+    releasePreWorkspace: () => { assert.equal(typeof releasePreWorkspace, 'function'); releasePreWorkspace(); },
     release: () => { assert.equal(typeof releaseList, 'function', 'the controlled readback must have started'); releaseList(); },
     close: async () => {
       assert.deepEqual(errors, [], 'no browser exception');
@@ -234,6 +261,32 @@ async function chooseMonthly(h) {
 
 async function waitForToast(h, pattern) {
   await h.page.waitForFunction(source => window.syntheticToasts.some(text => new RegExp(source).test(text)), pattern.source);
+}
+
+async function cardColours(card) {
+  return card.evaluate(node => { const style = getComputedStyle(node); return { background: style.backgroundColor, border: style.borderTopColor }; });
+}
+
+async function assertMonthlyGreen(h, card = h.card()) {
+  assert.equal(await card.evaluate(node => node.classList.contains('monthly-evidenced')), true, 'authoritative monthly evidence gives the whole card its own completed visual state');
+  assert.match(await card.locator('.petty-batch-chip').innerText(), /^已关联月报$/);
+  assert.doesNotMatch(await card.innerText(), /已入账/);
+  const colours = await cardColours(card);
+  for (const [part, value] of Object.entries(colours)) {
+    const channels = (value.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+    assert.equal(channels.length, 3);
+    assert.ok(channels[1] > channels[0] && channels[1] > channels[2], part + ' is visibly green, not just a CSS class');
+  }
+  const button = card.locator('[data-petty-batch-confirm]');
+  assert.equal(await button.isDisabled(), true, 'the already-linked exact monthly target cannot be submitted twice');
+  assert.match(await button.innerText(), /已关联月报/);
+  assert.doesNotMatch(await button.innerText(), /正在|回读|处理中/);
+}
+
+async function assertNotMonthlyGreen(card) {
+  assert.equal(await card.evaluate(node => node.classList.contains('monthly-evidenced')), false, 'an unverified response cannot paint monthly success');
+  assert.notEqual((await cardColours(card)).background, 'rgb(244, 251, 247)');
+  assert.doesNotMatch(await card.locator('.petty-batch-chip').innerText(), /已关联月报/);
 }
 
 async function runWidth(browser, baseURL, width) {
@@ -282,7 +335,7 @@ async function runWidth(browser, baseURL, width) {
     } finally { await h.close(); }
   }
   {
-    const h = await harness(browser, baseURL, width, { split: true });
+    const h = await harness(browser, baseURL, width, { split: true, existingTransactions: true, holdPettyReport: true });
     try {
       assert.equal(await h.card().locator('[data-batch-date]').inputValue(), '');
       assert.equal(await h.card().locator('[data-batch-amount]').inputValue(), '');
@@ -303,13 +356,47 @@ async function runWidth(browser, baseURL, width) {
       assert.ok(h.calls.filter(call => call.operation === 'expense_voucher_workspace').length >= 2, 'verified attach is followed by authoritative workspace readback');
       for (const itemId of [id(10), id(11)]) {
         const card = h.page.locator('[data-petty-batch-item="' + itemId + '"]');
+        await assertMonthlyGreen(h, card);
         assert.match(await card.locator('[data-monthly-cell-evidence]').innerText(), /月报|佐证/);
         assert.match(await card.innerText(), /逐笔对应待核对/);
         assert.equal(await card.evaluate(node => node.classList.contains('confirmed')), false, 'whole-image evidence does not confirm split components');
         assert.equal(await card.locator('[data-expense-match-change]').count(), 0, 'monthly evidence cannot use expense-match void');
       }
-      assert.equal(h.data.summary.confirmed, 0);
-      assert.ok(h.data.items.every(item => !item.confirmed_target_id && !item.expense_association));
+      assert.equal(h.data.summary.confirmed, 2, 'monthly evidence does not increase the pre-existing transaction count');
+      assert.ok(h.data.items.filter(item => item.source_voucher_id === originalId).every(item => !item.confirmed_target_id && !item.expense_association));
+      const transaction = h.page.locator('[data-petty-batch-item="' + id(20) + '"]');
+      const association = h.page.locator('[data-petty-batch-item="' + id(21) + '"]');
+      assert.equal(await transaction.evaluate(node => node.classList.contains('confirmed')), true);
+      assert.equal(await transaction.evaluate(node => node.classList.contains('monthly-evidenced')), false, 'another original must not inherit the monthly colour');
+      assert.match(await transaction.locator('.petty-batch-chip').innerText(), /已确认对应/);
+      assert.match(await association.locator('.petty-batch-chip').innerText(), /AI 已匹配/);
+      assert.equal(await association.locator('[data-expense-match-change]').count(), 1, 'old transaction correction remains in its own chain');
+      assert.deepEqual(await cardColours(h.card()), await cardColours(transaction), 'monthly completion uses exactly the established green card colours');
+      assert.equal(await h.page.evaluate(() => window.syntheticPettyReads), 0, 'monthly success must not wait on the unrelated petty report read');
+      const beforeDuplicate = h.calls.filter(call => call.operation === 'monthly_voucher_library' && call.payload.action === 'attach').length;
+      await h.card().locator('[data-petty-batch-confirm]').evaluate(node => { node.disabled = false; node.click(); });
+      await h.page.waitForTimeout(40);
+      assert.equal(h.calls.filter(call => call.operation === 'monthly_voucher_library' && call.payload.action === 'attach').length, beforeDuplicate,
+        'forcing a disabled duplicate button still cannot submit the same report/cell/original tuple');
+      await h.reload();
+      await h.card().locator('[data-monthly-cell-evidence]').waitFor();
+      await assertMonthlyGreen(h);
+      assert.equal(h.calls.filter(call => call.operation === 'monthly_voucher_library' && call.payload.action === 'attach').length, beforeDuplicate,
+        'a full page reload restores success from the server without creating a new association');
+      const secondValue = 'monthly_cell:' + reportId + '~' + id(202);
+      await h.card().locator('[data-batch-target]').selectOption(secondValue);
+      assert.equal(await h.card().locator('[data-petty-batch-confirm]').isDisabled(), false, 'another unlinked monthly target remains an explicit choice');
+      assert.match(await h.card().locator('[data-petty-batch-confirm]').innerText(), /补充月报佐证/);
+      h.page.once('dialog', dialog => dialog.dismiss());
+      await h.card().locator('[data-petty-batch-confirm]').click();
+      assert.equal(h.calls.filter(call => call.operation === 'monthly_voucher_library' && call.payload.action === 'attach').length, beforeDuplicate);
+      h.page.once('dialog', dialog => dialog.accept());
+      await h.card().locator('[data-petty-batch-confirm]').click();
+      await h.page.waitForFunction(() => document.querySelector('[data-petty-batch-item] [data-monthly-cell-evidence]').textContent.includes('产品进货'));
+      await assertMonthlyGreen(h);
+      assert.equal(h.data.items[0].monthly_cell_evidence.length, 2, 'supplementing another target preserves the old evidence tuple');
+      assert.deepEqual(h.data.items.find(item => item.id === id(20)).corrected_fields,
+        { document_date: month + '-06', amount: 15, counterparty: '原逐笔收款方' });
     } finally { await h.close(); }
   }
   for (const options of [
@@ -324,6 +411,7 @@ async function runWidth(browser, baseURL, width) {
       await button.click();
       await waitForToast(h, /待核验|未确认|失败/);
       assert.equal(await h.card().locator('[data-monthly-cell-evidence]').count(), 0, 'unverified ack/readback cannot show a success badge');
+      await assertNotMonthlyGreen(h.card());
       assert.equal(await h.card().evaluate(node => node.classList.contains('confirmed')), false);
       const messages = await h.page.evaluate(() => window.syntheticToasts);
       assert.equal(messages.some(message => /已(?:补充|保存|确认并逐笔|关联)/.test(message)), false, 'uncertain result must not claim success');
@@ -350,6 +438,8 @@ async function runWidth(browser, baseURL, width) {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
       assert.ok(h.calls.some(call => call.operation === 'monthly_voucher_library' && call.payload.action === 'list'));
+      await assertNotMonthlyGreen(h.card());
+      assert.equal(await h.card().locator('[data-monthly-cell-evidence]').count(), 0, 'attach ACK without completed membership readback is not visual success');
       await h.page.evaluate(async () => {
         document.getElementById('month').value = '2026-08';
         document.getElementById('petty-cash-report-table').innerHTML = '';
@@ -362,6 +452,62 @@ async function runWidth(browser, baseURL, width) {
       const after = await h.page.evaluate(() => ({ html: document.getElementById('petty-batch-list').innerHTML, toasts: window.syntheticToasts.slice() }));
       assert.deepEqual(after, before, 'late old-month evidence readback cannot alter the new-month DOM or toast');
       assert.equal(await h.page.locator('[data-monthly-cell-evidence]').count(), 0);
+      assert.equal(await h.page.locator('.monthly-evidenced').count(), 0, 'old-month receipt cannot colour any new-month card');
+    } finally { await h.close(); }
+  }
+  {
+    const h = await harness(browser, baseURL, width, { workspaceRefreshFails: true, holdPettyReport: true });
+    try {
+      const button = await chooseMonthly(h);
+      h.page.once('dialog', dialog => dialog.accept());
+      await button.click();
+      await h.card().locator('[data-monthly-cell-evidence]').waitFor();
+      await h.page.locator('#petty-batch-status').filter({ hasText: /刷新失败|读取失败/ }).waitFor();
+      await assertMonthlyGreen(h);
+      assert.equal(await h.page.evaluate(() => window.syntheticPettyReads), 0);
+      assert.equal(h.calls.filter(call => call.operation === 'monthly_voucher_library' && call.payload.action === 'attach').length, 1);
+      h.recoverWorkspace();
+      await h.reload();
+      await assertMonthlyGreen(h);
+    } finally { await h.close(); }
+  }
+  {
+    const h = await harness(browser, baseURL, width, { seededEvidence: true, listFails: true });
+    try {
+      await assertMonthlyGreen(h);
+      const secondValue = 'monthly_cell:' + reportId + '~' + id(202);
+      await h.card().locator('[data-batch-target]').selectOption(secondValue);
+      h.page.once('dialog', dialog => dialog.accept());
+      await h.card().locator('[data-petty-batch-confirm]').click();
+      await waitForToast(h, /待核验/);
+      assert.equal(await h.card().evaluate(node => node.classList.contains('monthly-evidenced')), true, 'uncertain new target cannot erase already-verified old evidence');
+      assert.doesNotMatch(await h.card().locator('[data-monthly-cell-evidence]').innerText(), /产品进货/);
+      assert.equal(await h.card().locator('[data-petty-batch-confirm]').isDisabled(), false, 'the failed target must not pretend to be already linked');
+      assert.doesNotMatch(await h.card().locator('[data-petty-batch-confirm]').innerText(), /正在|回读|已关联月报/);
+    } finally { await h.close(); }
+  }
+  {
+    const h = await harness(browser, baseURL, width, { holdPreAttachWorkspace: true });
+    try {
+      await h.page.evaluate(() => { window.preAttachWorkspaceRead = ZysyrPettyReloadBatch(); });
+      for (let n = 0; n < 60 && h.calls.filter(call => call.operation === 'expense_voucher_workspace').length < 2; n++) await new Promise(resolve => setTimeout(resolve, 10));
+      assert.equal(h.calls.filter(call => call.operation === 'expense_voucher_workspace').length, 2);
+      const button = await chooseMonthly(h);
+      h.page.once('dialog', dialog => dialog.accept());
+      await button.click();
+      await h.card().locator('[data-monthly-cell-evidence]').waitFor();
+      await assertMonthlyGreen(h);
+      h.releasePreWorkspace();
+      await h.page.evaluate(() => window.preAttachWorkspaceRead);
+      await assertMonthlyGreen(h);
+      assert.equal(await h.card().locator('[data-monthly-cell-evidence]').count(), 1, 'a workspace response begun before attachment cannot remove the newer verified evidence');
+      // A genuinely fresh authoritative read remains the source of truth;
+      // success is not a permanent browser overlay hiding later server changes.
+      for (const item of h.data.items) item.monthly_cell_evidence = [];
+      for (const target of h.data.targets) if (target.target_kind === 'monthly_cell') target.linked_vouchers = [];
+      await h.page.evaluate(() => ZysyrPettyReloadBatch());
+      await assertNotMonthlyGreen(h.card());
+      assert.equal(await h.card().locator('[data-monthly-cell-evidence]').count(), 0);
     } finally { await h.close(); }
   }
   {
@@ -400,7 +546,7 @@ async function runWidth(browser, baseURL, width) {
       assert.equal(h.navigations.length, 1, 'compatibility recovery cannot force-refresh an active page');
     } finally { await h.close(); }
   }
-  console.log('Monthly target browser ' + width + ': grouped/manual-only choices, disabled blanks, cancel, empty OCR fields, verified evidence-only attach, split isolation, failed/toxic readbacks, auto exclusion, late-month isolation and mixed-version fail-closed behavior passed.');
+  console.log('Monthly target browser ' + width + ': verified green whole-original status, duplicate guards, server refresh restore, independent target supplementation, preserved transaction status, uncertain/no-ACK safety, manual-only choices, stale scopes and mixed-version guards passed.');
 }
 
 (async () => {
