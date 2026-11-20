@@ -59,7 +59,7 @@
       '.petty-batch-summary span{padding:6px 9px;border-radius:999px;background:#fff;border:1px solid #d9c7a6;font-size:12px}',
       '.petty-batch-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}',
       '.petty-batch-item{border:1px solid #d9c7a6;border-radius:12px;background:#fff;padding:12px;min-width:0}',
-      '.petty-batch-item.confirmed{border-color:#8bb79e;background:#f4fbf7}',
+      '.petty-batch-item.confirmed,.petty-batch-item.monthly-evidenced{border-color:#8bb79e;background:#f4fbf7}',
       '.petty-batch-file{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}',
       '.petty-batch-file strong{overflow-wrap:anywhere}',
       '.petty-batch-chip{white-space:nowrap;border-radius:999px;padding:4px 7px;background:#eee8dd;font-size:11px;font-weight:800}',
@@ -315,9 +315,22 @@
     });
   }
 
+  function monthlyEvidenceLinks(item) {
+    return (Array.isArray(item.monthly_cell_evidence)?item.monthly_cell_evidence:[]).filter(function(link){
+      return link&&link.report_id&&link.cell_id&&link.target_id===link.report_id+'~'+link.cell_id;
+    });
+  }
+
+  function monthlyTargetLinked(item, target) {
+    return !!target&&target.target_kind==='monthly_cell'&&monthlyEvidenceLinks(item).some(function(link){
+      return link.target_id===target.id&&link.report_id===target.report_id&&link.cell_id===target.cell_id;
+    });
+  }
+
   function batchStatusText(item) {
     if (item.expense_association) return {label:item.association_stale?'原件已变化，需核验':item.expense_association.mode==='auto'?'AI 已匹配':'已人工匹配',className:item.association_stale?'warn':'good'};
     if (item.confirmed_target_id) return { label: '已确认对应', className: 'good' };
+    if (monthlyEvidenceLinks(item).length) return { label: '已关联月报', className: 'good' };
     if (item.task_status === 'queued' || item.task_status === 'processing') return { label: '正在识别', className: '' };
     if (item.match && item.match.state === 'exact') return { label: '已识别，可确认', className: 'good' };
     if (item.task_status === 'failed' || item.task_status === 'dead_letter') return { label: '识别失败，待恢复', className: 'warn' };
@@ -362,11 +375,13 @@
       return;
     }
     list.innerHTML = items.map(function (item) {
+      var monthlyEvidence=monthlyEvidenceLinks(item);
       var fields = (item.confirmed_target_id||item.expense_association) ? (item.corrected_fields || item.candidate_fields || {}) : (item.candidate_fields || {});
       var suggested = item.match && item.match.target_id ? batchTargetValue(item.match.target_kind, item.match.target_id) : '';
       var confirmed = item.confirmed_target_id ? batchTargetValue(item.confirmed_target_kind, item.confirmed_target_id) : '';
+      var linkedMonthly=targets.find(function(target){return monthlyTargetLinked(item,target);});
       var latestDraft = { document_date: fields.document_date || '',period_month:fields.period_month||'',evidence_kind:fields.evidence_kind||'transaction', amount: fields.amount == null ? '' : fields.amount,
-        counterparty: fields.counterparty || '', document_number: fields.document_number || '', target: confirmed || suggested };
+        counterparty: fields.counterparty || '', document_number: fields.document_number || '', target: confirmed || (linkedMonthly?batchTargetValue('monthly_cell',linkedMonthly.id):'') || suggested };
       var draft = batchDrafts[item.id] || latestDraft;
       Object.keys(latestDraft).forEach(function (key) {
         if (item.confirmed_target_id&&!item.expense_association || !(batchDirtyFields[item.id] || {})[key]) draft[key] = latestDraft[key];
@@ -375,7 +390,7 @@
       var selectedTarget=targets.find(function(target){return batchTargetValue(target.target_kind,target.id)===draft.target;});
       var monthlyCell=selectedTarget&&selectedTarget.target_kind==='monthly_cell';
       var monthlyCellDisabled=monthlyCell&&!monthlyEvidenceAllowed(selectedTarget);
-      var monthlyEvidence=Array.isArray(item.monthly_cell_evidence)?item.monthly_cell_evidence:[];
+      var monthlyLinked=monthlyTargetLinked(item,selectedTarget);
       var status = batchStatusText(item), disabled = (item.confirmed_target_id||item.expense_association) ? 'disabled' : '';
       var recognizing = item.task_status === 'queued' || item.task_status === 'processing';
       var summaryOnly = ['bank_summary','multiple_transactions'].includes(fields.document_kind)&&draft.evidence_kind!=='monthly_summary';
@@ -390,7 +405,7 @@
       if (error && (error.indexOf('CODEX_') === 0 || error.indexOf('OPENAI_') === 0)) reason = '凭证识别暂未完成，原图已保存，请稍后重试或人工核对';
       if (error === 'PDF_REQUIRES_MANUAL_REVIEW') reason = 'PDF 原件已保存，请人工填写日期、金额并选择对应明细';
       var separate=item.reanalysis_task,preview=separate&&separate.candidate_fields||{},previewHTML=separate?'<div class="help"><strong>重新识别（原确认保持原样）</strong> · '+esc(separate.model||'')+' · '+esc(separate.status==='succeeded'?((preview.expense_category||'类别待核对')+' / '+(preview.document_date||'完整日期不明')+' / '+(preview.amount==null?'金额不明':formatAmount(preview.amount))):['queued','processing'].includes(separate.status)?'识别中…':'未完成，请重试')+'</div>':'';
-      return '<article class="petty-batch-item' + (item.confirmed_target_id ? ' confirmed' : '') + '" data-expense-evidence-kind="'+esc(draft.evidence_kind)+'" data-petty-batch-item="' + esc(item.id) + '" data-batch-id="' + esc(item.batch_id) + '">'
+      return '<article class="petty-batch-item' + (item.confirmed_target_id ? ' confirmed' : '') + (monthlyEvidence.length&&!item.association_stale?' monthly-evidenced':'') + '" data-expense-evidence-kind="'+esc(draft.evidence_kind)+'" data-petty-batch-item="' + esc(item.id) + '" data-batch-id="' + esc(item.batch_id) + '">'
         + '<div class="petty-batch-file"><div><strong>' + esc(item.original_filename) + '</strong><div class="help">上传 ' + esc(window.ZysyrTime.dateTime(item.uploaded_at)) + '</div></div>'
         + '<span class="petty-batch-chip ' + status.className + '">' + esc(status.label) + '</span></div>'
         + (expenseWorkspace()?'<div class="petty-batch-match"><strong>'+esc(window.ZysyrExpenseVoucherWorkspace.label(item))+'</strong></div>':'')
@@ -403,7 +418,7 @@
         + '<label class="petty-batch-target">对应开支明细<select data-batch-target ' + disabled + '>' + batchTargetOptions(targets, draft.target, item.match && item.match.candidates) + '</select></label></div>'
         + previewHTML + '<div class="petty-batch-item-actions">'+(expenseWorkspace()?'<button type="button" class="secondary" data-voucher-reanalyze="'+esc(item.id)+'" '+(recognizing||item.mime_type&&!String(item.mime_type).startsWith('image/')||separate&&['queued','processing'].includes(separate.status)?'disabled':'')+'>重新识别</button>':'')+'<button type="button" class="ghost" data-petty-batch-open="' + esc(item.id) + '">查看原图</button>'
         + ((item.confirmed_target_id||item.expense_association) ? '<span class="petty-evidence-badge">'+(item.expense_association?'凭证已对应，未审批或入账':'原图已逐笔关联，金额未改变')+'</span>'
-          : '<button type="button" class="primary" data-petty-batch-confirm="' + esc(item.id) + '" ' + (recognizing || monthlyCellDisabled || summaryOnly&&!monthlyCell ? 'disabled' : '') + '>' + (monthlyCell ? '补充月报佐证' : summaryOnly ? '汇总 / 多笔，需拆分核对' : recognizing ? '识别中…' : '确认本张并对应') + '</button>')
+          : '<button type="button" class="primary" data-petty-batch-confirm="' + esc(item.id) + '" ' + (monthlyLinked || recognizing || monthlyCellDisabled || summaryOnly&&!monthlyCell ? 'disabled' : '') + '>' + (monthlyLinked ? '已关联月报' : monthlyCell ? '补充月报佐证' : summaryOnly ? '汇总 / 多笔，需拆分核对' : recognizing ? '识别中…' : '确认本张并对应') + '</button>')
         + (item.expense_association?'<button type="button" class="ghost" data-expense-match-change="'+esc(item.expense_association.id)+'">更改对应</button>':'')
         + '</div></article>';
     }).join('');
@@ -612,12 +627,26 @@
       var monthlyTarget=(batchStatusData.targets||[]).find(function(row){return row.target_kind==='monthly_cell'&&row.id===draft.target_id;});
       if(!monthlyEvidenceReady()){if(!quiet)toast(monthlyEvidenceUpdateMessage());return false;}
       if(quiet||!monthlyTarget||!monthlyEvidenceAllowed(monthlyTarget)){if(!quiet)toast('当前月报栏目不可关联，请刷新后核对');return false;}
+      if(monthlyTargetLinked(item,monthlyTarget)){toast('本张原图已关联此月报栏目，无需重复提交');return false;}
       var monthlyScope={store:currentStore(),month:document.getElementById('month').value},monthlyKey=currentBatchKey();
       if(!window.confirm('请核对原图，确认整份原图属于 '+monthlyScope.store+' · '+monthlyScope.month+' 月报栏目「'+monthlyTarget.summary+'」。仅补充月报佐证，不确认图内每笔付款，不改金额或入账状态，旧关联保留。'))return false;
       var monthlyButton=draft.card.querySelector('[data-petty-batch-confirm]');if(monthlyButton){monthlyButton.disabled=true;monthlyButton.textContent='正在关联并回读…';}
       try{
-        await window.ZysyrExpenseVoucherWorkspace.attachMonthlyCell(item,monthlyTarget,monthlyScope);
+        var receipt=await window.ZysyrExpenseVoucherWorkspace.attachMonthlyCell(item,monthlyTarget,monthlyScope);
         if(monthlyKey!==currentBatchKey())return false;
+        if(!receipt||receipt.cell_linked!==true||receipt.readback_confirmed!==true||receipt.amount_changed!==false||receipt.posted!==false)throw Error('月报佐证结果待核验，请刷新读取关联状态');
+        // This is the verified selected-original readback, not an optimistic write
+        // acknowledgement. Reflect it before any unrelated report refresh can wait.
+        if(batchStatusKey===monthlyKey){
+          // Discard workspace reads started before this newer verified receipt.
+          ++batchLoadGeneration;
+          var originalId=item.source_voucher_id||item.id;
+          (batchStatusData.items||[]).forEach(function(row){
+            if((row.source_voucher_id||row.id)!==originalId||monthlyTargetLinked(row,monthlyTarget))return;
+            row.monthly_cell_evidence=monthlyEvidenceLinks(row).concat([{target_id:monthlyTarget.id,report_id:monthlyTarget.report_id,cell_id:monthlyTarget.cell_id,summary:monthlyTarget.summary,source_locator:monthlyTarget.source_locator}]);
+          });
+          renderBatchStatus(batchStatusData);
+        }
         toast('已补充月报佐证，未改金额或入账；逐笔对应仍需核对');return true;
       }catch(error){if(monthlyKey===currentBatchKey())toast(error.message||'月报佐证结果待核验，请刷新后核对');return false;}
       finally{if(monthlyKey===currentBatchKey()&&monthlyButton&&monthlyButton.isConnected){monthlyButton.disabled=false;monthlyButton.textContent='补充月报佐证';}}
@@ -699,8 +728,9 @@
       button.onclick = async function () {
         var item = (batchStatusData.items || []).find(function (row) { return row.id === button.dataset.pettyBatchConfirm; });
         if (!item) return;
+        var monthlyOnly=button.closest('[data-petty-batch-item]').querySelector('[data-batch-target]').value.indexOf('monthly_cell:')===0;
         if (await confirmBatchItem(item, false)) {
-          await loadPettyCashReport();
+          if(!monthlyOnly)await loadPettyCashReport();
           await loadBatchStatus();
         }
       };
