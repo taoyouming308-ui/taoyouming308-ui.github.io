@@ -358,7 +358,7 @@
       button.disabled = !writable || dirty === 0 || !!active;
     });
     if (autofillButton) {
-      var canAutofill = state.user.role === 'finance' && writable && !sheet.locked;
+      var canAutofill = sheet.permissions?.fill_blanks === true && state.user.role === 'finance' && writable && !sheet.locked;
       autofillButton.classList.toggle('hidden', !canAutofill);
       autofillButton.disabled = !canAutofill || !!active || dirty > 0 || sourceBusy();
       autofillButton.textContent = active === 'autofill' ? '正在自动填写…' : '自动填写报表';
@@ -600,7 +600,8 @@
 
   async function autofillDailySheet() {
     var sheet = state.imports.sheet;
-    if (!detailOpen() || !sheet || !sheet.permissions?.write || sheet.locked || sheet.draft.status !== 'draft'
+    if (!detailOpen() || !sheet || !sheet.permissions?.write || sheet.permissions.fill_blanks !== true
+      || sheet.locked || sheet.draft.status !== 'draft'
       || state.user.role !== 'finance' || sourceBusy() || active) return;
     if (dailySheetDirtyCount()) { notice('请先保存手动填写的内容，再自动填写空白。'); return; }
     if (isLocalPreview()) { notice('本地预览没有已同步的收银数据。'); return; }

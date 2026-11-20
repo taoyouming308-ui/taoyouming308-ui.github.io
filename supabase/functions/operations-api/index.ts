@@ -6017,7 +6017,7 @@ async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): 
   if (!validDate(reportDate) || !reason) throw new Error("请填写日报日期和建表原因");
   if (voucherId) await approvedDailyVoucher(companyId, storeId, voucherId);
   const existing = await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=eq.${reportDate}&status=in.(draft,confirmed)&order=created_at.desc&limit=1`);
-  if (existing[0]) return dailySheetData(companyId, storeId, cleanText(existing[0].id, 40));
+  if (existing[0]) return dailySheetRead({ store: store.name, draft_id: existing[0].id }, session);
   const employees = await restRowsAll(`zysyr_employees?select=name,position,employee_code&company_id=eq.${companyId}&store_id=eq.${storeId}&employment_status=eq.active&deleted_at=is.null&order=employee_code.asc,name.asc&limit=200`, 200);
   const nameSeeds: JsonRecord[] = [];
   for (const employee of employees) {
@@ -6029,12 +6029,12 @@ async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): 
   const extraction: JsonRecord = { parsed: { report_date: reportDate, notes: "人工逐格填写空白日报模板", cells: nameSeeds },
     response_id: null, model: "manual-entry-v1", usage: null };
   return saveDailySheetExtraction({ companyId, storeId, actorId, reportDate, voucherId, reason,
-    extraction, provider: "manual-entry", storeName: cleanText(store.name, 100) });
+    extraction, provider: "manual-entry", storeName: cleanText(store.name, 100), session });
 }
 
 async function saveDailySheetExtraction(input: {
   companyId: string; storeId: string; actorId: string; reportDate: string; voucherId: string | null;
-  reason: string; extraction: JsonRecord; provider?: string; storeName?: string;
+  reason: string; extraction: JsonRecord; provider?: string; storeName?: string; session: JsonRecord;
 }): Promise<JsonRecord> {
   const { companyId, storeId, actorId, reportDate, voucherId, reason, extraction } = input;
   const parsed = extraction.parsed as JsonRecord;
@@ -6050,7 +6050,9 @@ async function saveDailySheetExtraction(input: {
     p_cells: dailySheetSeeds(extraction, cleanText(input.storeName, 100)), p_reason: reason,
   });
   const result = await dailySheetData(companyId, storeId, cleanText(saved.id, 40));
-  return { ...result, readonly: false, permissions: { write: true, upload_original: true, void_original: true, save_orientation: true },
+  return { ...result, readonly: false, permissions: { write: true, upload_original: true, void_original: true, save_orientation: true,
+    fill_blanks: cleanText(input.session.operations_role, 40) === "finance"
+      && (result.draft as JsonRecord).status === "draft" && result.locked !== true },
     detected_date: validDate(detectedDate) ? detectedDate : null,
     date_mismatch: validDate(detectedDate) && detectedDate !== reportDate };
 }
@@ -6764,7 +6766,9 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
   const writable = hasAuthCapability(session, "daily_report.write")
     && cleanText((data.draft as JsonRecord).status, 20) === "draft"
     && (data.locked !== true || hasUnlockApproval);
+  // The Edge build that advertises fill_blanks is deployed after its RPC migration.
   return { ...data, readonly: !writable, permissions: { write: writable, read_history: canReadDailyHistory(session),
+    fill_blanks: writable && data.locked !== true && cleanText(session.operations_role, 40) === "finance",
     correct_confirmed: canCorrectConfirmedDaily(session) && cleanText((data.draft as JsonRecord).status, 20) === "confirmed" && data.locked !== true,
     upload_original: hasAuthCapability(session, "daily_report.write"),
     void_original: writable, save_orientation: hasAuthCapability(session, "daily_report.write") },

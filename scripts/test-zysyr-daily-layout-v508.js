@@ -87,7 +87,7 @@ async function run() {
         set('payment', 'payment', 'total', 2126);
         source.cells.filter(cell => cell.row_key === 'stylist_1').forEach(cell => { cell.row_label_source_method = 'codex_local_candidate'; });
         source.draft = { id: 'fixture-draft', report_date: '2026-01-01', status: 'draft', edit_revision: 4, source_voucher_id: 'fixture-voucher', validation_result: { valid: false } };
-        source.permissions = { write: true };
+        source.permissions = { write: true, fill_blanks: true };
         source.attachments = [];
         source.history = [];
         window.fixtureSource = source;
@@ -493,6 +493,7 @@ async function run() {
         state.user.role = 'finance';
         fixtureSource.draft.status = 'draft';
         fixtureSource.permissions.write = true;
+        fixtureSource.permissions.fill_blanks = true;
         fixtureSource.locked = false;
         const cash = fixtureSource.cells.find(c => c.section_code === 'payment' && c.column_code === 'cash');
         Object.assign(cash, { ocr_numeric: null, manual_override: false, corrected_numeric: null });
@@ -507,6 +508,17 @@ async function run() {
       const cash = page.locator('#daily-detail-grid [data-section="payment"][data-column-code="cash"]');
       const manual = page.locator('#daily-detail-grid [data-section="summary"][data-column-code="treatment_card"]');
       const manualValue = await manual.inputValue();
+      await page.evaluate(() => {
+        delete state.imports.sheet.permissions.fill_blanks;
+        renderDailyDetailControls();
+        document.getElementById('daily-detail-autofill').dispatchEvent(new MouseEvent('click'));
+      });
+      assert.equal(await autofill.isVisible(), false, 'old backend without the explicit capability must not show autofill');
+      assert.equal(await page.evaluate(() => dailyOperations.some(x => x === 'daily_sheet_fill_blanks')), false);
+      await page.evaluate(() => {
+        state.imports.sheet.permissions.fill_blanks = true;
+        renderDailyDetailControls();
+      });
       await actual.fill('345');
       assert.equal(await autofill.isDisabled(), true);
       assert.equal(await actual.inputValue(), '345');
