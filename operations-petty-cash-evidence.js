@@ -502,6 +502,7 @@
     if (select) select.disabled = true;
     var fileResults = files.map(function (file) { return { name: file.name, status: '等待上传' }; });
     var nextFileIndex = 0;
+    var uploadConfirmedFile;
     batchUploadSummaryText = '';
     batchUploadSummaryKey = currentBatchKey();
     function renderUploadProgress() {
@@ -518,8 +519,7 @@
       try {
         var base64 = await fileBase64(file);
         if (!batchUploadCurrent()) return;
-        await api('petty_cash_batch_upload', { store: batchScope.store, month: batchScope.month, batch_id: batchId,
-          filename: file.name, mime_type: file.type, base64: base64 });
+        await uploadConfirmedFile(file,base64);
         fileResults[index].status = '已保存';
       } catch (error) {
         fileResults[index].status = error.code === 'UPLOAD_SOURCE_NOT_CONFIRMED' ? error.message
@@ -529,6 +529,16 @@
       await uploadNextFile();
     }
     try {
+      if (status) status.textContent = typeof preparePettyBatchUpload === 'function'
+        ? '请在弹窗核对本批 '+files.length+' 份原件并确认所属门店，确认后开始上传。'
+        : '请逐张核对弹窗中的原件所属门店，确认后上传。';
+      // An already-open older shell can lazily fetch this module before refreshing.
+      // Keep its original per-file API confirmation until it opts into the new shell.
+      uploadConfirmedFile = typeof preparePettyBatchUpload === 'function'
+        ? await preparePettyBatchUpload(files,batchId)
+        : function(file,base64){return api('petty_cash_batch_upload',{store:batchScope.store,month:batchScope.month,batch_id:batchId,
+          filename:file.name,mime_type:file.type,base64:base64});};
+      if (!batchUploadCurrent()) return;
       await Promise.all([uploadNextFile(), uploadNextFile()]);
       if (!batchUploadCurrent()) return;
       var success = fileResults.filter(function (item) { return item.status === '已保存'; }).length;
@@ -545,6 +555,8 @@
         toast('批量上传完成：成功 ' + success + ' 份' + (failed.length ? '，失败 ' + failed.length + ' 份' : '') + '。请核对识别结果。');
       }
       await loadBatchStatus(batchId);
+    } catch (error) {
+      if (status && batchUploadCurrent()) status.textContent = error.message;
     } finally {
       batchUploadBusy = false;
       if (select) select.disabled = false;

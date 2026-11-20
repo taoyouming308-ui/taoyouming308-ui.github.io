@@ -49,6 +49,7 @@ let browser;
     window.maxBatchUploads = 0;
     window.confirm = () => true;
     isLocalPreview = () => false;
+    apiRequest = (operation,payload) => api(operation,payload);
     api = async function (operation, payload) {
       window.calls.push({ operation, ...payload });
       if (operation === 'petty_cash_report') return window.fixture;
@@ -98,6 +99,13 @@ let browser;
   });
 
   await page.locator('#petty-batch-panel').waitFor();
+  async function confirmBatchSource(){
+    const dialog=page.locator('#upload-source-store-dialog');
+    await dialog.waitFor();
+    const store=await page.evaluate(()=>currentStore());
+    await dialog.locator('select').selectOption(store);
+    await dialog.getByRole('button',{name:'确认上传'}).click();
+  }
   assert.equal(await page.locator('#finance-open-upload').count(), 0, 'legacy upload center button must be hidden on petty page');
   assert.equal(await page.locator('#finance-ledger-refresh').count(), 0, 'legacy refresh button must be hidden on petty page');
   assert.match(await page.locator('#petty-batch-panel').innerText(), /月底一次上传[\s\S]*不改金额、不自动入账/);
@@ -107,6 +115,7 @@ let browser;
     { name: '柠檬.png', mimeType: 'image/png', buffer: Buffer.from('receipt-a') },
     { name: '鲜花.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('receipt-b') },
   ]);
+  await confirmBatchSource();
   await page.waitForFunction(() => window.calls.filter(call => call.operation === 'petty_cash_batch_upload').length === 2);
   await page.waitForFunction(() => document.querySelectorAll('[data-petty-batch-item]').length === 2);
   assert.equal(await page.locator('#petty-batch-confirm-exact').isEnabled(), true);
@@ -137,6 +146,7 @@ let browser;
     { name: '失败.png', mimeType: 'image/png', buffer: Buffer.from('receipt-d') },
     { name: '成功乙.pdf', mimeType: 'application/pdf', buffer: Buffer.from('receipt-e') },
   ]);
+  await confirmBatchSource();
   await page.waitForFunction(() => document.getElementById('petty-batch-status').textContent.includes('2 份已保存，1 份需核验'));
   const batchProgress = await page.evaluate(() => ({ max: window.maxBatchUploads, calls: window.calls.filter(call => call.operation === 'petty_cash_batch_upload') }));
   assert.equal(batchProgress.max, 2, 'bulk uploads should use bounded concurrency of two');
@@ -150,6 +160,7 @@ let browser;
   await (await staleChooser).setFiles(['旧范围甲.jpg', '旧范围乙.jpg', '旧范围丙.jpg'].map(name => ({
     name, mimeType: 'image/jpeg', buffer: Buffer.from(name)
   })));
+  await confirmBatchSource();
   await page.waitForFunction(() => window.heldBatchUploads.length === 2);
   await page.evaluate(() => {
     const month = document.getElementById('month');
@@ -163,6 +174,29 @@ let browser;
   await page.waitForFunction(() => window.activeBatchUploads === 0 && !document.getElementById('petty-batch-select')?.disabled);
   assert.equal(await page.evaluate(() => window.calls.filter(call => call.operation === 'petty_cash_batch_upload'
     && call.filename.startsWith('旧范围')).length), 2, 'switching month and returning must stop queued files from the previous upload scope');
+  // A still-open v671 shell can load the new lazy module without the new factory.
+  // It must retain its existing per-file source confirmation, never bypass it.
+  await page.evaluate(()=>{
+    window.heldBatchUploads=null;
+    preparePettyBatchUpload=undefined;
+    const legacyApi=api;
+    api=async function(operation,payload){
+      if(operation==='petty_cash_batch_upload'){
+        const source=await chooseUploadSourceStore(payload.store,payload.filename);
+        if(!source)throw sourceStoreNotConfirmed();
+        payload={...payload,source_store:source};
+      }
+      return legacyApi(operation,payload);
+    };
+  });
+  await page.locator('#petty-batch-files').setInputFiles([
+    {name:'旧页面甲.jpg',mimeType:'image/jpeg',buffer:Buffer.from('legacy-a')},
+    {name:'旧页面乙.jpg',mimeType:'image/jpeg',buffer:Buffer.from('legacy-b')}
+  ]);
+  await confirmBatchSource();await confirmBatchSource();
+  await page.waitForFunction(()=>window.calls.filter(c=>c.operation==='petty_cash_batch_upload'&&c.filename.startsWith('旧页面')).length===2);
+  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.filename?.startsWith('旧页面')).every(c=>c.source_store===currentStore())),true);
+  await page.waitForFunction(()=>!document.getElementById('petty-batch-select').disabled);
   await page.setViewportSize({ width: 1280, height: 900 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), true, 'batch UI must not create page overflow');
   assert.deepEqual(errors, []);

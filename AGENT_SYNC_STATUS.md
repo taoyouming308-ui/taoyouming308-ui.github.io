@@ -1,3 +1,10 @@
+## 2026-11-20 · Batch voucher source confirmation (App version: v676)
+
+- Owner: Codex. Isolated fix/upload-store-dialog-20261120; baseline checks and daily backup passed. Preserves protected mainc36c4365/v675, its daily-original inline layout and customer source-turn modules unchanged. Previous241d33ca and5f784d55 passed full local and protected gates; revalidate the merged v676 head before publication.
+- One explicit, non-default source-store choice covers the displayed exact batch file list. Scoped closure authorizes only original file objects, one send each, original batch/store/month/session; wrong store, cancellation and stale scope fail closed. Ordinary per-record uploads keep their existing per-file proof. No database, OCR, financial amount, matching or posting changes.
+- Synthetic browser checks at390/1280 cover20-file single confirmation, wrong store, foreign file, repeated send, cancellation and stale month plus existing session/account isolation. Full release gates and protected publication/readback required before calling live.
+- Old open shells loading the new lazy module retain their existing per-file API confirmation; new shells use the exact-batch closure. The real batch UI regression covers both paths without bypassing source-store selection.
+
 ## 2026-11-20 · Inline archived originals in daily reports (App version: v675; local candidate)
 
 - Owner: Codex. Isolated branch from protected github/main 83ce6ce3. Full daily recovery archive and baseline checks completed before edits.

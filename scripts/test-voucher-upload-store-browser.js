@@ -130,6 +130,40 @@ let browser;
     assert.deepEqual(await page.evaluate(() => api('monthly_cell_save', { amount: 42 })), { saved: true });
     assert.equal(await dialog.count(), 0);
     assert.equal((await calls()).at(-1).amount, 42);
+
+    // A batch has one explicit confirmation for its exact file list, never one dialog per worker.
+    await page.evaluate(() => {
+      window.batchFiles = Array.from({length:20},(_,i)=>({name:'凭证'+(i+1)+'.jpeg',type:'image/jpeg'}));
+      window.batchPrepared=preparePettyBatchUpload(batchFiles,'synthetic-batch');
+    });
+    await dialog.waitFor();
+    assert.match(await dialog.innerText(),/本批共 20 份/);
+    assert.equal(await dialog.locator('li').count(),20);
+    await select.selectOption(otherStore);
+    assert.equal(await confirm.isEnabled(),false);
+    await select.selectOption(store);
+    await confirm.click();
+    const beforeBatch=(await calls()).length;
+    await page.evaluate(async()=>{
+      window.batchUpload=await batchPrepared;
+      await Promise.all(batchFiles.map(file=>batchUpload(file,'ZmFrZQ==')));
+    });
+    assert.equal(await dialog.count(),0);
+    assert.equal((await calls()).length,beforeBatch+20);
+    for(const request of (await calls()).slice(beforeBatch)){
+      assert.equal(request.source_store,store);
+      assert.equal(request.batch_id,'synthetic-batch');
+    }
+    await assert.rejects(page.evaluate(()=>batchUpload({name:'未确认.jpeg',type:'image/jpeg'},'ZmFrZQ==')),/文件未上传/);
+    await assert.rejects(page.evaluate(()=>batchUpload(batchFiles[0],'ZmFrZQ==')),/文件未上传/);
+    await page.evaluate(()=>{window.cancelledBatch=preparePettyBatchUpload(batchFiles,'cancel').catch(e=>e.code)});
+    await dialog.waitFor();await cancel.click();
+    assert.equal(await page.evaluate(()=>cancelledBatch),'UPLOAD_SOURCE_NOT_CONFIRMED');
+    await page.evaluate(()=>{window.staleBatch=preparePettyBatchUpload(batchFiles,'stale')});
+    await dialog.waitFor();await select.selectOption(store);await confirm.click();
+    await page.evaluate(async()=>{window.staleUploader=await staleBatch;document.getElementById('month').value='2026-08'});
+    await assert.rejects(page.evaluate(()=>staleUploader(batchFiles[0],'ZmFrZQ==')),/文件未上传/);
+    assert.equal((await calls()).length,beforeBatch+20);
     await page.close();
   }
   console.log('Voucher uploads (390/1280): no defaults, wrong-store rejection, per-file queue and proof, stale-account cancellation, ordinary edits bypass chooser.');
