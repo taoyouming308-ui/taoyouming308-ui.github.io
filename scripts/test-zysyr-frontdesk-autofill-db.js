@@ -513,6 +513,94 @@ let started=false;
   assert.equal(json(`select zysyr_private.daily_sheet_validation('${company}','${xiang}','${draft}')`).valid,false);
   for(const role of ['anon','authenticated','service_role'])assert.equal(sql(`select has_function_privilege('${role}','zysyr_daily_electronic_private.project_classification_issues(jsonb)','execute')`),'f');
  });
+ sql(fs.readFileSync('supabase/migrations/20261002020000_zysyr_daily_exact_catalog_v10.sql','utf8'));
+ sql(`create table public.zysyr_daily_reports(company_id uuid,store_id uuid,report_date date,status text)`);
+ const fillDay='2026-09-16';
+ const scopedDraft=sql(`insert into public.zysyr_daily_sheet_drafts
+   (company_id,store_id,report_date,ocr_provider,ocr_model,created_by_user_id,updated_by_user_id)
+   values('${company}','${xiang}','${fillDay}','manual-entry','manual-entry-v1','${actor}','${actor}') returning id;`).split('\n')[0];
+ const fill=(revision, date=fillDay, id=scopedDraft, user=actor, store=xiang, role='service_role')=>json(
+  `set role ${role};select public.zysyr_fill_daily_sheet_blanks('${company}','${store}','${user}','${id}','${date}',${revision});`);
+ const fillRevision=()=>Number(sql(`select edit_revision from public.zysyr_daily_sheet_drafts where id='${scopedDraft}'`));
+ const cellSnapshot=()=>json(`select jsonb_agg(to_jsonb(c) order by c.id) from public.zysyr_daily_sheet_cells c where c.draft_id='${scopedDraft}'`);
+ const ledgerBefore=json('select jsonb_agg(to_jsonb(i)) from public.legacy_income i');
+ const beforeInstall=json('select jsonb_agg(to_jsonb(d) order by d.id) from public.zysyr_daily_sheet_drafts d');
+ sql(fs.readFileSync('supabase/migrations/20261120030318_zysyr_daily_sheet_fill_blanks.sql','utf8'));
+ check('explicit fill installation preserves scheduled drafts and enforces service role and actor/store scope',()=>{
+  assert.deepEqual(json('select jsonb_agg(to_jsonb(d) order by d.id) from public.zysyr_daily_sheet_drafts d'),beforeInstall);
+  for(const role of ['anon','authenticated'])assert.throws(()=>fill(0,fillDay,scopedDraft,actor,xiang,role),/permission denied/);
+  assert.throws(()=>fill(0,fillDay,scopedDraft,draft),/SCOPE/);
+  assert.throws(()=>fill(0,fillDay,scopedDraft,actor,free),/SCOPE/);
+  assert.equal(sql(`select has_function_privilege('service_role','zysyr_daily_electronic_private.apply_daily_autofill(text,date,uuid,integer,uuid)','execute')`),'f');
+  assert.equal(autofill('向里造型',fillDay).status,'source_unavailable_or_changed');
+  assert.equal(fill(0).status,'source_unavailable_or_changed');
+  assert.equal(fillRevision(),0);
+ });
+ check('explicit fill populates untouched template in place from current source, retaining original blank row and audit',()=>{
+  sql(`insert into public.zysyr_daily_sheet_cells
+    (company_id,store_id,draft_id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,source_method,updated_by_user_id)
+    values('${company}','${xiang}','${scopedDraft}','stylist','stylist_1','模板员工','perm','烫发',3,2,'staff_value','blank_template','${actor}');`);
+  list('向里造型',fillDay);
+  const p=payload('向里造型',fillDay);p.bills[0].items[0].item_code='324';
+  ingest(p);
+  assert.equal(fillRevision(),0,'scheduled writer leaves an empty manual template awaiting an explicit action');
+  const untouched=cellSnapshot();
+  assert.equal(fill(1).status,'draft_changed');assert.equal(fill(0,fillDay,draft).status,'draft_changed');
+  assert.deepEqual(cellSnapshot(),untouched);
+  const result=fill(0);
+  assert.equal(result.status,'draft_filled');assert.equal(result.draft_id,scopedDraft);
+  assert.equal(result.revision,1);assert.ok(result.filled_value_count>0);assert.equal(result.formal_ledger_amount_changed,false);
+  assert.equal(sql(`select count(*) from public.zysyr_daily_sheet_drafts where store_id='${xiang}' and report_date='${fillDay}'`),'1');
+  assert.deepEqual(cellSnapshot().find(c=>c.id===untouched[0].id),untouched[0]);
+  assert.equal(sql(`select before_snapshot->>'triggered_by_user_id' from public.zysyr_daily_autofill_events where draft_id='${scopedDraft}'`),actor);
+ });
+ check('explicit fill repairs a missing value on the same source snapshot and preserves manual and OCR rows byte-for-byte',()=>{
+  const target=sql(`select id from public.zysyr_daily_sheet_cells where draft_id='${scopedDraft}' and cell_role='staff_value' and column_code='perm' and row_key like 'stylist_e%'`);
+  sql(`update public.zysyr_daily_sheet_cells set ocr_numeric=null,ocr_text=null where id='${target}';
+   update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=8.18 where draft_id='${scopedDraft}' and section_code='payment' and column_code='alipay';
+   update public.zysyr_daily_sheet_cells set manual_override=true,corrected_numeric=null where draft_id='${scopedDraft}' and section_code='payment' and column_code='cash';
+   update public.zysyr_daily_sheet_cells set row_label_source_method='manual' where draft_id='${scopedDraft}' and row_key='stylist_1';`);
+  assert.equal(autofill('向里造型',fillDay).status,'already_applied');
+  const others=cellSnapshot().filter(c=>c.id!==target);
+  const result=fill(1);
+  assert.equal(result.status,'draft_filled');assert.equal(result.filled_value_count,1);
+  assert.equal(sql(`select ocr_numeric from public.zysyr_daily_sheet_cells where id='${target}'`),'100.00');
+  assert.deepEqual(cellSnapshot().filter(c=>c.id!==target),others);
+  assert.equal(sql(`select ocr_raw_result#>'{autofill,active_staff_row_keys}' ? 'stylist_1' from public.zysyr_daily_sheet_drafts where id='${scopedDraft}'`),'t');
+  const after=cellSnapshot();
+  assert.equal(fill(1).status,'draft_changed');assert.equal(fill(2).status,'no_fillable_blanks');
+  assert.equal(fillRevision(),2);assert.deepEqual(cellSnapshot(),after);
+ });
+ check('explicit fill rejects stale sources, inconsistent existing values, locked months, and posted reports',()=>{
+  sql(`update public.mgj_daily_consumption set services='[{"source_id":"42","amount":101}]' where shop_name='向里造型' and business_date='${fillDay}'`);
+  assert.equal(fill(2).status,'source_unavailable_or_changed');
+  list('向里造型',fillDay);
+  sql(`update public.zysyr_daily_sheet_cells set ocr_numeric=999 where draft_id='${scopedDraft}' and cell_role='staff_value' and column_code='perm' and row_key like 'stylist_e%'`);
+  const snapshot=cellSnapshot();
+  assert.equal(fill(2).status,'source_conflict');assert.deepEqual(cellSnapshot(),snapshot);
+  sql(`update public.zysyr_daily_sheet_cells set source_method='codex_local_candidate'
+    where draft_id='${scopedDraft}' and cell_role='staff_value' and column_code='perm' and row_key like 'stylist_e%'`);
+  assert.equal(fill(2).status,'source_conflict','conflicting recognized values in projected cells must also remain intact');
+  sql(`update public.zysyr_daily_sheet_cells set source_method='frontdesk_autofill'
+    where draft_id='${scopedDraft}' and cell_role='staff_value' and column_code='perm' and row_key like 'stylist_e%'`);
+  sql(`insert into public.test_locks values('${xiang}','${fillDay}')`);assert.equal(fill(2).status,'period_locked');
+  sql(`delete from public.test_locks where store_id='${xiang}' and report_date='${fillDay}';
+   insert into public.zysyr_daily_reports values('${company}','${xiang}','${fillDay}','approved')`);
+  assert.equal(fill(2).status,'confirmed_preserved');assert.equal(fillRevision(),2);assert.deepEqual(cellSnapshot(),snapshot);
+  assert.deepEqual(json('select jsonb_agg(to_jsonb(i)) from public.legacy_income i'),ledgerBefore);
+ });
+ check('combined template and source cells must stay below the detail read boundary',()=>{
+  sql(`delete from public.zysyr_daily_reports where report_date='${fillDay}';
+   delete from public.zysyr_daily_sheet_cells where draft_id='${scopedDraft}'
+    and cell_role='staff_value' and column_code='perm' and row_key like 'stylist_e%';
+   insert into public.zysyr_daily_sheet_cells
+    (company_id,store_id,draft_id,section_code,row_key,row_label,column_code,column_label,row_number,column_number,cell_role,source_method)
+    select '${company}','${xiang}','${scopedDraft}','test',n::text,'模板','placeholder','占位',1,1,'staff_value','blank_template'
+    from generate_series(1,999-(select count(*)::int from public.zysyr_daily_sheet_cells where draft_id='${scopedDraft}')) n;`);
+  assert.equal(cellSnapshot().length,999);
+  assert.equal(fill(2).status,'source_too_large');
+  assert.equal(fillRevision(),2);assert.equal(cellSnapshot().length,999);
+ });
  check('optional cash projection error never rolls back accepted immutable evidence',()=>{
   list('向里造型','2026-09-21');ingest(payload('向里造型','2026-09-21'));
   sql(`create or replace function zysyr_daily_electronic_private.cash_receipt_projection(p_company uuid,p_store uuid,p_day date) returns jsonb language plpgsql stable set search_path='' as $$begin raise exception 'synthetic_projection_error';end$$;`);
