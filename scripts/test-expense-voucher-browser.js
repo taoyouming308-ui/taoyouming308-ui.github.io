@@ -32,7 +32,7 @@ await page.waitForFunction(()=>document.querySelector('[data-petty-batch-item]')
 assert.equal(calls.filter(c=>c.operation==='expense_voucher_match_apply').length,1,'normal unique evidence associates without a human click');
 assert.equal(links.length,1);assert.equal(links[0].target_kind,'monthly_source');
 assert.match(await page.locator('#petty-batch-list').innerText(),/跨月|其他月份/);
-const options=await page.locator('[data-batch-target]').nth(1).innerText();assert.equal(await page.locator('[data-batch-target]').nth(1).locator('optgroup').first().getAttribute('label'),'月报全部开支栏目');assert.match(options,/水费/);assert.match(options,/工资/);
+const options=await page.locator('[data-batch-target]').nth(1).innerText();assert.equal(await page.locator('[data-batch-target]').nth(1).locator('optgroup').first().getAttribute('label'),'月报全部开支栏目（已指定原件）');assert.match(options,/水费/);assert.match(options,/工资/);
 await page.evaluate(()=>ZysyrExpenseVoucherWorkspace.decorateMonthly({C12:document.getElementById('cell'),C17:document.getElementById('cell-water')}));
 await page.waitForSelector('[data-expense-cell-vouchers]');assert.equal(await page.locator('#cell input').inputValue(),'1648.27');
 await page.locator('[data-expense-cell-vouchers]').click();

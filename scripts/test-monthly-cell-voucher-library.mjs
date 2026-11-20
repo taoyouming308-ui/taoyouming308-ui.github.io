@@ -34,3 +34,40 @@ const repeated=harness({linked:true});assert.equal((await repeated.run({action:'
 const noRead=harness();await assert.rejects(noRead.run({},{read:false}),/凭证查看权限/);assert.equal(noRead.calls.length,0);
 assert.match(source,/operation === "monthly_voucher_library"/);
 console.log('Monthly detail library: four real cell classifications, all-upload dates, corrected amounts, unrecognized originals, scoped explicit evidence-only attach, repeat and rejection guards passed.');
+
+function workspaceHarness(options={}){
+ const calls=[],store={company_id:id(1),id:id(2)},values=[['支出','支出类别','Nov.'],['','房租','5000'],['','技术人员','8000'],['','备用金','100'],['','空白费用',''],['','合计','13100']];
+ const report={id:id(3),company_id:id(1),store_id:id(2),report_type:'monthly_profit_loss',report_date:'2026-07-01',status:options.inactive?'superseded':'active',sha256:'a'.repeat(64),version:2,display_data:{values,merges:[{start_row:1,end_row:3,start_col:0,end_col:0}]}};
+ const cell=(n,row,label,value,display=String(value))=>({id:id(n),company_id:id(1),store_id:id(2),report_id:id(3),cell_address:'C'+row,row_number:row,column_number:3,label,numeric_value:value,display_value:display,cell_kind:'input'});
+ const cells=[cell(4,2,'房租 / 房租',5000),cell(13,3,'技术人员 / 工资',8000),cell(14,4,'其它 / 备用金',100),cell(15,5,'杂项 / 空白费用',0,'')];
+ const revisions=[{id:id(6),source_cell_id:id(4),revision:1,revision_type:'evidence_update',after_amount:5000}];
+ let linked=Boolean(options.linked),reads=0;
+ const deps={canUpload:s=>s.finance,canRead:s=>s.read,store:async(s,p)=>{if(p.store!=='Synthetic')throw Error('scope');return store;},category:context.monthlyItemCategory,
+ rows:async query=>{calls.push({q:query});assert(query.includes('company_id=eq.'+id(1))&&query.includes('store_id=eq.'+id(2)));
+  if(query.startsWith('zysyr_report_uploads?')){if(query.includes('order=version.desc&limit=1')){reads++;return [options.changed&&reads>1?{...report,id:id(99)}:report];}return [{id:id(3)}];}
+  if(query.startsWith('zysyr_report_cells?'))return cells.filter(c=>query.includes('&id=eq.'+c.id));
+  if(query.startsWith('zysyr_voucher_attachments?'))return options.badVoucher?[]:[{id:id(7)}];
+  throw Error('Unexpected direct read '+query);},
+ all:async query=>{calls.push({q:query});assert(query.includes('company_id=eq.'+id(1))&&query.includes('store_id=eq.'+id(2)));
+  if(query.startsWith('zysyr_report_cells?'))return cells;
+  if(query.startsWith('zysyr_monthly_cell_revisions?'))return revisions;
+  if(query.startsWith('zysyr_monthly_cell_revision_vouchers?'))return linked?[{revision_id:id(6),voucher_id:id(7)}]:[];
+  throw Error('Workspace must not scan all vouchers or OCR '+query);},
+ save:async(route,body)=>{calls.push({path:route,body});if(options.fail)throw Error('synthetic link failure');linked=true;return {};}};
+ const payload={store:'Synthetic',month:'2026-07',report_id:id(3),cell_id:id(4),context:'expense_workspace',action:'list',voucher_id:id(7)};
+ return {calls,run:(p={},s={})=>monthlyCellVoucherLibrary({...payload,...p},{finance:true,read:true,auth_account_id:id(5),...s},deps)};
+}
+for(const cellId of [id(4),id(13),id(14)]){
+ const h=workspaceHarness();const list=await h.run({cell_id:cellId});assert.equal(list.items.length,1);assert.equal(list.items[0].id,id(7));assert.equal(list.items[0].already_linked,false);assert.equal(list.target.manual_only,true);
+ const saved=await h.run({action:'attach',cell_id:cellId,confirmed:true,reason:'已核对整张原图，仅作月报栏目佐证',amount:999999});
+ assert.equal(saved.evidence_only,true);assert.equal(saved.whole_original,true);assert.equal(saved.amount_changed,false);assert.equal(saved.posted,false);
+ const write=h.calls.find(c=>c.path);assert.equal(write.path,'rpc/zysyr_attach_monthly_cell_voucher');assert.equal(write.body.p_source_cell_id,cellId);assert.equal(write.body.p_voucher_id,id(7));assert(!Object.keys(write.body).some(k=>/amount|review|post/.test(k)));
+ if(cellId===id(4)){const reread=await h.run();assert.equal(reread.items[0].already_linked,true);const again=await h.run({action:'attach',confirmed:true,reason:'checked again'});assert.equal(again.already_linked,true);assert.equal(h.calls.filter(c=>c.path).length,1);}
+ assert(!h.calls.some(c=>c.q&&/ocr_tasks|voucher_reviews/.test(c.q)),'workspace single-image readback cannot miss a historical original due to the 2000-item store cap');
+}
+for(const [options,patch,pattern] of [[{}, {cell_id:id(15)}, /金额为空/], [{inactive:true},{},/版本已变化/], [{changed:true},{},/版本已变化/],
+ [{badVoucher:true},{},/凭证不存在/], [{},{voucher_id:id(99),action:'attach',confirmed:false,reason:'checked'},/先核对/],
+ [{},{action:'attach_combination',items:[],confirmed:true},/不支持图内分项或组合/], [{},{component_index:0},/不支持图内分项或组合/],
+ [{},{voucher_id:null},/需要回读的原图/], [{},{context:'unexpected'},/入口无效/], [{fail:true},{action:'attach',confirmed:true,reason:'checked'},/synthetic link failure/],
+ [{},{report_id:id(99)},/版本已变化/], [{},{cell_id:id(99)},/可关联的栏目/]])await assert.rejects(workspaceHarness(options).run(patch),pattern);
+console.log('Electronic expense-workspace library: current report/cell revalidation, left salary/summary manual whole-original support, unknown blocking, one-image bounded readback, legacy behavior, repeated attachment and no amount/approval/posting writes passed.');

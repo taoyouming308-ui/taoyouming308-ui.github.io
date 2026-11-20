@@ -41,14 +41,21 @@ export function buildExpenseVoucherWorkspace(base,source,links=[]) {
   const targetGroups=new Map();
   for(const item of items){const kind=item.confirmed_target_kind||item.match?.target_kind,id=item.confirmed_target_id||item.match?.target_id;if(!kind||!id)continue;const key=kind+':'+id,group=targetGroups.get(key)||[];group.push(item);targetGroups.set(key,group);}
   for(const group of targetGroups.values())if(new Set(group.map(i=>i.source_voucher_id||i.id)).size>1)for(const item of group)if(!item.confirmed_target_id&&item.match?.auto_eligible)item.match={...item.match,state:'ambiguous',auto_eligible:false,unique_exact:false,reason:'该明细已有或同时出现另一张凭证，请核对是否重复或补充证据'};
+  // Cell evidence belongs to an entire original, not one recognized payment.
+  // Never manufacture a confirmed transaction or consume its split components.
+  for(const item of items) item.monthly_cell_evidence=(source.electronic_report?.targets||[])
+    .filter(t=>(t.linked_vouchers||[]).includes(item.source_voucher_id||item.id))
+    .map(t=>({target_id:t.id,report_id:t.report_id,cell_id:t.cell_id,summary:t.summary,source_locator:t.source_locator}));
   const associated=items.filter(i=>i.confirmed_target_id), needs=items.filter(i=>!i.confirmed_target_id&&!['queued','processing','failed','dead_letter'].includes(i.task_status)&&!i.match?.auto_eligible);
   return {...base,items,targets,source_status:source.status,source_message:source.message||null,
+    monthly_targets_status:source.electronic_report?.status||'unavailable',monthly_targets_message:source.electronic_report?.message||null,
     source_selection:source.source||null,expense_links:links,
     summary:{...base.summary,components:items.length,ready:items.filter(i=>!i.confirmed_target_id&&i.match?.auto_eligible).length,
       needs_review:new Set(needs.map(i=>i.source_voucher_id||i.id)).size,
       failed:new Set(items.filter(i=>['failed','dead_letter'].includes(i.task_status)).map(i=>i.source_voucher_id||i.id)).size,
       auto_matched:associated.filter(i=>i.expense_association?.mode==='auto').length,
-      confirmed:new Set(associated.map(i=>i.source_voucher_id||i.id)).size},
+      confirmed:new Set(associated.map(i=>i.source_voucher_id||i.id)).size,
+      monthly_evidence:new Set(items.filter(i=>i.monthly_cell_evidence.length).map(i=>i.source_voucher_id||i.id)).size},
     candidate_only:true,human_confirmation_required:false,formal_ledger_written:false};
 }
 
@@ -60,6 +67,7 @@ export function expenseMatchPlan(workspace,requests,mode) {
     if(!item || item.latest_ocr_task?.id!==request.task_id || item.confirmed_target_id || item.expense_association)continue;
     const target=workspace.targets.find(t=>t.id===request.target_id&&t.target_kind===request.target_kind);
     if(!target)throw Error('对应明细或原件已变化，请刷新');
+    if(target.target_kind==='monthly_cell'||target.manual_only)throw Error('电子月报栏目请通过人工补充佐证入口关联，不能作为逐笔匹配');
     if(mode==='auto'&&(!item.match?.auto_eligible||item.match.target_id!==target.id||item.match.target_kind!==target.target_kind))continue;
     const fields=mode==='auto'?item.candidate_fields:request.corrected_fields;
     const monthlySummary=item.candidate_fields?.evidence_kind==='monthly_summary'||mode==='manual'&&fields?.evidence_kind==='monthly_summary';

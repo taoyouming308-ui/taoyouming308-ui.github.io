@@ -96,15 +96,25 @@ assert.equal(matchExpenseComponent({...payroll.fields.monthly_summary,period_mon
 // Execute real API methods with scoped synthetic I/O. No production connection.
 const apiSource=fs.readFileSync('supabase/functions/operations-api/index.ts','utf8');
 const code=stripTypeScriptTypes(apiSource.slice(apiSource.indexOf('async function expenseVoucherWorkspace('),apiSource.indexOf('async function voucherCenter(')));
-let writes=[],apiBase=base,apiLinks=[],rawReads=0;
+let writes=[],apiBase=base,apiLinks=[],rawReads=0,projectionReads=0;
 const scoped=path=>assert(path.includes('company_id=eq.'+id(20))&&path.includes('store_id=eq.'+id(21)));
 const deps={buildExpenseVoucherWorkspace,expenseMatchPlan,recoverVoucherDateCandidate,uuidIn:ids=>'('+ids.join(',')+')',pettyCashBatchStatus:async(p,s)=>{if(s.operations_role!=='finance')throw Error('denied');return structuredClone(apiBase);},selectedStoreInfo:async()=>({company_id:id(20),id:id(21)}),cleanText:(v,n)=>String(v||'').slice(0,n),readReportSourceReview:async()=>structuredClone(source),
+  // The projection reader has its own scoped I/O tests. Exercise API routing
+  // separately so a missing archived selection cannot suppress that service.
+  projectVoucherMonthlyDisplay:()=>{throw Error('projection is mocked in this orchestration test');},
+  monthlyItemCategory:()=> 'expense',readMonthlyVoucherTargets:async(store,month,io)=>{projectionReads++;assert.equal(store.id,id(21));assert.equal(month,'2026-07');assert.equal(typeof io.rows,'function');assert.equal(typeof io.project,'function');return {id:id(25),status:'ready',cells:[{id:id(26),cell_address:'C12',label:'房租 / 物业费 / Nov.',amount:'1648.2700',revision:0}],targets:[{id:id(25)+'~'+id(26),target_kind:'monthly_cell',report_id:id(25),cell_id:id(26),source_locator:'C12',summary:'物业费',category:'物业费',amount:1648.27,period_month:month,manual_only:true,aggregate:true,linked_vouchers:[]}]};},
   restRows:async path=>{scoped(path);if(path.startsWith('zysyr_report_uploads?')){assert(path.includes('order=version.desc&limit=1'));return [{id:id(25),sha256:'b'.repeat(64)}];}if(path.startsWith('zysyr_voucher_ocr_tasks?')){rawReads++;return [{id:id(8),raw_result:{provider_response:rawReceipt}}];}throw Error('Unexpected bounded read '+path);},
   restRowsAll:async path=>{scoped(path);if(path.startsWith('zysyr_report_uploads?'))throw Error('A one-row latest query must not use the complete-pagination helper');if(path.startsWith('zysyr_report_cells?'))return [{id:id(26),cell_address:'C12',label:'房租 / 物业费 / Nov.',numeric_value:'1648.2700'}];if(path.startsWith('zysyr_expense_voucher_matches?'))return apiLinks;return [];},financeRpcSaved:async(route,body)=>{writes.push({route,body});return {inserted:1};},wakeVoucherOcrInBackground:()=>{}};
 const methods=new Function(...Object.keys(deps),code+';return {expenseVoucherWorkspace,applyExpenseVoucherMatches,recoverExpenseVoucherFailures};')(...Object.values(deps));
 await assert.rejects(methods.expenseVoucherWorkspace({month:'2026-07'},{operations_role:'employee'}));
 const realShape=await methods.expenseVoucherWorkspace({month:'2026-07'},{operations_role:'finance'});assert.equal(writes.length,0,'workspace read cannot write associations');
-assert.equal(realShape.targets.find(t=>t.source_locator==='C12').electronic_cell.report_id,id(25),'bounded latest report projection survives the real one-row result');
+assert.equal(realShape.targets.find(t=>t.source_locator==='C12').electronic_cell.report_id,id(25),'current electronic projection still enriches the historical source target');
+const beforeMissingSource=projectionReads;
+const noSelection=await methods.expenseVoucherWorkspace({month:'2026-07'},{operations_role:'finance'},{status:'missing',monthly_status:'missing'});
+assert.equal(projectionReads,beforeMissingSource+1,'projection is read independently of archived-source readiness');
+assert.equal(noSelection.targets.find(t=>t.source_locator==='C12').target_kind,'monthly_cell');
+assert.equal(noSelection.items[0].match.auto_eligible,false);
+assert.equal(writes.length,0,'restoring choices must not create source selections or links');
 await methods.applyExpenseVoucherMatches({month:'2026-07',mode:'auto',items:[request]},{operations_role:'finance',auth_account_id:id(22)});
 assert.equal(writes.length,1);assert.equal(writes[0].body.p_actor,id(22));assert.equal(writes[0].body.p_company,id(20));assert.equal(writes[0].body.p_matches[0].target_id,request.target_id);
 apiBase={...base,items:[{...parent,candidate_fields:lostDate,field_confidences:{...confidence,document_date:0}}]};

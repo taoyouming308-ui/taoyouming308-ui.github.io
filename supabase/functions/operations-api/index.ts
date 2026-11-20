@@ -7,6 +7,7 @@ import { parseDetailCSV, previewDetailRows, detailKey } from "../_shared/petty-d
 import { loadPettyDetailWorkbook, loadCompatibleWorkbook, compatibleWorkbookXml } from "../_shared/petty-detail-xlsx.mjs";
 import { buildExpenseVoucherWorkspace, expenseMatchPlan } from "../_shared/expense-voucher-workspace.mjs";
 import { monthlyCellVoucherLibrary } from "../_shared/monthly-cell-voucher-library.mjs";
+import { readMonthlyVoucherTargets } from "../_shared/monthly-voucher-targets.mjs";
 import { expenseCombinationPlan } from "../_shared/expense-voucher-combinations.mjs";
 import { recoverVoucherDateCandidate,voucherCodexCandidates } from "../_shared/zysyr-voucher-codex.mjs";
 import JSZip from "jszip";
@@ -4537,23 +4538,25 @@ async function confirmPettyCashBatchVoucher(payload: JsonRecord, session: JsonRe
   return { saved, candidate_only_before_confirmation: true, human_confirmed: true, amount_changed: false };
 }
 
+async function projectVoucherMonthlyDisplay(report: JsonRecord, cells: JsonRecord[], revisions: JsonRecord[]): Promise<JsonRecord> {
+  const company=String(report.company_id),store=String(report.store_id),month=String(report.report_date).slice(0,7);
+  const [adjustments,daily,textRevisions]=await Promise.all([
+    monthlyIncomeAdjustments(company,store,month),confirmedDailyRollup(company,store,month),
+    restRowsAll(`zysyr_monthly_text_revisions?select=id,cell_address,cell_role,revision,base_text,before_text,after_text&company_id=eq.${company}&store_id=eq.${store}&report_id=eq.${report.id}&order=cell_address.asc,revision.desc&limit=5000`,5000),
+  ]);
+  // Reuse the same formulas, effective names and confirmed-source adjustments as
+  // the monthly page. A voucher selector must not display stale cached amounts.
+  return effectiveMonthlyDisplay(report.display_data,cells,revisions,adjustments,daily,textRevisions);
+}
+
 async function expenseVoucherWorkspace(payload: JsonRecord, session: JsonRecord, sourceOverride?: JsonRecord): Promise<JsonRecord> {
   const base=await pettyCashBatchStatus(payload,session);
   const store=await selectedStoreInfo(session,payload),month=cleanText(payload.month,7);
   let source: JsonRecord=sourceOverride||{};
   if(!sourceOverride){try{source=await readReportSourceReview({...payload,kind:"expenses"},session);}catch{source={status:"unavailable",message:"月报开支来源暂不可读，未自动匹配，请稍后刷新"};}}
-  if(source.status==="ready"){
-    try{
-      const reports=await restRows(`zysyr_report_uploads?select=id,sha256&company_id=eq.${store.company_id}&store_id=eq.${store.id}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&order=version.desc&limit=1`);
-      if(reports[0]){
-        const report=reports[0];
-        const [cells,revisions]=await Promise.all([
-          restRowsAll(`zysyr_report_cells?select=id,cell_address,label,numeric_value&company_id=eq.${store.company_id}&store_id=eq.${store.id}&report_id=eq.${report.id}&column_number=eq.3&limit=300`,300),
-          restRowsAll(`zysyr_monthly_cell_revisions?select=source_cell_id,revision,after_amount&company_id=eq.${store.company_id}&store_id=eq.${store.id}&report_id=eq.${report.id}&order=revision.desc&limit=5000`,5000)]);
-        source.electronic_report={...report,cells:cells.map(cell=>{const prior=revisions.find(r=>r.source_cell_id===cell.id);return {...cell,amount:prior?prior.after_amount:cell.numeric_value,revision:prior?.revision||0};})};
-      }
-    }catch{source.electronic_projection_status="unavailable";}
-  }
+  // An uploaded monthly report must not disappear from voucher choices simply
+  // because the separate archived-original selection has not been designated.
+  source.electronic_report=await readMonthlyVoucherTargets(store,month,{rows:restRows,all:restRowsAll,category:monthlyItemCategory,project:projectVoucherMonthlyDisplay});
   const links=await restRowsAll(`zysyr_expense_voucher_matches?select=id,voucher_id,component_index,source_task_id,target_kind,target_id,target_snapshot,corrected_fields,mode,status,created_at&company_id=eq.${store.company_id}&store_id=eq.${store.id}&period_month=eq.${month}-01&order=created_at.desc&limit=5000`,5000);
   const recoverable=(base.items as JsonRecord[]).filter(item=>{const fields=(item.candidate_fields||{}) as JsonRecord;
     return !item.confirmed_target_id&&item.audit_status==="pending"&&item.task_status==="succeeded"
@@ -4646,6 +4649,7 @@ async function reanalyzeExpenseVouchers(payload: JsonRecord,session: JsonRecord)
 async function monthlyVoucherLibrary(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   return monthlyCellVoucherLibrary(payload, session, { canUpload: canUploadVouchers, canRead: (actor: JsonRecord) => hasAuthCapability(actor, "voucher.read"),
     store: selectedStoreInfo, rows: restRows, all: restRowsAll, save: financeRpcSaved, category: monthlyItemCategory,
+    project: projectVoucherMonthlyDisplay,
     effective: (store: JsonRecord,month: string,report: string) => monthlyAdjustmentContext(String(store.company_id),String(store.id),month,report,false) });
 }
 
