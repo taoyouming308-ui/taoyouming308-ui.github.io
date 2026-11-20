@@ -174,6 +174,29 @@ let browser;
   await page.waitForFunction(() => window.activeBatchUploads === 0 && !document.getElementById('petty-batch-select')?.disabled);
   assert.equal(await page.evaluate(() => window.calls.filter(call => call.operation === 'petty_cash_batch_upload'
     && call.filename.startsWith('旧范围')).length), 2, 'switching month and returning must stop queued files from the previous upload scope');
+  // A still-open v671 shell can load the new lazy module without the new factory.
+  // It must retain its existing per-file source confirmation, never bypass it.
+  await page.evaluate(()=>{
+    window.heldBatchUploads=null;
+    preparePettyBatchUpload=undefined;
+    const legacyApi=api;
+    api=async function(operation,payload){
+      if(operation==='petty_cash_batch_upload'){
+        const source=await chooseUploadSourceStore(payload.store,payload.filename);
+        if(!source)throw sourceStoreNotConfirmed();
+        payload={...payload,source_store:source};
+      }
+      return legacyApi(operation,payload);
+    };
+  });
+  await page.locator('#petty-batch-files').setInputFiles([
+    {name:'旧页面甲.jpg',mimeType:'image/jpeg',buffer:Buffer.from('legacy-a')},
+    {name:'旧页面乙.jpg',mimeType:'image/jpeg',buffer:Buffer.from('legacy-b')}
+  ]);
+  await confirmBatchSource();await confirmBatchSource();
+  await page.waitForFunction(()=>window.calls.filter(c=>c.operation==='petty_cash_batch_upload'&&c.filename.startsWith('旧页面')).length===2);
+  assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.filename?.startsWith('旧页面')).every(c=>c.source_store===currentStore())),true);
+  await page.waitForFunction(()=>!document.getElementById('petty-batch-select').disabled);
   await page.setViewportSize({ width: 1280, height: 900 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), true, 'batch UI must not create page overflow');
   assert.deepEqual(errors, []);

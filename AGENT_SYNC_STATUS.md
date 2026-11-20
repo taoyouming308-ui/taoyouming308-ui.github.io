@@ -3,6 +3,7 @@
 - Owner: Codex. Isolated fix/upload-store-dialog-20261120 from protected main 0aa2d212; starting checks and daily backup passed. Reconciled protected main83ce6ce3/v673 without changing its daily-original module; initial690763ac passed the complete local publication gate; revalidate the merged head before release.
 - One explicit, non-default source-store choice covers the displayed exact batch file list. Scoped closure authorizes only original file objects, one send each, original batch/store/month/session; wrong store, cancellation and stale scope fail closed. Ordinary per-record uploads keep their existing per-file proof. No database, OCR, financial amount, matching or posting changes.
 - Synthetic browser checks at390/1280 cover20-file single confirmation, wrong store, foreign file, repeated send, cancellation and stale month plus existing session/account isolation. Full release gates and protected publication/readback required before calling live.
+- Old open shells loading the new lazy module retain their existing per-file API confirmation; new shells use the exact-batch closure. The real batch UI regression covers both paths without bypassing source-store selection.
 
 ## 2026-11-20 · Void archived originals in daily detail (App version: v673; local candidate)
 
