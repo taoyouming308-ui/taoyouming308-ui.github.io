@@ -1,3 +1,21 @@
+## 2026-11-20 verified customer runtime and approved backlog repair
+
+The runtime `~/.hermes/scripts/sync_mgj_all.py` matches tracked candidate `d6fe05fb`, SHA256 `89a51806212cf335f1ba2c38c3dbe0880cf77996cda72a8c350bf6627da6a338`; this live byte check supersedes the old NOT DEPLOYED labels below. Customer cadence is currently minute03/33 and recent-services minute14. Preserve exact installed schedules, credentials, deferred/retry queues and disabled inventory output. Booking runtime is the separately verified protocol2 recovery, not the older main script: do not use the six-file core deployer for this repair.
+
+User approved customer backlog recovery. Work is isolated on `fix/customer-sync-backlog-20261120`, based on `dd5c8bae`/v669, with daily backup and starting gates passed. The proposed new private history-window resume module must preserve every source validation, source/session locks, booking/daily priority, budget and manual-review state. Only canonical customer main plus its new module are deployment targets after tests. Same-protocol replacement still requires coordinator/legacy/booking/daily locks, no active customer process, known preimage and recoverable atomic replacement. New repair is not yet installed or published.
+
+## 2026-11-17 fairness candidate: historical NOT DEPLOYED note
+
+Do not hot-swap the coordinator change based on free legacy lock alone. All old customer modes/launchers must be quiescent; booking session renewal and keepalive retain legacy lock semantics. Follow docs/operations/customer-fairness-cutover.md for selective temporary pause, four nonblocking locks, hash-backed atomic install, exact trigger restoration and equally quiescent rollback. No added frequency or source probe. Runtime currently remains the previous coordination version; this candidate has not been production-accepted.
+
+## 2026-11-17 customer coordination candidate: NOT DEPLOYED
+
+Only the canonical customer script is a future deployment target; do not install without completed gates and deployment instruction. Preserve appointment and daily-consumption scripts, locks, cron and source credentials. Shared customer lock also protects booking session renewal. Candidate source lock is nonblocking per request with max10s subprocess timeout; late higher-priority arrivals can wait for that request, so no zero-impact or absolute fairness claim. Deferred file is private0600 and separate from original retry queue. Accept only complete source/cache readbacks; observe natural batches, do not probe repeatedly. Roll back only runtime bytes under the existing customer lock to verified backup a6c58df344693083c89ec7dc94bb7dcdb49d73a1d671c973e9b6c7228b0b9f99; do not delete or restore old cache/queue data. Full formal gate and independent diff review passed locally; publication authorization and deployment decision remain pending.
+
+## 2026-11-17 customer recovery candidate
+
+Canonical customer source now uses exact read-only source endpoints and verified TLS. History is retrieved in bounded <=365-day windows because the source rejects multi-year requests. Keep the existing 8-profile, 105-second budget and shared lock. Do not reset old needs-review queue. Partial history/packages and failed service projection must remain incomplete/retry, not healthy. Deployment is only the canonical customer script to `sync_mgj_all.py`; preserve the separate appointment repair and all shared helpers. Runtime and final release status must be verified from receipts before claiming recovery.
+
 # Hermes Handoff
 
 ## 2026-10-08 daily text save readback (App version: v608)

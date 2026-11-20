@@ -1,3 +1,8 @@
+## 2026-11-20 · 客户档案积压修复准备（v669 不变）
+
+- 将已实际运行的客户只读传输与协调版本合入最新隔离开发基线，保留现行预约、日消费和自动出库关闭状态。
+- 已确认完整历史在让路后丢失读取进度；准备增加有限、私有、身份绑定的年窗续传。不重置人工核查队列，不增加频率，不改前端或数据库结构。新修复尚未部署。
+
 <!-- academy-reviewed-inputs:8724d84e3df655532d155eaffb9da8b0f0070950541785bbf833f50f346d9c67 -->
 ## 2026-11-20 · Reviewed academy publication candidate (App version: v669 unchanged)
 
@@ -60,6 +65,24 @@
 - 增加两个仅服务端可调用的事务包装函数，复用既有财务权限与关联接口，校验门店、原图、目标、并发关联和月报来源快照。无表、金额、原图或审核结构变更。
 - 新增纯金额/推荐、实际 API、隔离 PostgreSQL17 和390/1280实际页面验收，覆盖170.30的两张/三张组合、单张保留、人工更正、未知金额、跨月/重复/其他关联、部分重试、第二张失败回滚与切月隔离。
 
+## 2026-11-17 Customer fairness candidate (not deployed)
+
+- Preserve same-batch history progress across bounded readiness waits while releasing shared session/source locks.
+- Build requests from a single locked session snapshot; stop uncertain responses without replay.
+- Add fairness/transition safety tests and quiescent cutover/trigger restoration plan; no production cadence or frontend change.
+
+## 2026-11-17 Customer coordination candidate (not deployed)
+
+- Bound and pace customer source reads, yield to daily/booking activity without lock waiting, preserve existing shared-lock contracts.
+- Track deferred work separately from failures, deduplicate compensation, emit age/persistent-source alerts, and finish all modes with released locks.
+- Add offline integration coverage to mandatory existing gate; no frontend, production scheduler or financial changes.
+
+## 2026-11-17 Customer source transport and bounded history recovery
+
+- Restrict customer reads to verified-TLS source targets with compatible request headers; reject redirects and redact subprocess credentials from error strings.
+- Split history reads into <=365-day windows with continuity, identity and failure checks; preserve incomplete data and retry state.
+- Eliminate temporary multipart-body cleanup failures; yield a JSON/HTTP 429 rate-limited batch, including search, instead of immediate retries; reject missing/non-success HTTP status.
+- No frontend version change, source business edits, financial posting or scheduler change.
 ## v664 · 2026-11-17
 
 - 补齐月报产品进货、零售产品成本、备用金分类及杂项明细的凭证库入口；可选择同店已上传原图，金额一致及接近优先推荐，上传月份不限制原账期。

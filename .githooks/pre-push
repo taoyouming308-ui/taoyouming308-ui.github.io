@@ -47,5 +47,5 @@ node scripts/test-aesthetic-study-sql.cjs || exit 1
 node scripts/test-aesthetic-study-browser.cjs || exit 1
 node scripts/test-aesthetic-study-admin-browser.cjs || exit 1
 "$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_aesthetic_coach_endpoint.py || exit 1
-"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_mgj_customer_coordination.py scripts/test_mgj_customer_fairness.py scripts/test_mgj_customer_cutover.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py || exit 1
 node scripts/check-agent-sync-status.js || exit 1

@@ -1,3 +1,9 @@
+## 2026-11-20 · Customer backlog recovery (App version: v669 unchanged; in development)
+
+- Owner: Codex; user authorized bounded customer synchronization repair. Isolated `fix/customer-sync-backlog-20261120` from protected main `dd5c8bae`; initial gates and daily recovery archive passed. Merge the existing customer-only transport/fairness source without replacing unrelated running workers.
+- Read-only runtime verification supersedes the November17 candidate labels below: deployed `sync_mgj_all.py` already equals candidate `d6fe05fb` (SHA256 `89a51806212cf335f1ba2c38c3dbe0880cf77996cda72a8c350bf6627da6a338`). Current customer cron is minute03/33 and recent services minute14, not the historical schedules below. Booking runtime uses a newer protocol2 recovery; preserve its exact bytes and healthy source/cloud equality.
+- Diagnosis: completed annual history windows are discarded on bounded source-priority deferral, so long histories restart each attempt. Add private, scope-bound bounded resume state, retaining source validation, 105-second batch budget, existing cadence, booking/daily priority and needs-review isolation. No queue reset, source-business write, inventory enablement, frontend, schema or financial changes. New recovery is not yet installed or published.
+
 <!-- academy-reviewed-inputs:8724d84e3df655532d155eaffb9da8b0f0070950541785bbf833f50f346d9c67 -->
 ## 2026-11-20 · Reviewed academy publication candidate (App version: v669 unchanged)
 
@@ -30,6 +36,25 @@
 - Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
 - A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
+## 2026-11-17 · Bounded customer fairness candidate (not deployed)
+
+- Formal isolated candidate adds all-mode customer coordinator, per-request legacy session/source locks, two readiness waits totaling20s inside105s. Preserve booking/daily priority and current customer1/31/service16 schedules. No production changes or public push.
+- Request factory re-reads one locked session snapshot and derives employee/shop with credential identity checks. Ambiguous sent requests, HTML/non-JSON/malformed replies and429 stop without fallback/replay. Partial history remains protected.
+-99 focused tests pass; isolated and formal independent reviews passed. Full pre-push gate passed locally2026-11-17 04:03 +08:00, including152/152 finance tests and126 final Python tests. No production deployment or public push. Four-lock guard is only a primitive: actual launcher pause receipts, empty old-process inventory, atomic install and exact trigger restoration are required by docs/operations/customer-fairness-cutover.md.
+
+## 2026-11-17 · Customer coordination candidate (not deployed)
+
+- Integrated reviewed source pacing and nonblocking shared-source coordination onto main 1cb33fd7, preserving appointment repair and existing shared session-lock behavior. No production schedule/runtime changes or public push.
+- Verified TLS and exact read endpoints remain; subprocess wall time capped at10s per read, existing batch budget105s applied to all modes. Daily due/booking active yields, waits happen outside source lock; advisory priority still permits one already-started bounded request.
+- Persist deferred customers separately with0600 atomic files, retain old failure queue, deduplicate compensation, preserve first-deferred age and alert persistent transport deferral. All modes write terminal state and release outer shared lock. No claimed absolute starvation or zero-interference guarantee.
+-73 customer/coordination unit tests pass. Independent final formal-diff review passed. Full unchanged pre-push gate plus new coordination tests passed on 2026-11-17 01:28 +08:00 (finance152/152 and final100 Python tests). No push or production deployment; no real-source acceptance yet; runtime remains prior a6c58df candidate.
+
+## 2026-11-17 · Customer source reads and bounded history recovery (v663 unchanged)
+
+- Isolated owner branch `fix/customer-source-transport-20261117`, base protected main c80358ad. Original developer tree and appointment repair preserved; daily recovery archive and version/integrity/handoff gates passed.
+- Customer search requires the existing browser user-agent; source reads use exact host/path allowlists, verified TLS, no redirects. Multipart reads remove legacy insecure TLS and use only the three existing read endpoints. Curl exceptions no longer serialize cookie-bearing command arguments.
+- Source history now rejects ranges exceeding one year. Read non-overlapping windows of at most 365 days, require all windows before complete status, check dates and duplicate IDs, preserve old history on failure/budget exhaustion. Partial history/packages or failed service projection retain retry instead of reporting success.
+- 56 isolated unit tests pass. Two-transport source probes, two complete nine-window history samples and existing limited runtime recovery are documented privately without customer identifiers. Runtime connection-only recovery updated 6 profiles; one not-found and one deferred by budget remain; old needs-review queue is not reset. History runtime candidate deployed with matching hash; two source-history samples and one merged cache readback passed. Natural services batch passed 3/0; next normal batch was partial 3/2/3 due temporary-body cleanup and source rate limiting. Follow-up uses stdin request bodies, requires explicit successful HTTP status, and yields the current batch on source JSON/HTTP 429 including search without retry or second-shop probing; full publication gates remain pending. No source-business writes, appointment edits, credentials, security settings, scheduling, frontend or financial changes.
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
 
 ## 2026-11-18 · Changing shoulder line and stable haircut baseline (App version: v667 unchanged)
