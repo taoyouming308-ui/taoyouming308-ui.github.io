@@ -1,3 +1,10 @@
+## 2026-11-19 · Reversible parting corridor and directional haircut structure (App version: v679 unchanged)
+
+- Current owner: Codex content publisher. Rebased without overwriting concurrent work onto protected `github/main` `e2335569e38d155b2aeeab6f2cd2d1fabc7e39c6` in an isolated clean worktree. Existing v679 release and all forty-two earlier aesthetic cases remain preserved.
+- One stable `aesthetic-2026-11-19` case separates visible current root fall from fictional zonal hair/growth settings, a customer-confirmed two-minute no-product routine and required left/center/right parting tests. Conditional A/B reasoning compares fixed-side directional asymmetry with a reversible parting corridor, balanced baseline and temporary blow-dry direction; six answers and five explicitly unscored self-checks include first-wash, third-week, eighth-week, stop and switch signals without inventing user completion.
+- Original 2172x724 AI WebP shows only one fictional adult woman's current front/two true profiles/back jaw-to-upper-neck bob in a neutral near-center part, not the undisplayed deep-side-part reference, proposed cut, perm, blowout, makeover or future state. No real customer, measured anatomy, verified density/diameter/growth force, occupation, personality, scientific validation or independent expert certification is implied.
+- Scope is feed, image, transparent preparer audit and public change/handoff records only. App/runtime/version, academy, retired feed, calculator, customer, finance, database/backend, login/permissions, business sync and automation are untouched. Local and protected gates, normal merge, Pages success and exact live feed/image/App readback remain publication requirements.
+
 ## 2026-11-20 · Green monthly evidence completion (App version: v679; approved release candidate)
 
 - User requested the same green card treatment as existing completed voucher associations and explicitly approved publication after checks. Isolated from protected f75932e0/v678; clean tracked baseline, starting gates and daily recovery archive passed.
