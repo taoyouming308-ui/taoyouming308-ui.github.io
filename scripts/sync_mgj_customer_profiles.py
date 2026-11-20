@@ -53,6 +53,11 @@ try:
 except ModuleNotFoundError:
     from scripts import mgj_private_customer as private_customer
 
+try:
+    import mgj_customer_history_resume as history_resume
+except ModuleNotFoundError:
+    from scripts import mgj_customer_history_resume as history_resume
+
 # ── 配置 ──
 CONFIG_PATH = "/Users/a1/.hermes/meiguanjia-config.json"
 HISTORY_CONFIG_PATH = os.environ.get(
@@ -179,10 +184,25 @@ def deferred_metrics(now=None):
               (item.get("deferrals", 0) >= 3 or age >= 1800) for item, age in zip(items, ages))}
 
 def compensation_phones(queue, limit=INCREMENTAL_RETRY_LIMIT):
-    # Oldest deferred items remain visible even after rotating booking cursor advances.
-    deferred = sorted(load_deferred()["items"], key=lambda item: (parse_iso_datetime(item.get("last_attempted_at", item["deferred_since"])).timestamp(), parse_iso_datetime(item["deferred_since"]).timestamp()))
-    retry = eligible_retry_phones(queue, limit=limit)
-    values = ([deferred[0]["phone"]] if deferred else []) + retry + [item["phone"] for item in deferred[1:]]
+    # Finish already-validated work in at most one existing compensation slot.
+    # A deferred entry must never revive needs_review or bypass retry backoff.
+    queued = {str(item["phone"]) for item in queue.get("items", []) if item.get("phone")}
+    due = eligible_retry_phones(queue, limit=len(queue.get("items", [])))
+    allowed = set(due)
+    deferred = sorted(
+        [item for item in load_deferred()["items"]
+         if item["phone"] not in queued or item["phone"] in allowed],
+        key=lambda item: (parse_iso_datetime(item.get("last_attempted_at", item["deferred_since"])).timestamp(),
+                          parse_iso_datetime(item["deferred_since"]).timestamp()),
+    )
+    store = history_resume_store(read_only=True)
+    active = []
+    for item in deferred:
+        progress = store.peek(history_owner_key(item["phone"]))
+        if progress and progress["completed_windows"]:
+            active.append((progress["created_at"], item["phone"]))
+    first = min(active)[1] if active else (deferred[0]["phone"] if deferred else None)
+    values = ([first] if first else []) + due + [item["phone"] for item in deferred]
     return list(dict.fromkeys(values))[:limit]
 
 def finish_deferred(mode, reason):
@@ -217,6 +237,15 @@ WAIT_EPISODES = 0
 SESSION_SCOPES = {}
 INITIAL_READY_CHECKED = True  # CLI opts in once per batch.
 INITIAL_READY_WAIT_SECONDS = 60
+HISTORY_RESUME_ROOT = os.path.expanduser("~/.hermes/mgj_customer_history_resume")
+
+
+def history_owner_key(phone):
+    return hashlib.sha256(str(phone).encode("utf-8")).hexdigest()
+
+
+def history_resume_store(read_only=False):
+    return history_resume.HistoryResumeStore(HISTORY_RESUME_ROOT, read_only=read_only)
 
 
 def locked_session(config_path=None):
@@ -1041,39 +1070,28 @@ def fetch_service_history(
     billing_shop_id,
     detail_calls=HISTORY_DETAIL_CALLS,
     config_path=HISTORY_CONFIG_PATH,
+    resume_owner=None,
+    resume_receipt=None,
 ):
     """Fetch bills through the read-only history session and enrich recent rows."""
     if not member_card_id:
         raise RuntimeError("缺少会员卡ID，无法查询消费记录")
+    if resume_owner is not None:
+        if resume_receipt is None:
+            raise ValueError("history_resume_receipt_required")
+        return fetch_resumable_history(cust_id, member_card_id, billing_shop_id,
+                                       detail_calls, config_path, resume_owner, resume_receipt)
     # The source now rejects ranges longer than one year. Read finite,
     # non-overlapping <=365-day windows; any failed window keeps old history.
     first_day = datetime.strptime(HISTORY_START_DATE, "%Y-%m-%d").date()
     last_day = datetime.now().date()
-    source_shop = None  # Derived from the same locked session snapshot as cookies.
     history_by_id = {}
     while last_day >= first_day:
         if not run_budget_available():
             raise TimeoutError("消费历史分段未完成，保留原历史")
         window_start = max(first_day, last_day - timedelta(days=364))
-        bills = multipart_post("member!queryMemberBillListnew.action", {
-            "pageNum": 1, "pageSize": 99999,
-            "memberid": cust_id, "shopid": billing_shop_id,
-            "billstatus": -1, "billtype": -1, "timeUnLimit": 0,
-            "memberCardId": int(member_card_id),
-            "startDate": window_start.isoformat(), "endDate": last_day.isoformat(),
-            "isFromOpenCard": 0,
-        }, source_shop, config_path=config_path)
-        rows = bills.get("content")
-        if (not isinstance(rows, list) or len(rows) >= 99999
-                or type(bills.get("count")) is not int or bills["count"] != len(rows)
-                or bills.get("pageIndex") != 1):
-            raise RuntimeError("消费记录分段格式异常或分页数量不完整")
-        for row in rows:
-            mapped = map_bill_summary(row)
-            if not mapped.get("id") or not mapped.get("date"):
-                raise RuntimeError("消费记录缺少编号或日期，不能判定历史完整")
-            if not window_start.isoformat() <= mapped["date"] <= last_day.isoformat():
-                raise RuntimeError("消费记录超出请求分段，不能判定历史完整")
+        for mapped in read_history_window(cust_id, member_card_id, billing_shop_id,
+                                          window_start.isoformat(), last_day.isoformat(), config_path):
             key = str(mapped["id"])
             if key in history_by_id and history_by_id[key] != mapped:
                 raise RuntimeError("消费记录重复编号内容冲突")
@@ -1096,6 +1114,100 @@ def fetch_service_history(
             raise
         except Exception as exc:
             log(f"  ⚠️ 账单{history[index].get('id')}明细读取失败，保留账单摘要: {exc}")
+    return history[:HISTORY_RECORD_LIMIT]
+
+
+def history_resume_scope(cust_id, member_card_id, billing_shop_id, config_path):
+    # Local identity read under the same lock used for credential renewal.
+    # Never persist cookies/tokens or derive a principal outside this lock.
+    with open(SESSION_LOCK, "a") as session_lock:
+        try:
+            fcntl.flock(session_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise SourceDeferred("source_busy")
+        locked_session(config_path)
+        server, shop, user, employee = SESSION_SCOPES[config_path]
+    return {"host": server, "customer_id": str(cust_id), "card_id": str(member_card_id),
+            "store_id": str(billing_shop_id), "session_shop": shop,
+            "session_user": user, "session_employee": employee}
+
+
+def read_history_window(cust_id, member_card_id, billing_shop_id, start, end, config_path):
+    if not run_budget_available():
+        raise SourceDeferred("source_budget")
+    bills = multipart_post("member!queryMemberBillListnew.action", {
+        "pageNum": 1, "pageSize": 99999,
+        "memberid": cust_id, "shopid": billing_shop_id,
+        "billstatus": -1, "billtype": -1, "timeUnLimit": 0,
+        "memberCardId": int(member_card_id), "startDate": start, "endDate": end,
+        "isFromOpenCard": 0,
+    }, None, config_path=config_path)
+    rows = bills.get("content")
+    if (not isinstance(rows, list) or len(rows) >= 99999
+            or type(bills.get("count")) is not int or bills["count"] != len(rows)
+            or bills.get("pageIndex") != 1):
+        raise RuntimeError("消费记录分段格式异常或分页数量不完整")
+    mapped_rows = {}
+    for row in rows:
+        mapped = map_bill_summary(row)
+        if not mapped.get("id") or not mapped.get("date"):
+            raise RuntimeError("消费记录缺少编号或日期，不能判定历史完整")
+        if not start <= mapped["date"] <= end:
+            raise RuntimeError("消费记录超出请求分段，不能判定历史完整")
+        key = str(mapped["id"])
+        if key in mapped_rows and mapped_rows[key] != mapped:
+            raise RuntimeError("消费记录重复编号内容冲突")
+        mapped_rows[key] = mapped
+    return list(mapped_rows.values())
+
+
+def fetch_resumable_history(cust_id, member_card_id, billing_shop_id, detail_calls,
+                            config_path, owner, receipt):
+    store = history_resume_store()
+    scope = history_resume_scope(cust_id, member_card_id, billing_shop_id, config_path)
+    today = datetime.now().date().isoformat()
+    revision = 0
+    try:
+        state = store.load(owner, scope)
+    except history_resume.ResumeExpired as exc:
+        # Expiry starts a new finite cycle, never extends the old evidence lifetime.
+        state, revision = None, exc.revision
+    if state is not None and (state["start_date"] != HISTORY_START_DATE or state["detail_limit"] != detail_calls):
+        raise history_resume.ResumeConflict(state["revision"])
+    if state is None:
+        state = store.start(owner, scope, HISTORY_START_DATE, today,
+                            detail_limit=detail_calls, expected_revision=revision)
+    while True:
+        pending = store.pending_windows(state, today)
+        if not pending:
+            break
+        for window in pending:
+            rows = read_history_window(cust_id, member_card_id, billing_shop_id,
+                                       window["start"], window["end"], config_path)
+            state = store.record_window(state, window["start"], window["end"], rows)
+    recent = store.recent_window(state, today)
+    rows = read_history_window(cust_id, member_card_id, billing_shop_id,
+                               recent["start"], recent["end"], config_path)
+    state = store.refresh_recent_window(state, rows)
+    history = store.list_rows(state, today)
+    if state["enrichment_ids"] is None:
+        indexes = select_history_detail_indexes(history, detail_calls,
+                                               slot=int(state["created_at"] // 1800))
+        state = store.select_enrichment(state, [history[index]["id"] for index in indexes])
+    by_id = {row["id"]: row for row in history}
+    for bill_id in store.enrichment_candidates(state, today):
+        row = by_id[bill_id]
+        try:
+            row = enrich_bill_history(row, billing_shop_id, config_path=config_path)
+        except SourceDeferred:
+            raise
+        except Exception:
+            # Existing best-effort detail semantics: keep a truthful summary.
+            row = {**row, "detail_fetch_error": "detail_unavailable"}
+            log("  ⚠️ 账单明细暂不可用，保留已验证摘要")
+        state = store.record_enrichment(state, bill_id, row)
+    history = store.finalize(state, today)
+    receipt.update(owner=owner, state=state)  # Internal only; never sent to cloud.
     return history[:HISTORY_RECORD_LIMIT]
 
 
@@ -1171,7 +1283,10 @@ def parse_cashier_html(html):
 #  获取客户完整数据（核心逻辑）
 # ═══════════════════════════════════════════════════════════════════
 
-def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
+def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS, read_only=False):
+    if read_only:
+        # Validation must not advance/clear progress or touch compensation queues.
+        return _get_customer_full(phone, history_detail_calls, use_resume=False)
     load_deferred()  # Corrupt state must not be overwritten or ignored.
     attempted_at = datetime.now().astimezone().isoformat(timespec="microseconds")
     mark_deferred_attempt(phone, attempted_at)
@@ -1182,7 +1297,7 @@ def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
         raise
 
 
-def _get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
+def _get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS, use_resume=True):
     """
     获取客户的完整数据。
 
@@ -1280,17 +1395,25 @@ def _get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
         billing_shop_id = str(member_info.get("shopid") or shop_id)
         service_history = []
         history_complete = False
+        history_receipt = {}
+        history_error = ""
         try:
+            resume = use_resume and history_detail_calls == HISTORY_DETAIL_CALLS
             service_history = fetch_service_history(
                 cust_id,
                 card_id,
                 billing_shop_id,
                 detail_calls=history_detail_calls,
+                resume_owner=history_owner_key(phone) if resume else None,
+                resume_receipt=history_receipt if resume else None,
             )
             history_complete = True
             log(f"  消费记录: {len(service_history)}笔")
         except SourceDeferred:
             raise
+        except history_resume.ResumeError as exc:
+            history_error = exc.code
+            log(f"  ⚠️ 消费历史续传需核对，保留原数据: {history_error}")
         except Exception as exc:
             log(f"  ⚠️ 消费记录读取失败，将保留档案原数据: {exc}")
 
@@ -1309,6 +1432,8 @@ def _get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
             "source_customer_id": str(cust_id),
             "_packages_complete": True,
             "_history_complete": history_complete,
+            "_history_resume_receipt": history_receipt,
+            "_history_error": history_error,
         }
 
     # 回退路径：现金页HTML
@@ -1570,7 +1695,14 @@ def upsert_customer(data, fill_missing_only=False):
             log(f"  ⚠️ 烫染护对账明细写入失败，客户档案已保留: {service_exc}")
             return False, "客户档案已保存，但服务历史投影未完成，保留重试"
         if data.get("_history_complete") is False or data.get("_packages_complete") is False:
-            return False, "客户档案已保存，但套餐或消费历史读取不完整，保留重试"
+            reason = data.get("_history_error")
+            suffix = f"（{reason}，需核对续传状态）" if reason else ""
+            return False, "客户档案已保存，但套餐或消费历史读取不完整，保留重试" + suffix
+        receipt = data.get("_history_resume_receipt")
+        if receipt:
+            if receipt.get("owner") != history_owner_key(phone) or not receipt.get("state"):
+                return False, "客户档案已保存，但续传回执不匹配，保留重试"
+            history_resume_store().ack(receipt["state"])
         clear_completed_deferred(data.get("phone"))
         return True, action
     except SourceDeferred:
@@ -1585,7 +1717,7 @@ def upsert_customer(data, fill_missing_only=False):
 
 def validate_customer(phone):
     """验证一个客户的消费数据是否合理"""
-    data = get_customer_full(phone)
+    data = get_customer_full(phone, read_only=True)
     if not data.get("found"):
         return {"valid": False, "error": data.get("message", "未找到")}
 
