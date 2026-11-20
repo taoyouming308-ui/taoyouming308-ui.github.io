@@ -20,6 +20,12 @@
 
 ## v669 · 2026-11-19
 
+## 2026-11-19 Appointment sync recovery
+
+- Restore a single launchd appointment schedule with exact runtime backups.
+- Reject malformed/partial sources, atomically replace each store/day, make retries idempotent and preserve change audit.
+- Keep the existing App shell, source appointments and separate consumption task unchanged.
+
 - 修复界面资源检查结束后仍显示“准备中”的问题；检查完成、下载中、等待切换、失败及等待过久分别提示。
 - 三入口共用可收起提示，当前版本在同一浏览会话内记住“稍后”；主应用不再叠加第二条更新按钮，失败仍可重试。
 - 保留保存后关闭全部本站页面再自然切换的流程；Chromium/WebKit 的390/1366尺寸、跨页面收起、旧输入保留与多窗口版本隔离回归通过。
