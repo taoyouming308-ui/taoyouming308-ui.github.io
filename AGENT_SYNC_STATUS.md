@@ -1,3 +1,9 @@
+## 2026-11-21 · Reject voided or unbound daily originals before posting (App version: v682; release candidate)
+
+- Owner: Codex. Baseline protected main 2f7629af/v681, clean tracked worktree, mandatory start checks and daily backup completed. User authorized production publication after checks.
+- Only the approved, active original actually referenced by the draft authorizes the photo-based route. Independent archive references and unattached/voided/incorrect documents never satisfy this gate. A ready electronic source still follows its existing confirmation path; uncertain prior posting can still be queried.
+- Show the existing upload/replacement action in a persistent status before posting; guard both actions and the direct handler without disabling draft edits or saves. Pure Pages change: no database, Edge, attachment, amount, or ledger writes in deployment or live verification.
+
 ## 2026-11-21 · Evidence-based daily draft correction (App version: v681; local candidate)
 
 - Owner: Codex; based on fresh protected main d6acedb2/v680. Baseline release checks and daily recovery archive completed. User authorized the repair, not production publication.

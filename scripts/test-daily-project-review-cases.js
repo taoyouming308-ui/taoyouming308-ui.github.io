@@ -99,10 +99,14 @@ module.exports=async function({sql,json,q,C,S,A,U,V:baseVoucher,id}){
  }
  async function browserSequence(){
   const calls=[],uploads=[];
-  const read=()=>json(service+`select jsonb_build_object('draft',(select to_jsonb(d) from zysyr_daily_sheet_drafts d where id='${D}'),
+  const read=()=>{
+   const sheet=json(service+`select jsonb_build_object('draft',(select to_jsonb(d) from zysyr_daily_sheet_drafts d where id='${D}'),
    'cells',(select jsonb_agg(to_jsonb(c) order by row_number,column_number) from zysyr_daily_sheet_cells c where draft_id='${D}'),
    'cash_review',public.zysyr_daily_cash_review_status('${C}','${S}','${D}'),'project_review',public.zysyr_daily_project_review_context('${C}','${S}','${D}'),
    'permissions',jsonb_build_object('write',true,'upload_original',true),'history','[]'::jsonb,'attachments','[]'::jsonb,'locked',false);`);
+   if(sheet.draft.source_voucher_id===V)sheet.attachments=[{id:V,audit_status:'approved',document_type:'daily_report',attachment_kind:'original_report',voided:false}];
+   return sheet;
+  };
   const context={console,crypto:crypto.webcrypto,SUPABASE_URL:'http://synthetic-storage',SERVICE_KEY:'synthetic',REPORT_BUCKET:'zysyr-reports',
    cleanText:(v,n)=>String(v??'').trim().slice(0,n),safeCellText:(v,n)=>String(v??'').slice(0,n),uuidValue:v=>v,
    hasAuthCapability:()=>true,selectedStoreInfo:async()=>({id:S,company_id:C,name:'Synthetic store'}),restRows:async()=>[read().draft],restRowsAll:async()=>read().cells,dailySheetRead:async()=>read(),

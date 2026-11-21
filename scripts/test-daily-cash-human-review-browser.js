@@ -161,11 +161,12 @@ async function run(){
   }
   await page.close();
  }
- for(const width of [390,1280])for(const mode of ['ready','missing','cancel','lost','legacy-unavailable','legacy-stripped']){
+ for(const width of [390,1280])for(const mode of ['ready','ready-voided-photo','missing','cancel','lost','legacy-unavailable','legacy-stripped']){
   const page=await browser.newPage({viewport:{width,height:900}});
   await page.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());await setup(page,origin);
   await page.evaluate(mode=>{
-   syntheticSheet.draft.source_voucher_id=null;syntheticSheet.attachments=[];
+   syntheticSheet.draft.source_voucher_id=null;
+   syntheticSheet.attachments=mode==='ready-voided-photo'?syntheticSheet.attachments.map(a=>({...a,voided:true})):[];
    syntheticSheet.cash_review.original_ready=false;syntheticSheet.cash_review.electronic_ready=mode!=='missing';
    syntheticSheet.cash_review.electronic_reason='电子明细与来源清单尚未同步一致';
    syntheticCancel=mode==='cancel';syntheticLost=mode==='lost';
@@ -181,8 +182,12 @@ async function run(){
   },mode);
   if(!mode.startsWith('legacy-'))await page.locator('[data-section="summary"][data-column-code="card_subtotal"]').fill('0');
   assert.equal(await page.locator('#daily-detail-confirm-top').evaluate(b=>b.classList.contains('blocked-action')),mode==='missing');
-  await page.locator('#daily-detail-confirm-top').click();
-  if(['ready','lost'].includes(mode)||mode.startsWith('legacy-')){
+  if(mode==='missing'){
+   assert.equal(await page.locator('#daily-detail-confirm-top').isDisabled(),true);
+   assert.match(await page.locator('#daily-detail-confirm-help').innerText(),/上传 \/ 重传正确日报/);
+   await page.evaluate(()=>confirmDailyReportDetail());
+  }else await page.locator('#daily-detail-confirm-top').click();
+  if(['ready','ready-voided-photo','lost'].includes(mode)||mode.startsWith('legacy-')){
    try { await page.waitForFunction(()=>state.imports.sheet.draft.status==='confirmed',{},{timeout:5000}); }
    catch(e){console.error({mode,width,note:await page.locator('#daily-detail-note').innerText(),ops:await page.evaluate(()=>syntheticOps.map(x=>x.op))});throw e;}
    assert.match(await page.evaluate(()=>syntheticDialogs[0]),/电子来源.*无需上传照片/);

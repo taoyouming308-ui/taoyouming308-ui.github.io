@@ -88,7 +88,8 @@ async function run() {
         source.cells.filter(cell => cell.row_key === 'stylist_1').forEach(cell => { cell.row_label_source_method = 'codex_local_candidate'; });
         source.draft = { id: 'fixture-draft', report_date: '2026-01-01', status: 'draft', edit_revision: 4, source_voucher_id: 'fixture-voucher', validation_result: { valid: false } };
         source.permissions = { write: true, fill_blanks: true };
-        source.attachments = [];
+        source.attachments = [{ id: 'fixture-link', voucher_id: 'fixture-voucher', audit_status: 'approved',
+          document_type: 'daily_report', attachment_kind: 'original_report', voided: false }];
         source.history = [];
         window.fixtureSource = source;
         state.imports.sheet = structuredClone(source);
@@ -533,6 +534,44 @@ async function run() {
       assert.equal(await manual.inputValue(), manualValue);
       assert.equal(await page.evaluate(() => dailyOperations.filter(x => x === 'daily_sheet_fill_blanks').length), 2);
       assert.equal(await page.evaluate(() => dailyOperations.some(x => x === 'daily_sheet_confirm')), false);
+      const postBottom = page.locator('#daily-detail-confirm'), postTop = page.locator('#daily-detail-confirm-top');
+      const sourceHelp = page.locator('#daily-detail-confirm-help');
+      const amountBefore = await actual.inputValue();
+      for (const mode of ['voided', 'voided-primary', 'archive-only', 'missing-primary', 'unbound-approved', 'pending', 'supporting', 'wrong-document']) {
+        await page.evaluate(mode => {
+          const sheet = state.imports.sheet;
+          sheet.draft.source_voucher_id = ['voided-primary', 'missing-primary', 'pending', 'supporting', 'wrong-document'].includes(mode) ? 'fixture-voucher' : null;
+          const item = { ...fixtureSource.attachments[0] };
+          if (mode.startsWith('voided')) item.voided = true;
+          if (mode === 'pending') item.audit_status = 'pending';
+          if (mode === 'supporting') item.attachment_kind = 'supporting_document';
+          if (mode === 'wrong-document') item.document_type = 'other';
+          sheet.attachments = ['archive-only', 'missing-primary'].includes(mode) ? [] : [item];
+          sheet.archived_originals = [{ report_date: sheet.draft.report_date, state: 'archived' }];
+          sheet.cash_review = {};
+          window.dailyOperations = [];
+          renderDailyDetailControls();
+        }, mode);
+        assert.equal(await postBottom.isDisabled(), true, mode);
+        assert.equal(await postTop.isDisabled(), true, mode);
+        assert.match(await sourceHelp.innerText(), /上传 \/ 重传正确日报.*原件审核/);
+        if (mode.startsWith('voided')) assert.match(await sourceHelp.innerText(), /原图已作废/);
+        // Even the direct handler must stop before any save or confirm request.
+        await page.evaluate(() => confirmDailyReportDetail());
+        assert.deepEqual(await page.evaluate(() => dailyOperations), []);
+        assert.equal(await actual.inputValue(), amountBefore);
+      }
+      await actual.fill('345');
+      assert.equal(await postBottom.isDisabled(), true, 'missing original must still allow editing');
+      assert.equal(await page.locator('#daily-detail-save').isEnabled(), true, 'the draft save stays available');
+      await page.evaluate(() => {
+        const sheet = state.imports.sheet;
+        sheet.draft.source_voucher_id = 'fixture-voucher';
+        sheet.attachments = [{ ...fixtureSource.attachments[0] }];
+        renderDailyDetailControls();
+      });
+      assert.equal(await postBottom.isEnabled(), true, 'binding an approved active original removes the evidence block');
+      assert.doesNotMatch(await sourceHelp.innerText(), /上传 \/ 重传正确日报/);
       await page.evaluate(() => { state.imports.sheet.draft.status = 'confirmed'; renderDailyDetailControls(); });
       assert.equal(await autofill.isVisible(), false);
       assert.deepEqual(errors, []);
