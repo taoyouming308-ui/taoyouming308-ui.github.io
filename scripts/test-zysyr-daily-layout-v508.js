@@ -504,7 +504,7 @@ async function run() {
         window.dailyOperations = [];
         renderDailySheetDetail();
       });
-      const autofill = page.getByRole('button', { name: '自动填写报表' });
+      const autofill = page.getByRole('button', { name: '补空白', exact: true });
       const cash = page.locator('#daily-detail-grid [data-section="payment"][data-column-code="cash"]');
       const manual = page.locator('#daily-detail-grid [data-section="summary"][data-column-code="treatment_card"]');
       const manualValue = await manual.inputValue();

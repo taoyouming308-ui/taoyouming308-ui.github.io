@@ -115,8 +115,65 @@ async function run(){
     const request=await page.evaluate(()=>attachmentRequests[0]);
     assert.equal(request.store,'向里造型');assert.equal(request.source_store,'向里造型');
     assert.equal(request.draft_id,'source-action-draft');
+    await page.evaluate(()=>{
+      const sheet=previewDailySheetData();
+      sheet.draft.id='synthetic-correction-draft';sheet.draft.status='draft';sheet.draft.edit_revision=4;
+      sheet.permissions={write:true,fill_blanks:true,draft_source_correction:true};
+      sheet.locked=false;sheet.readonly=false;
+      const cells=sheet.cells.filter(c=>c.section_code==='stylist'&&c.cell_role==='staff_value'&&['perm','color'].includes(c.column_code)).slice(0,2);
+      cells.forEach((c,i)=>Object.assign(c,{ocr_numeric:90+i,manual_override:false,corrected_numeric:null}));
+      window.correctionItems=cells.map((c,i)=>({cell_id:c.id,row_label:c.row_label,column_label:c.column_label,before_value:90+i,suggested_value:100+i}));
+      window.correctionCalls=[];window.correctionStale=false;
+      state.imports.sheet=sheet;state.imports.dirty={};state.imports.dirtyLabels={};
+      state.user.role='finance';
+      api=async(operation,payload)=>{
+        correctionCalls.push({operation,payload});
+        const scope={store:'向里造型',report_date:sheet.draft.report_date,draft_id:sheet.draft.id};
+        if(operation==='daily_sheet_source_preview')return {...scope,status:'preview',revision:4,source_token:'a'.repeat(64),items:correctionItems};
+        if(operation==='daily_sheet_source_correct')return correctionStale
+          ? {...scope,status:'source_changed'} : {...scope,status:'saved',revision:5,changed_cells:1,formal_ledger_amount_changed:false};
+        if(operation==='daily_sheet_read'){
+          const fresh=structuredClone(sheet);fresh.draft.edit_revision=5;
+          Object.assign(fresh.cells.find(c=>c.id===correctionItems[0].cell_id),{manual_override:true,corrected_numeric:100});
+          return fresh;
+        }
+        throw Error('Unexpected operation '+operation);
+      };
+      renderDailySheetDetail();
+    });
+    const correction=page.getByRole('button',{name:'核对并纠正',exact:true});
+    const review=page.locator('#daily-draft-source-review');
+    const saveSelected=review.getByRole('button',{name:'保存所选纠正'});
+    const items=review.getByRole('checkbox');
+    const cellIds=await page.evaluate(()=>correctionItems.map(i=>i.cell_id));
+    const cellInputs=cellIds.map(id=>page.locator('[data-daily-cell="'+id+'"]'));
+    await correction.click();
+    await review.waitFor();
+    assert.equal(await items.count(),2);
+    assert.equal(await items.first().isChecked(),false);assert.equal(await saveSelected.isDisabled(),true);
+    assert.match(await review.textContent(),/当前 90\.00 元 → 建议 100\.00 元/);
+    assert.equal(await cellInputs[0].inputValue(),'90');
+    await items.first().check();
+    await review.getByRole('button',{name:'取消'}).click();
+    await review.waitFor({state:'detached'});
+    assert.deepEqual(await page.evaluate(()=>correctionCalls.map(c=>c.operation)),['daily_sheet_source_preview']);
+    await page.evaluate(()=>{window.correctionStale=true;});
+    await correction.click();await items.first().check();await saveSelected.click();
+    await page.waitForFunction(()=>document.getElementById('daily-detail-note').textContent.includes('差异已变化'));
+    assert.equal(await cellInputs[0].inputValue(),'90');
+    await page.evaluate(()=>{window.correctionStale=false;window.correctionCalls=[];});
+    await correction.click();await items.first().check();await saveSelected.click();
+    await page.waitForFunction(()=>document.getElementById('daily-detail-note').textContent.includes('已纠正 1 格并保存草稿，未入账'));
+    assert.equal(await cellInputs[0].inputValue(),'100');assert.equal(await cellInputs[1].inputValue(),'91');
+    const calls=await page.evaluate(()=>correctionCalls);
+    assert.deepEqual(calls.map(c=>c.operation),['daily_sheet_source_preview','daily_sheet_source_correct','daily_sheet_read']);
+    assert.deepEqual(calls[1].payload,{...calls[0].payload,source_token:'a'.repeat(64),selected_ids:[cellIds[0]],confirmed:true});
+    await cellInputs[1].fill('92');
+    assert.equal(await correction.isDisabled(),true);
+    await page.evaluate(()=>{state.imports.dirty={};state.imports.sheet.draft.status='confirmed';renderDailyDetailControls();});
+    assert.equal(await correction.isVisible(),false);
     assert.deepEqual(errors,[]);await page.close();
   }
-  console.log('ZYSYR v517 daily source actions: prominent mobile/desktop controls, single-flight feedback and completion state passed');
+  console.log('Daily source actions: mobile/desktop controls, single-flight feedback and selected-only draft correction passed');
 }
 run().finally(async()=>{if(browser)await browser.close();server.close();}).catch(error=>{console.error(error);process.exitCode=1;});
