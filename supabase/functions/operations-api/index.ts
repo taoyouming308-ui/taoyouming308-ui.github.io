@@ -4149,7 +4149,7 @@ async function assertBusinessVoucherTarget(
   if (!rows.length) throw new Error("业务记录不存在、已冲销或不属于当前门店");
 }
 
-async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+async function uploadVoucher(payload: JsonRecord, session: JsonRecord, batchArchiveNote?: string): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const recordType = cleanText(payload.record_type, 20) || "unassigned";
   const recordId = cleanText(payload.record_id, 100);
@@ -4163,6 +4163,8 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const businessId = cleanText(payload.business_id, 40);
   const businessLinkReason = cleanText(payload.business_link_reason ?? payload.note, 500);
   if (!canUploadVouchers(session)) throw new Error("只有财务账号可以上传凭证");
+  const note = batchArchiveNote ?? cleanText(payload.note, 500);
+  if (batchArchiveNote === undefined && note.startsWith("petty_cash_batch|")) throw new Error("凭证归档月份请从本月批量上传入口确认");
   if (!["unassigned", "report"].includes(recordType)
     || (recordType === "report" && !/^[0-9a-f-]{36}$/i.test(recordId))
     || (recordType === "unassigned" && recordId)) throw new Error("凭证关联记录无效");
@@ -4235,7 +4237,7 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
       p_mime_type: mime,
       p_size_bytes: bytes.length,
       p_sha256: digest,
-      p_note: cleanText(payload.note, 500),
+      p_note: note,
     }),
   });
   if (!metadata.ok) {
@@ -4389,10 +4391,9 @@ async function uploadPettyCashBatchVoucher(payload: JsonRecord, session: JsonRec
     record_id: null,
     business_type: "",
     business_id: "",
-    note: pettyCashBatchNote(month, batchId, cleanText(payload.filename, 200)),
     skip_ocr: false,
     defer_ocr_wake: true,
-  }, session);
+  }, session, pettyCashBatchNote(month, batchId, cleanText(payload.filename, 200)));
   return { ...result, batch_id: batchId, target_month: month };
 }
 

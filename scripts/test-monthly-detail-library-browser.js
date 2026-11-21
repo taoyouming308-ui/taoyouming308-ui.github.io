@@ -19,7 +19,7 @@ for(const width of [390,1280]){
    if(op==='monthly_voucher_library'){
     if(p.action==='attach'){if(detailFail)throw Error('synthetic save failure');detailLinked[p.cell_id.replace('cell-','')]=true;return {cell_linked:true};}
     if(detailLate)await new Promise(r=>window.detailRelease=r);if(detailReadFail)throw Error('synthetic read failure');
-    const amount=amounts[p.cell_id.replace('cell-','')];return {items:[{id:'unknown',original_filename:'unknown.png',candidate_fields:{}},{id:'near',original_filename:'near.png',candidate_fields:{amount:amount+.01}},{id:'exact',original_filename:'exact.png',mime_type:'image/png',candidate_fields:{amount},already_linked:!!detailLinked[p.cell_id.replace('cell-','')]}]};
+    const amount=amounts[p.cell_id.replace('cell-','')];return {archive_month:'2026-07',items:[{id:'unknown',original_filename:'unknown.png',candidate_fields:{}},{id:'near',original_filename:'near.png',candidate_fields:{amount:amount+.01}},{id:'exact',original_filename:'exact.png',mime_type:'image/png',candidate_fields:{amount},already_linked:!!detailLinked[p.cell_id.replace('cell-','')]}].map(row=>({...row,archive_month:'2026-07'}))};
    }throw Error('Unexpected API/write '+op);
   };
  });

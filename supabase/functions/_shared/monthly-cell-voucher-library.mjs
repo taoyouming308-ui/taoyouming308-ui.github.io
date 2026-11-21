@@ -2,8 +2,14 @@
 import { expenseComponents } from './expense-voucher-matching.mjs';
 import { combinationTotal, voucherCents } from '../../../voucher-combination-core.js';
 import { readMonthlyVoucherTargets } from './monthly-voucher-targets.mjs';
+import { parsePettyCashBatchNote } from './petty-cash-batch.mjs';
 const text = value => String(value ?? '').trim();
 const uuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text(value));
+const archiveMonth = voucher => {
+  const batch = parsePettyCashBatchNote(voucher.note);
+  return batch && uuid(batch.batch_id) ? batch.month : null;
+};
+const archiveError = () => Error('凭证未归档到当前报表月份，请从本月凭证列表选择；原件和已有凭证关联不变');
 export async function monthlyCellVoucherLibrary(payload, session, deps) {
   if (!deps.canUpload(session)) throw Error('只有财务账号可以补充凭证');
   if (!deps.canRead(session)) throw Error('当前账号没有凭证查看权限');
@@ -39,10 +45,14 @@ export async function monthlyCellVoucherLibrary(payload, session, deps) {
       items: [{ id: voucherId, source_voucher_id: voucherId, already_linked: links.some(link => link.voucher_id === voucherId) }], truncated: false };
   }
   if (payload.action === 'attach_combination') {
-    if (payload.confirmed !== true || !Array.isArray(payload.items)) throw Error('请逐张核对并确认组合凭证');
-    if (payload.items.some(item => !uuid(item.voucher_id))) throw Error('组合凭证编号无效');
-    const selected = payload.items.map(item => ({ id: item.voucher_id, candidate_fields: { amount: item.amount } }));
+    if (payload.confirmed !== true || !Array.isArray(payload.items) || payload.items.length < 2 || payload.items.length > 20) throw Error('请逐张核对并确认组合凭证');
+    if (payload.items.some(item => !item || !uuid(item.voucher_id))) throw Error('组合凭证编号无效');
+    const selected = payload.items.map(item => ({ id: text(item.voucher_id).toLowerCase(), candidate_fields: { amount: item.amount } }));
     const total = combinationTotal(selected);if(total===null)throw Error('请选择金额明确的独立凭证，不能重复计入同一原图');
+    const selectedIds = selected.map(item => item.id);
+    const originals = await deps.rows(`zysyr_voucher_attachments?select=id,note&${scope}&id=in.(${selectedIds.join(',')})&limit=20`);
+    const archived = new Set(originals.filter(voucher => archiveMonth(voucher) === month).map(voucher => voucher.id));
+    if (selectedIds.some(id => !archived.has(id))) throw archiveError();
     // Monthly evidence can include orders, summaries and chat originals; this does not confirm a payment.
     const context = await deps.effective(store, month, reportId);
     const target = context.cells.find(cell => cell.id === cellId);
@@ -51,17 +61,19 @@ export async function monthlyCellVoucherLibrary(payload, session, deps) {
       p_actor: session.auth_account_id, p_company: company, p_store: storeId, p_cell: cellId,
       p_expected_amount: total / 100, p_expected_versions: context.versions,
       p_expected_adjustments: context.adjustments.map(row => row.id).sort(),
-      p_items: payload.items.map(item => ({ voucher_id: item.voucher_id, amount: Number(item.amount) })),
+      p_items: selected.map(item => ({ voucher_id: item.id, amount: Number(item.candidate_fields.amount) })),
       p_reason: '人工逐张核对组合凭证，合计 ' + (total / 100).toFixed(2),
     });
     return { ...saved, combination_saved: true, cell_linked: true, combination_total: total / 100, amount_changed: false, posted: false };
   }
   if (payload.action === 'attach') {
-    const voucherId = text(payload.voucher_id), reason = text(payload.reason).slice(0, 500);
+    const voucherId = text(payload.voucher_id).toLowerCase(), reason = text(payload.reason).slice(0, 500);
     if (!uuid(voucherId) || payload.confirmed !== true || !reason) throw Error('请先核对原图并确认关联');
-    const vouchers = await deps.rows(`zysyr_voucher_attachments?select=id&${scope}&id=eq.${voucherId}&limit=1`);
-    if (!vouchers.length) throw Error('凭证不存在或不属于当前门店');
+    const vouchers = await deps.rows(`zysyr_voucher_attachments?select=id,note&${scope}&id=eq.${voucherId}&limit=1`);
+    const original = vouchers.find(voucher => voucher.id === voucherId);
+    if (!original) throw Error('凭证不存在或不属于当前门店');
     const alreadyLinked = links.some(link => link.voucher_id === voucherId);
+    if (!alreadyLinked && archiveMonth(original) !== month) throw archiveError();
     if (!alreadyLinked) await deps.save('rpc/zysyr_attach_monthly_cell_voucher', {
       p_actor_user_id: session.auth_account_id, p_company_id: company, p_store_id: storeId,
       p_source_cell_id: cellId, p_voucher_id: voucherId, p_reason: reason,
@@ -70,9 +82,18 @@ export async function monthlyCellVoucherLibrary(payload, session, deps) {
       ...(workspace ? { evidence_only: true, whole_original: true, target_kind: 'monthly_cell', report_id: reportId, cell_id: cellId } : {}) };
   }
   if (payload.action !== 'list') throw Error('凭证库操作无效');
-  // Upload month is not accounting month: July originals can be uploaded in November.
-  const vouchers = await deps.all(`zysyr_voucher_attachments?select=id,original_filename,mime_type,uploaded_at&${scope}&order=uploaded_at.desc,id.asc&limit=2001`, 2001);
-  const visible = vouchers.slice(0, 2000), tasks = [], reviews = [];
+  // Use the server-written batch designation, not the filename, OCR date,
+  // upload timestamp or mutable report association. Existing links remain visible in the trace.
+  const path = `zysyr_voucher_attachments?select=id,original_filename,mime_type,uploaded_at,note&${scope}&note=like.${encodeURIComponent('petty_cash_batch|'+month+'|*')}&order=uploaded_at.desc,id.asc`;
+  const vouchers = [];
+  for (let offset = 0; offset <= 2000; offset += 1000) {
+    const limit = Math.min(1000, 2001 - offset);
+    const page = await deps.rows(`${path}&limit=${limit}&offset=${offset}`);
+    if (page.length > limit) throw Error('凭证库返回条数异常，请刷新重试');
+    vouchers.push(...page);
+    if (page.length < limit) break;
+  }
+  const visible = vouchers.filter(voucher => archiveMonth(voucher) === month).slice(0, 2000), tasks = [], reviews = [];
   // Bound URL length even when the store has thousands of originals.
   for (let offset = 0; offset < visible.length; offset += 100) {
     const ids = '(' + visible.slice(offset, offset + 100).map(v => v.id).join(',') + ')';
@@ -84,10 +105,11 @@ export async function monthlyCellVoucherLibrary(payload, session, deps) {
   }
   const latest = rows => { const map = new Map(); for (const row of rows) if (!map.has(row.voucher_id)) map.set(row.voucher_id, row); return map; };
   const taskMap = latest(tasks), reviewMap = latest(reviews), linked = new Set(links.map(link => link.voucher_id));
-  return { ...(workspace ? { evidence_only: true, whole_original: true, target: workspaceTarget } : {}), items: visible.map(v => {
+  return { archive_month: month, items: visible.map(v => {
     const candidate = taskMap.get(v.id)?.candidate_fields || {}, corrected = reviewMap.get(v.id)?.corrected_fields || {};
-    return { ...v, source_voucher_id: v.id, candidate_fields: { ...candidate, ...corrected },
+    return { id:v.id, original_filename:v.original_filename, mime_type:v.mime_type, uploaded_at:v.uploaded_at,
+      archive_month:month, source_voucher_id: v.id, candidate_fields: { ...candidate, ...corrected },
       recognized_amounts: Object.hasOwn(corrected, 'amount') ? [corrected.amount] : expenseComponents(candidate).map(component => component.amount),
       already_linked: linked.has(v.id) };
-  }), truncated: vouchers.length > visible.length };
+  }), truncated: vouchers.length > 2000 };
 }

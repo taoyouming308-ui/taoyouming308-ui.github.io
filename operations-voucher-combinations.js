@@ -2,7 +2,7 @@
   'use strict';
   var corePromise;
   function loadCore(){return corePromise=corePromise||import('./voucher-combination-core.js?v='+document.documentElement.dataset.version).catch(function(error){corePromise=null;throw error;});}
-  root.ZysyrVoucherCombinationUI={rank:async function(items,target,month){return (await loadCore()).rankVoucherLibrary(items,target,month);},period:async function(value,contextMonth){return (await loadCore()).normalizeVoucherPeriod(value,contextMonth);},mount:async function(host,options){
+  root.ZysyrVoucherCombinationUI={rank:async function(items,target,month,archiveScoped){return (await loadCore()).rankVoucherLibrary(items,target,month,archiveScoped);},period:async function(value,contextMonth){return (await loadCore()).normalizeVoucherPeriod(value,contextMonth);},mount:async function(host,options){
     var section=document.createElement('section');section.className='voucher-combinations';
     section.innerHTML='<h4>组合凭证</h4><p class="help">几张凭证可共同对应这一笔。核对每张原图的日期、用途和金额后确认。</p><div data-combination-recommendations>正在计算金额一致的组合…</div><details><summary>手动选择多张凭证</summary><input type="search" aria-label="组合凭证搜索" placeholder="搜索文件名、商户、金额"><div data-combination-options></div><div data-combination-selection></div><button type="button" class="secondary" data-combination-review>核对已选凭证</button></details><div data-combination-review-panel></div>';
     host.appendChild(section);
@@ -11,7 +11,7 @@
       var core=await loadCore();if(!active())return;if(core.voucherCents(options.target.amount)===null){section.textContent='当前开支金额待核对，暂不能计算组合。';return;}
       var selected=new Map(),generation=0,esc=options.escape,money=options.amount,target=options.target,items=options.items||[],pending=false;
       var recommendations=section.querySelector('[data-combination-recommendations]'),list=section.querySelector('[data-combination-options]'),search=section.querySelector('input[type=search]'),review=section.querySelector('[data-combination-review-panel]');
-      var result=core.recommendVoucherCombinations(items,target,options.month);
+      var result=core.recommendVoucherCombinations(items,target,options.month,'',options.archiveScoped===true);
       function blocked(item){if(!options.legacy)return false;var f=core.voucherFields(item);return f.evidence_kind==='monthly_summary'||['bank_summary','multiple_transactions','monthly_summary'].includes(f.document_kind)||Boolean(item.confirmed_target_id||item.expense_association)&&!core.sameVoucherTarget(item,target);}
       function linked(item){return options.legacy?core.sameVoucherTarget(item,target):Boolean(item.already_linked);}
       function description(item){var f=core.voucherFields(item),hint=core.voucherRecommendation(item,target,options.month);return (item.original_filename||'凭证')+' · '+(hint.amount_cents===null?'金额待核对':(hint.document_only?hint.amount_label+' ':'')+money(hint.amount_cents/100))+(hint.payment_unconfirmed?' · 付款待核对':'')+' · '+(f.document_date||'付款日期待核对')+(linked(item)?' · 已关联本笔':'');}
@@ -28,7 +28,7 @@
         section.querySelector('[data-combination-review]').disabled=chosen.length<2||chosen.length>20;
       }
       function renderOptions(){
-        list.innerHTML='';var query=search.value.trim().toLowerCase();core.rankVoucherLibrary(items,target,options.month).map(function(row){return row.item;}).filter(function(item){var f=core.voucherFields(item),hint=core.voucherRecommendation(item,target,options.month);return [description(item),f.summary,f.expense_category,f.counterparty,f.evidence&&f.evidence.expense_category,hint.dates.map(function(d){return d.date;}).join(' ')].join(' ').toLowerCase().includes(query);}).forEach(function(item){
+        list.innerHTML='';var query=search.value.trim().toLowerCase();core.rankVoucherLibrary(items,target,options.month,options.archiveScoped===true).map(function(row){return row.item;}).filter(function(item){var f=core.voucherFields(item),hint=core.voucherRecommendation(item,target,options.month);return [description(item),f.summary,f.expense_category,f.counterparty,f.evidence&&f.evidence.expense_category,hint.dates.map(function(d){return d.date;}).join(' ')].join(' ').toLowerCase().includes(query);}).forEach(function(item){
           var label=document.createElement('label');label.className='simple-voucher-rule';var checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.dataset.combinationPick=core.voucherPartKey(item);checkbox.checked=selected.has(core.voucherPartKey(item));
           checkbox.disabled=blocked(item);var span=document.createElement('span');span.textContent=description(item)+(blocked(item)?' · 需先核对类型或既有关联，可在上方查看原图':'');label.appendChild(checkbox);label.appendChild(span);list.appendChild(label);
           checkbox.onchange=function(){if(!active()||pending)return;if(checkbox.checked){if(selected.size>=20){checkbox.checked=false;return;}Array.from(selected.entries()).forEach(function(entry){if(core.voucherIdentity(entry[1])===core.voucherIdentity(item))selected.delete(entry[0]);});selected.set(core.voucherPartKey(item),item);}else selected.delete(core.voucherPartKey(item));generation++;review.innerHTML='';renderOptions();};

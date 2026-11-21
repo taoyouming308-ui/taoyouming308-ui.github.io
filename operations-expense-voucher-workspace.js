@@ -27,8 +27,8 @@
   function pettySummary(target){return target&&target.target_kind==='monthly_source'&&/(^|\/)备用金$/.test(String(target.summary||'').replace(/\s/g,'').replace(/[／·]/g,'/'));}
   function monthlyCell(target){return target&&target.target_kind==='monthly_cell';}
   function canAttachMonthlyCell(target){return monthlyCell(target)&&target.disabled!==true&&target.can_attach===true&&typeof target.amount==='number'&&Number.isFinite(target.amount);}
-  async function rankLibrary(items,target,month){
-    if(root.ZysyrVoucherCombinationUI&&root.ZysyrVoucherCombinationUI.rank)return root.ZysyrVoucherCombinationUI.rank(items,target,month);
+  async function rankLibrary(items,target,month,archiveScoped){
+    if(root.ZysyrVoucherCombinationUI&&root.ZysyrVoucherCombinationUI.rank)return root.ZysyrVoucherCombinationUI.rank(items,target,month,archiveScoped);
     return items.map(function(item,index){var fields=Object.assign({},item.candidate_fields||{},item.corrected_fields||{}),n=fields.amount==null?NaN:Number(fields.amount),amount=Number.isFinite(n)&&n>0?Math.round(n*100):null;
       return {item:item,index:index,recommendation:{amount_cents:amount},difference:amount===null?Infinity:Math.abs(amount-Math.round(Number(target.amount)*100))};}).sort(function(a,b){return a.difference-b.difference||a.index-b.index;});
   }
@@ -47,17 +47,19 @@
       loading=true;panel.textContent='正在读取已上传凭证…';
       try{
         var result=await api('monthly_voucher_library',Object.assign({},payload,{action:'list'}));if(!active())return;
-        var ranked=await rankLibrary(result.items||[],library.target,context.month);if(!active())return;
-        panel.innerHTML='<h4>选择已上传凭证</h4><div class="help">'+esc(context.month+' · '+library.target.summary)+'。核对原图后补充凭证，金额保持不变。</div>'
+        if(!result||result.archive_month!==context.month||!Array.isArray(result.items))throw Error('未确认本月归档范围，暂不显示候选凭证');
+        var archiveItems=result.items.filter(function(item){return item&&item.archive_month===context.month;});
+        var ranked=await rankLibrary(archiveItems,library.target,context.month,true);if(!active())return;
+        panel.innerHTML='<h4>选择本月归档凭证</h4><div class="help">'+esc(context.month+' · '+library.target.summary)+'。只显示上传时归到本月的原件，不按票面日期筛选。核对原图后关联，不改金额。</div>'
           +'<input type="search" data-library-search aria-label="搜索凭证" placeholder="搜索文件名、商户、金额"><div data-library-list></div><div data-library-selected></div>'
-          +(result.truncated?'<div class="candidate-warning">当前显示最近 2000 份凭证；更早原件请到凭证库核对。</div>':'');
+          +(result.truncated?'<div class="candidate-warning">当前显示本月最近 2000 份归档凭证；其余请到本月凭证中心核对。</div>':'');
         var search=panel.querySelector('[data-library-search]'),list=panel.querySelector('[data-library-list]'),selected=panel.querySelector('[data-library-selected]'),generation=0;
         function render(){list.innerHTML='';var query=search.value.trim().toLowerCase();ranked.filter(function(row){var item=row.item,f=item.candidate_fields||{};return [item.original_filename,f.counterparty,f.summary,f.amount,recommendationLabel(row),(row.recommendation.dates||[]).map(function(d){return d.date;}).join(' '),(item.recognized_amounts||[]).join(' '),f.document_date,f.period_month].join(' ').toLowerCase().includes(query);}).forEach(function(row){
           var item=row.item,f=item.candidate_fields||{},button=document.createElement('button');button.type='button';button.className='ghost monthly-library-item';
           button.textContent=(item.original_filename||'凭证')+' · '+recommendationLabel(row)
             +(Number.isFinite(row.difference)?row.difference===0?' · 金额一致':' · 相差 '+formatAmount(row.difference/100):'')+(item.already_linked?' · 已关联当前金额':'');
           button.onclick=function(){if(active())choose(item);};list.appendChild(button);
-        });if(!list.children.length)list.textContent='没有找到相符的凭证。';}
+        });if(!list.children.length)list.textContent='没有找到相符的本月归档凭证。';}
         async function choose(item){
           var request=++generation;selected.innerHTML='<div data-library-preview>正在读取原图…</div><div data-library-fields></div>';
           var picture=selected.querySelector('[data-library-preview]'),form=selected.querySelector('[data-library-fields]');
@@ -78,7 +80,7 @@
           catch(error){if(active()&&request===generation)picture.textContent='原图读取失败：'+error.message;}
         }
         search.oninput=render;render();
-        if(root.ZysyrVoucherCombinationUI)root.ZysyrVoucherCombinationUI.mount(panel,{items:result.items,target:library.target,month:context.month,legacy:false,active:active,escape:esc,amount:formatAmount,preview:preview,
+        if(root.ZysyrVoucherCombinationUI)root.ZysyrVoucherCombinationUI.mount(panel,{items:archiveItems,target:library.target,month:context.month,archiveScoped:true,legacy:false,active:active,escape:esc,amount:formatAmount,preview:preview,
           load:async function(item){var file=await api('voucher_url',{store:context.store,voucher_id:item.id});return {file_url:file.url,filename:file.filename};},
           save:function(rows){return api('monthly_voucher_library',Object.assign({},payload,{action:'attach_combination',confirmed:true,items:rows.map(function(row){return {voucher_id:row.item.id,amount:row.fields.amount};})}));},
           success:toast,reopen:function(){return openCellTrace(address);}});

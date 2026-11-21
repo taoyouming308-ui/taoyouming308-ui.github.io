@@ -1,3 +1,10 @@
+## 2026-11-21 · Scope monthly voucher picker to archive month (App version: v680; approved release candidate)
+
+- Owner: Codex, isolated from protected e2335569/v679 after a fresh fetch, baseline checks and daily backup. User authorized release after checks; no business data changes.
+- The month selected on batch upload is the authoritative archive month. Monthly evidence list, combination suggestions and new selected-original links use the stored batch designation, not the OCR or printed date, filename, receipt time or mutable report association. Existing evidence traces and completed links remain untouched. Unscoped older originals are not guessed into the monthly picker; explicit direct supplemental uploads are outside this candidate list.
+- Validate report/cell/store and archive membership server-side before a new single or combination link. Unrelated voucher audit and legacy per-transaction matching retain their original rules. No migration, OCR, permissions, objects, accounting columns or ledger changes.
+- Release via exact-head protected validation, compatible Edge source first and normal Pages publication next. Public file hashes, deployed source and scoped read-only checks are separate acceptance stages.
+
 ## 2026-11-20 · Green monthly evidence completion (App version: v679; approved release candidate)
 
 - User requested the same green card treatment as existing completed voucher associations and explicitly approved publication after checks. Isolated from protected f75932e0/v678; clean tracked baseline, starting gates and daily recovery archive passed.
