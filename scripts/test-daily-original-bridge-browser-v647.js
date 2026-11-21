@@ -221,12 +221,13 @@ let browser;
       const inline = page.locator('[data-daily-archived-zoom] img');
       assert.equal(await inline.getAttribute('src'), archive(date).private_url, 'original is embedded in the electronic daily page');
       assert.match(await page.locator('#daily-detail-archived-originals').innerText(), new RegExp(date));
-      assert.match(await page.locator('#daily-detail-confirm').getAttribute('data-block-reason'), /上传当天原始日报.*原件审核/, 'archive alone cannot satisfy the existing financial evidence gate');
+      assert.match(await page.locator('#daily-detail-confirm-help').innerText(), /上传 \/ 重传正确日报.*原件审核/, 'an archive-only image immediately shows the binding requirement');
+      assert.equal(await page.locator('#daily-detail-confirm').isDisabled(), true, 'archive alone cannot satisfy the existing financial evidence gate');
       const finance = await page.evaluate(() => ({ draft: state.imports.sheet.draft, cells: state.imports.sheet.cells, attachments: state.imports.sheet.attachments, original_image_url: state.imports.sheet.original_image_url }));
       const expected = sheet(date);
       assert.deepEqual(finance, { draft: expected.draft, cells: expected.cells, attachments: [], original_image_url: null });
       if (month === '2026-07' && i === 1) {
-        await page.locator('#daily-detail-confirm').click();
+        await page.evaluate(() => confirmDailyReportDetail());
         assert.match(await page.locator('#daily-detail-note').innerText(), /原件审核/);
         assert(!calls.some(c => /daily_sheet_(confirm|save)/.test(c.operation)), 'blocked confirmation sends no financial mutation');
       }

@@ -63,7 +63,12 @@
     // Signed image URLs change on reads; they are not a financial revision.
     return JSON.stringify([sheet.draft.edit_revision, sheet.draft.status, sheet.draft.source_voucher_id,
       sheet.draft.validation_result, sheet.cells, sheet.permissions, sheet.locked, sheet.daily_unlock_approved, sheet.cash_review, sheet.project_review,
-      (sheet.attachments || []).map(function (item) { return [item.id, item.voucher_id, item.voided, item.audit_status]; })]);
+      dailyAttachmentState(sheet)]);
+  }
+  function dailyAttachmentState(sheet) {
+    return (sheet.attachments || []).map(function (item) {
+      return [item.id, item.voucher_id, item.voided, item.audit_status, item.document_type, item.attachment_kind];
+    });
   }
   function sourceBusy() { return !!(window.ZysyrDailySourceActions && window.ZysyrDailySourceActions.busy()); }
   function syncStatus(message) {
@@ -290,21 +295,39 @@
     return c.cashMode && c.cardSales == null && !!grid().querySelector('[data-section="summary"][data-column-code="card_subtotal"]')
       && canReviewNumeric(calculateDailyControls(grid(), true));
   }
-  function localBlockReason() {
+  function dailyPostingEvidence(sheet) {
+    var primary = String(sheet.draft.source_voucher_id || '');
+    if (!primary && sheet.cash_review?.electronic_ready === true && sheet.cash_review.source_token) {
+      return { electronic: true, reason: '' };
+    }
+    var attachments = sheet.attachments || [];
+    // A reference in the date archive (or approval of a different attachment)
+    // does not make it the approved, active original bound to this draft.
+    var bound = primary && attachments.find(function (item) {
+      return String(item.voucher_id || item.id || '') === primary;
+    });
+    if (bound && !bound.voided && bound.audit_status === 'approved' &&
+      bound.document_type === 'daily_report' && bound.attachment_kind === 'original_report') {
+      return { electronic: false, reason: '' };
+    }
+    var voided = (bound && bound.voided) || (!primary && attachments.some(function (item) {
+      return item.voided && item.attachment_kind === 'original_report';
+    }));
+    return { electronic: false, reason: (voided ? '本张草稿的原图已作废。' : '本张草稿未绑定有效原件。')
+      + '请点击「上传 / 重传正确日报」，为本张草稿上传当天原始日报并完成原件审核。已保存的金额不受影响。' };
+  }
+  function localBlockReason(evidence) {
     var sheet = state.imports.sheet, c = calculateDailyControls(grid());
     if (sheet.draft.status === 'confirmed') return '这张日报已入账。';
     if (!(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance') return '仅财务账号可以入账。';
     if (sheet.locked) return '本月已锁账，暂不能入账；请先完成解锁审批。';
-    var approved = !!sheet.draft.source_voucher_id || (sheet.attachments || []).some(function (item) {
-      return item.audit_status === 'approved' && item.document_type === 'daily_report';
-    });
-    var electronic = sheet.cash_review?.electronic_ready === true && !sheet.draft.source_voucher_id;
-    if (!approved && !electronic) return sheet.cash_review?.electronic_reason || '请先上传当天原始日报，并完成原件审核；有电子来源的日报须先完成来源核对。';
+    evidence = evidence || dailyPostingEvidence(sheet);
+    if (evidence.reason) return evidence.reason;
     var project = projectReviewState();
     if (project.required && !project.ready) return project.reason;
     if (!c.valid) {
       if (canReviewNumeric(c) && !c.sourceMissing) return '';
-      if ((canReviewNumeric(c) && c.sourceMissing) || blankSalesReady()) return sheet.cash_review?.source_token && (sheet.cash_review?.original_ready || electronic) ? '' : '原件或电子来源尚未就绪；收款来源核实服务须可用。';
+      if ((canReviewNumeric(c) && c.sourceMissing) || blankSalesReady()) return sheet.cash_review?.source_token && (sheet.cash_review?.original_ready || evidence.electronic) ? '' : '原件或电子来源尚未就绪；收款来源核实服务须可用。';
       var differences = controlDifferences(c);
       return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : c.missing ? '尚有未核实字段，请核对来源及候选数据；空白不按0处理。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
     }
@@ -349,7 +372,7 @@
       if (calculateDailyControls(grid()).earnedMode) help.textContent = '日报实做＝现金业绩＋实际获得卡金业绩；两处总计另含充值售卡实收。卡金消费按获得业绩，不按原始划卡额。月报美发收入只取现金流，不含卡金。未知字段保留待核对，本表未自动入账。';
     }
     help.classList.toggle('hidden', !help.textContent);
-    var reason = localBlockReason(), salesBlank = !confirmed && blankSalesReady();
+    var evidence = dailyPostingEvidence(sheet), reason = localBlockReason(evidence), salesBlank = !confirmed && blankSalesReady();
     document.getElementById('daily-detail-confirm-help').textContent = confirmed
       ? '已入账，已计入当天及月报；更正需走修订流程。'
       : uncertain ? '上次入账结果待查询；点击“入账”先查询结果。'
@@ -357,10 +380,11 @@
       || (salesBlank ? '合计已一致；点击入账时确认充值售卡空白的含义，普通无业务明细无需补0。' : '') || '保存草稿：留存修改，可继续编辑。入账：核对后计入当天和月报。';
     postButtons.forEach(function (button) {
       button.textContent = confirmed ? '已入账' : active === 'post' ? '正在入账…' : '入账';
-      button.disabled = confirmed || !(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance' || !!active;
+      button.disabled = confirmed || !(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance' || !!active || (!uncertain && !!evidence.reason);
       button.dataset.blockReason = confirmed ? '' : reason;
       button.classList.toggle('blocked-action', !confirmed && !!reason);
-      button.title = confirmed ? '此日报已经入账' : '核对后保存并入账，自动更新月报';
+      button.setAttribute('aria-describedby', 'daily-detail-confirm-help');
+      button.title = confirmed ? '此日报已经入账' : uncertain ? '查询上次入账结果' : reason || '核对后保存并入账，自动更新月报';
     });
     saveButtons.forEach(function (button) {
       button.textContent = active === 'save' ? '正在保存…' : '保存草稿';
@@ -414,7 +438,7 @@
   function saveGuard(sheet) {
     return JSON.stringify([sheet.draft.status, sheet.draft.template_code, sheet.draft.source_voucher_id,
       sheet.permissions, sheet.locked, sheet.daily_unlock_approved,
-      (sheet.attachments || []).map(function (item) { return [item.id, item.voucher_id, item.voided, item.audit_status]; })]);
+      dailyAttachmentState(sheet)]);
   }
   function verifyCommittedDraft(ctx, sheet, snapshot, edits) {
     var previous = state.imports.sheet;
@@ -531,7 +555,7 @@
       finally { end(); }
       return;
     }
-    var reason = localBlockReason();
+    var evidence = dailyPostingEvidence(sheet), reason = localBlockReason(evidence);
     if (reason) { showProblem(reason); return; }
     if (isLocalPreview() || ctx.id.indexOf('preview') === 0) { notice('当前是本地预览，不能正式入账。'); return; }
     var projectConsent;
@@ -539,7 +563,7 @@
     catch (error) { showProblem(error.message); return; }
     if (projectConsent === false) { notice('已取消复核，填写内容未修改，尚未入账。'); return; }
     var c = calculateDailyControls(grid());
-    var electronic = sheet.cash_review?.electronic_ready === true && !sheet.draft.source_voucher_id;
+    var electronic = evidence.electronic;
     // Evidence routing is independent of the amount-calculation policy. Legacy
     // source drafts can have reviewed electronic evidence without cash candidates.
     var cashConsent = (electronic || c.cashMode) ? { statement: electronic ? 'electronic-channels-sales-v1' : 'cash-original-channels-sales-v1', source_token: sheet.cash_review?.source_token, request_id: crypto.randomUUID() } : null;
