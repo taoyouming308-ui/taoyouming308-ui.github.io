@@ -1,0 +1,46 @@
+{
+  "batch": "aesthetic-2026-11-20",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "c71a6799cf1b106be8657906f3f49c87e8de8000",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, true camera distortion, real hair diameter or density, home reproducibility, or that any proposed haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional camera-distance versus three-dimensional-person haircut case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current four-view hair/shoulder relationships are separated from fictional camera, hair-zone, routine and preference settings plus live confirmation needs",
+      "A/B and B1/B2 benefits, costs, stop conditions and switch signals are explicit; no proposed structure is presented as a completed makeover",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry state, complete head, baseline, neck and shoulders without showing the undisplayed video screenshot, reference or a design result",
+      "No user answer is invented; all five recap fields state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Face, head and neck proportions, actual density, diameter, growth direction, camera perspective and stable home styling are not established by the image; case-only settings require live verification",
+      "Mirror, common-camera, parting, head-turn and first-wash tests cannot reproduce every device, light, humidity, garment or eight-week state",
+      "Preparer audit is not independent scientific, medical, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-20-camera-distance-proportion.webp",
+    "sha256": "414f6a7c73d7630b29fc6fc8923d5abbbce2d85048ebdcedf5248c5d4c3509d7",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation produced an original 2153x730 PNG; converted at unchanged dimensions to mobile WebP quality 84 without content edits",
+    "promptSummary": "Same fictional adult Chinese woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; near-center-part collarbone straight long bob, slightly flat crown, lower-third weight touching shoulders, neutral dry finish and consistent documentary light"
+  },
+  "hashes": {
+    "feedRawSha256": "eb27a8b257e7ed772b56452fb41bfcce07da58a512602d2ed6afc263c0ef73db",
+    "caseCanonicalSha256": "4d746ec2f7349b19d10a37222a36a760d73920f273ddfa90e0c81288cb63e190"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-20 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "Fresh protected main c71a6799/v683 worktree; no stale branch or unrelated code carried forward",
+    "contentChecks": "test-aesthetic-daily and test-perm-academy pass with 45 cases; prior 42 parsed objects are preserved and three dated cases are unique",
+    "nonBrowserChecks": "Content-only catch-up on v683; complete exact-head protected validation remains mandatory",
+    "browserCheck": "Local browser availability will be checked; if unavailable, exact browser regressions remain mandatory in protected CI",
+    "protectedCI": "pending exact-head pull-request run; no pass is claimed yet"
+  }
+}

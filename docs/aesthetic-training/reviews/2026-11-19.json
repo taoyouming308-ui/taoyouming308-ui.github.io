@@ -1,0 +1,46 @@
+{
+  "batch": "aesthetic-2026-11-19",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "c71a6799cf1b106be8657906f3f49c87e8de8000",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, real hair diameter or density, growth force, three-parting stability, home reproducibility or that either proposed haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional reversible-parting and directional-structure bob case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All forty-two earlier parsed feed objects preserved; one unique stable same-day ID appended",
+      "Visible current root fall is separated from fictional zonal hair/growth settings, customer-confirmed routine and required live three-parting tests",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; reversible B is a conditional design process, not a claimed completed cut",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry state, complete head, baseline, neck and shoulders without depicting the undisplayed reference or a proposed result",
+      "No user answer is invented; all five recap fields explicitly state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Face, head and neck proportions, actual density, diameter, growth direction, chemical condition and left/center/right parting stability are not established by the image; case-only settings require live verification",
+      "Three-parting, turning, low-head and ear-tuck tests cannot reproduce every humidity, sleep, garment or eight-week state",
+      "Preparer audit is not independent scientific, medical, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live readback remain mandatory"
+    ]
+  },
+  "image": {
+    "path": "img/aesthetic-training/2026-11-19-reversible-parting-structure.webp",
+    "sha256": "85576c49a11ef7d627b47ac11874174a696bab04be2b7183fd5c670555f77b35",
+    "rights": "Original fictional adult generated for this teaching case, no real customer or third-party photograph",
+    "provenance": "Built-in image generation produced an original 2172x724 PNG; converted at unchanged dimensions to mobile WebP quality 84 without content edits",
+    "promptSummary": "Same fictional adult Chinese woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; jaw-to-upper-neck grown-out bob, near-center part with subtle root-fall asymmetry, neutral dry finish and consistent documentary light"
+  },
+  "hashes": {
+    "feedRawSha256": "eb27a8b257e7ed772b56452fb41bfcce07da58a512602d2ed6afc263c0ef73db",
+    "caseCanonicalSha256": "0d91338f145787a629030bf660d6f1211b1cd747405d3d6d345c4d98127043e2"
+  },
+  "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",
+  "sameDayReplay": "Reuse/update aesthetic-2026-11-19 if retried, never duplicate or substitute unrelated material",
+  "localChecks": {
+    "baseChecks": "Fresh protected main c71a6799/v683 worktree; prior failed content branch was not merged and no unrelated code is carried forward",
+    "contentChecks": "test-aesthetic-daily and test-perm-academy pass with 45 cases; prior 42 parsed objects are preserved and three dated cases are unique",
+    "nonBrowserChecks": "Content-only catch-up on v683; complete exact-head protected validation remains mandatory",
+    "browserCheck": "Local pinned Playwright Chromium executable is unavailable; test-aesthetic-daily-browser and the pre-push academy browser gate failed before page launch only. The exact browser regressions remain mandatory in protected CI",
+    "protectedCI": "pending exact-head pull-request run; no pass is claimed yet"
+  }
+}
