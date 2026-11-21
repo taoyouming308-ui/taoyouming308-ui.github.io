@@ -1,3 +1,10 @@
+## 2026-11-21 · Aesthetic training catch-up: reversible parting, camera distance and dynamic face framing (App version: v683 unchanged)
+
+- Current owner: Codex content publisher. Fresh protected `github/main` `c71a6799`/v683 in an isolated clean content worktree. The earlier unmerged November 19 branch remains separate; no finance, daily-report, customer-sync or other concurrent application code is carried into this content candidate.
+- Preserve all forty-two published cases through November 18 and append three unique stable IDs for November 19–21. Each case has one original AI-generated fictional current-state four-view WebP, five explicit conditions, one core A/B question, six conditional reference answers and five unscored recaps. November 20 separates close-camera appearance from real three-dimensional proportions; November 21 separates static reference framing from speaking/looking-down motion.
+- Images show only current fictional adults with complete crown, hairstyle baseline, neck and shoulders; they are not real customers, reference screenshots, proposed cuts, makeovers or proof of home reproducibility. Visible facts, technical hypotheses, fictional case settings and live confirmation needs remain distinct; no user completion or score is invented.
+- Scope is `docs/aesthetic-training/feed.v1.json`, three transparent review records, three matching images and public change/handoff records only. No App/runtime/version, retired academy feed, calculator, customer, finance, database/backend, login/permissions, business sync or automation changes. Exact-head protected CI, normal merge, Pages success and live feed/image/App readback remain mandatory before claiming synchronization.
+
 ## 2026-11-21 · Bind an existing archived photo to a daily-report draft (App version: v683; release candidate)
 
 - Owner: Codex. Fresh protected main 295bfd36/v682, clean baseline, starting checks and daily recovery archive complete. User authorizes protected publication after checks, not binding any real draft during verification.
