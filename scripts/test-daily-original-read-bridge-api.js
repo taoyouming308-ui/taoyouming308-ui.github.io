@@ -7,7 +7,7 @@ const store={id:id(1),company_id:id(2),name:'Synthetic Store'};
 const draft={id:id(3),report_date:'2026-08-01',source_voucher_id:null,status:'draft',template_code:'synthetic',validation_result:{valid:false,grand_total:12.34},edit_revision:7,autofill_view:{}};
 const actor={operations_role:'shareholder',auth_account_id:id(4),auth_stores:[store.name],auth_store_records:[store],auth_capabilities:['voucher.read']};
 const original=n=>({request_id:id(n),report_date:draft.report_date,original_filename:`synthetic-${n}.jpg`,mime_type:'image/jpeg',size_bytes:123,sha256:'a'.repeat(64),completed_at:'2026-11-13T00:00:00Z',object_path:`${store.company_id}/${store.id}/daily-originals/2026-08/2026-08-01/${id(n)}`});
-let mode='ok',granted=true,active=true,calls=[],records=[original(10),original(11)],rpcBodies=[];
+let mode='ok',granted=true,active=true,calls=[],records=[original(10),original(11)],rpcBodies=[],bindBodies=[];
 let autofillDeployed=false;
 let browserEnv;
 (async()=>{
@@ -22,6 +22,12 @@ let browserEnv;
    if(path==='rpc/zysyr_daily_original_references'){
     rpcBodies.push(JSON.parse(opt.body));if(mode==='query-failed')return new Response('{}',{status:503});
     data={days:records.length?[{report_date:draft.report_date,count:records.length}]:[],archives:JSON.parse(opt.body).p_detail?records:[]};
+   }else if(path==='rpc/zysyr_bind_daily_archived_original'){
+    assert.equal(method,'POST');
+    bindBodies.push(JSON.parse(opt.body));
+    if(mode==='source-voided')return new Response(JSON.stringify({message:'DAILY_ARCHIVE_BIND_SOURCE_UNAVAILABLE'}),{status:400});
+    data={bound:true,draft_id:draft.id,archive_request_id:id(10),revision:8,amounts_unchanged:true,posted:false,recognition_triggered:false};
+    if(mode==='bad-bind-receipt')data.posted=true;
    }else if(path.startsWith('rpc/zysyr_fill_daily_sheet_blanks?')){
     assert.equal(method,'GET','readiness must be read-only');
     assert.match(path,/p_expected_revision=-1$/);assert(opt.signal);
@@ -83,6 +89,26 @@ let browserEnv;
  assert.equal(response.status,200);assert.equal(response.data.permissions.fill_blanks,true);
  const existing=await post('daily_sheet_create',false,{report_date:draft.report_date,reason:'Synthetic test'});
  assert.equal(existing.status,200);assert.equal(existing.data.permissions.fill_blanks,true);
+ const operation='daily_sheet_attachment_bind_archive',request={report_date:draft.report_date,expected_revision:7,request_id:id(10),confirmed:true};
+ assert.equal(response.data.permissions.bind_archived_original,false,'write without voucher review cannot bind');
+ assert.notEqual((await post(operation,false,request)).status,200);
+ assert.equal((await post(operation,true,request)).status,403);
+ assert.equal(bindBodies.length,0);
+ env.mockSession.auth_capabilities.push('voucher.review');
+ assert.equal((await post('daily_sheet_read')).data.permissions.bind_archived_original,true);
+ for(const invalid of [{confirmed:false},{expected_revision:'7'},{report_date:'2026-02-30'},{store:'Wrong Store'}]){
+  assert.notEqual((await post(operation,false,{...request,...invalid})).status,200);
+ }
+ assert.equal(bindBodies.length,0);
+ calls=[];
+ response=await post(operation,false,{...request,actor_user_id:id(99),company_id:id(99),store_id:id(99),object_path:'untrusted'});
+ assert.equal(response.status,200);
+ assert.deepEqual(bindBodies[0],{p_actor_user_id:actor.auth_account_id,p_company_id:store.company_id,p_store_id:store.id,
+   p_draft_id:draft.id,p_report_date:draft.report_date,p_expected_revision:7,p_archive_request_id:id(10)});
+ assert.deepEqual(calls.map(call=>call.path),['rpc/zysyr_bind_daily_archived_original'],'no upload, OCR, save, or posting calls');
+ mode='source-voided';response=await post(operation,false,request);
+ assert.notEqual(response.status,200);assert.match(response.data.error,/原图已作废/);
+ mode='bad-bind-receipt';assert.notEqual((await post(operation,false,request)).status,200);
  env.mockSession={...actor,auth_capabilities:[]};assert.equal((await post('daily_sheet_read')).status,403);
- console.log('Daily original bridge real HTTP: account/staff trusted scope, completed-only read facade, month metadata only, exact-date detail URLs, separate unreviewed references, failed signing/query, unchanged financial/recognition and no writes passed. Synthetic only.');
+ console.log('Daily original bridge real HTTP: scoped archive reads, explicit finance-only bind, validated receipt and zero unrelated writes passed. Synthetic only.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

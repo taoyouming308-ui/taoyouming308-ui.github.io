@@ -1,3 +1,10 @@
+## 2026-11-21 · Bind an existing archived photo to a daily-report draft (App version: v683; release candidate)
+
+- Owner: Codex. Fresh protected main 295bfd36/v682, clean baseline, starting checks and daily recovery archive complete. User authorizes protected publication after checks, not binding any real draft during verification.
+- Finance with daily write and voucher review can preview a completed, same-store/same-date, non-void archived photo and explicitly bind it to an unlocked draft with no primary original. The service-only transaction checks scope and revision, serializes with archive void, and creates an audited reference to the existing private storage object.
+- No upload, OCR, edits to financial cells or reports, migration backfill, or automatic posting. Continue to distinguish archive references from actual draft evidence. Existing approved and posted records remain untouched.
+- Validate with the real register function in isolated PG17, synthetic HTTP and desktop/mobile tests, protected CI, deployed Edge and Pages readback. Deploy the additive migration before the compatible Edge handler and the UI. Do not validate production through a real binding.
+
 ## 2026-11-21 · Reject voided or unbound daily originals before posting (App version: v682; release candidate)
 
 - Owner: Codex. Baseline protected main 2f7629af/v681, clean tracked worktree, mandatory start checks and daily backup completed. User authorized production publication after checks.
