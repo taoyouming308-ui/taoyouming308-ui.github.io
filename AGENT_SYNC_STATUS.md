@@ -1,3 +1,11 @@
+## 2026-11-21 · Evidence-based daily draft correction (App version: v681; local candidate)
+
+- Owner: Codex; based on fresh protected main d6acedb2/v680. Baseline release checks and daily recovery archive completed. User authorized the repair, not production publication.
+- Keep blank fill separate. Finance previews current-value/source-value differences for uniquely matched stylist project cells in the same store/date, explicitly selects cells, and receives a revision-checked draft-only save and readback. No changes to existing vouchers, originals, ledger, posting state or other reports.
+- Never write from client-supplied numbers. The service RPC re-reads the authorized source and verifies the selection, snapshot fingerprint and draft revision under the existing lock ordering; the audited draft saver performs the write. No data backfill.
+- Synthetic PostgreSQL passed 59 safety groups; the scoped Edge contracts, frozen Deno check and the 390/1280 browser correction flow passed. These are not live accounting or deployment checks.
+- Production sequence after approval and protected checks: apply only the new RPC migration, confirm its service-only visibility, deploy compatible operations-api, then publish and verify Pages. Do not exercise a real draft write as a deployment probe.
+
 ## 2026-11-21 · Scope monthly voucher picker to archive month (App version: v680; approved release candidate)
 
 - Owner: Codex, isolated from protected e2335569/v679 after a fresh fetch, baseline checks and daily backup. User authorized release after checks; no business data changes.

@@ -4795,6 +4795,8 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     if (sqlState === "23505" && code.includes("zysyr_report_cells")) throw new Error("日报归档单元格位置重复，本次未入账；请更新页面后重试（DAILY_ARCHIVE_COORDINATE_CONFLICT）");
     console.error("finance rpc failed", path, response.status, sqlState);
     if (sqlState === "57014" && path === "rpc/zysyr_fill_daily_sheet_blanks") throw new Error("自动填写超时，请重新打开日报查看当前草稿");
+    if (["57014", "55P03"].includes(sqlState) && path === "rpc/zysyr_correct_daily_draft_from_source")
+      throw new Error("日报来源核对超时，请重新打开草稿核对状态后再试");
     if (sqlState === "57014") throw new Error("入账核对超时，本次数据库事务已回滚，草稿仍保留；请重新打开日报核对状态后再提交，不要连续点击");
     if (code === "FINANCE_SCOPE_FORBIDDEN") throw new Error("只有当前门店财务账号可以维护正式财务记录");
     if (code === "FINANCE_PERIOD_LOCKED") throw new Error("该月份已锁账，不能继续修改");
@@ -6001,6 +6003,48 @@ async function fillDailySheetBlanks(payload: JsonRecord, session: JsonRecord): P
     filled_value_count: status === "draft_filled" ? result.filled_value_count : 0 };
 }
 
+async function dailyDraftSourceCorrection(payload: JsonRecord, session: JsonRecord, apply: boolean): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "仅当前门店财务可以按收银来源纠正日报草稿");
+  const store = await selectedStoreInfo(session, payload);
+  const storeName = cleanText(store.name, 100), date = cleanText(payload.report_date, 32);
+  const draftId = uuidValue(payload.draft_id, "请选择日报草稿")?.toLowerCase();
+  const revision = payload.expected_revision;
+  if (!draftId || cleanText(payload.store, 100) !== storeName || !validDate(date)
+    || typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0 || revision >= 2147483647) {
+    throw new Error("日报门店、日期或版本已变化，请重新打开后核对");
+  }
+  let selected: string[] | null = null, token: string | null = null;
+  if (apply) {
+    token = typeof payload.source_token === "string" ? payload.source_token : "";
+    if (payload.confirmed !== true || !/^[a-f0-9]{64}$/.test(token) || !Array.isArray(payload.selected_ids)
+      || payload.selected_ids.length < 1 || payload.selected_ids.length > 1000) throw new Error("请勾选并确认需要纠正的差异");
+    selected = payload.selected_ids.map(id => {
+      const normalized = uuidValue(id, "日报差异编号无效")?.toLowerCase();
+      if (!normalized) throw new Error("日报差异编号无效");
+      return normalized;
+    });
+    if (new Set(selected).size !== selected.length) throw new Error("日报差异编号重复，请重新核对");
+  }
+  const result = await financeRpcSaved("rpc/zysyr_correct_daily_draft_from_source", {
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_draft_id: draftId, p_day: date, p_expected_revision: revision, p_source_token: token, p_selected: selected,
+  });
+  const status = cleanText(result.status, 40);
+  const scope = { store: storeName, report_date: date, draft_id: draftId };
+  if (["draft_changed", "not_editable", "source_unavailable", "source_changed"].includes(status)) return { status, ...scope };
+  if (!apply && status === "preview" && result.draft_id === draftId && result.revision === revision
+    && /^[a-f0-9]{64}$/.test(cleanText(result.source_token, 64)) && Array.isArray(result.items) && result.items.length <= 1000) {
+    return { ...scope, status, revision, source_token: result.source_token,
+      source_fetched_at: result.source_fetched_at, items: result.items };
+  }
+  if (apply && status === "saved" && result.draft_id === draftId && result.revision === revision + 1
+    && result.changed_cells === selected?.length && result.formal_ledger_amount_changed === false) {
+    return { ...scope, status, revision: result.revision, changed_cells: result.changed_cells, formal_ledger_amount_changed: false };
+  }
+  throw new Error("日报核对回执无法确认，请重新打开草稿查看，不要重复提交");
+}
+
 async function dailySheetData(companyId: string, storeId: string, draftId: string, readHistory = false): Promise<JsonRecord> {
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,autofill_view:ocr_raw_result->autofill,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = drafts[0];
@@ -6132,9 +6176,10 @@ async function saveDailySheetExtraction(input: {
     p_cells: dailySheetSeeds(extraction, cleanText(input.storeName, 100)), p_reason: reason,
   });
   const result = await dailySheetData(companyId, storeId, cleanText(saved.id, 40));
+  const canUseSource = cleanText(input.session.operations_role, 40) === "finance"
+    && (result.draft as JsonRecord).status === "draft" && result.locked !== true;
   return { ...result, readonly: false, permissions: { write: true, upload_original: true, void_original: true, save_orientation: true,
-    fill_blanks: cleanText(input.session.operations_role, 40) === "finance"
-      && (result.draft as JsonRecord).status === "draft" && result.locked !== true && await canAdvertiseDailyFillBlanks() },
+    draft_source_correction: canUseSource, fill_blanks: canUseSource && await canAdvertiseDailyFillBlanks() },
     detected_date: validDate(detectedDate) ? detectedDate : null,
     date_mismatch: validDate(detectedDate) && detectedDate !== reportDate };
 }
@@ -6849,6 +6894,7 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
     && cleanText((data.draft as JsonRecord).status, 20) === "draft"
     && (data.locked !== true || hasUnlockApproval);
   return { ...data, readonly: !writable, permissions: { write: writable, read_history: canReadDailyHistory(session),
+    draft_source_correction: writable && data.locked !== true && cleanText(session.operations_role, 40) === "finance",
     fill_blanks: writable && data.locked !== true && cleanText(session.operations_role, 40) === "finance"
       && await canAdvertiseDailyFillBlanks(),
     correct_confirmed: canCorrectConfirmedDaily(session) && cleanText((data.draft as JsonRecord).status, 20) === "confirmed" && data.locked !== true,
@@ -7530,7 +7576,7 @@ const OPERATIONS_API_LOG_OPERATIONS = new Set(`
 expense_voucher_combination_apply monthly_voucher_library expense_voucher_workspace expense_voucher_reanalyze expense_voucher_match_apply expense_voucher_match_void expense_voucher_failures_retry voucher_ai_settings_read voucher_ai_settings_save
 monthly_review_status monthly_review_inbox monthly_review_preview monthly_review_publish monthly_review_confirm
 daily_electronic_sources
-daily_sheet_fill_blanks
+daily_sheet_fill_blanks daily_sheet_source_preview daily_sheet_source_correct
 daily_business_details
 daily_sheet_correct daily_sheet_correction_status
 report_source_review monthly_source_archive_upload monthly_source_archive_resume monthly_source_archive_status monthly_source_archive_list monthly_source_archive_url monthly_source_archive_select monthly_source_archive_selection_status ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_original_archive_upload daily_original_archive_resume daily_original_archive_status daily_original_archive_list daily_original_archive_url daily_original_archive_void daily_original_archive_orientation_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record expense_voucher_workspace expense_voucher_match_apply expense_voucher_match_void expense_voucher_failures_retry petty_detail_import_preview petty_detail_import_confirm petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
@@ -7744,6 +7790,8 @@ async function handleOperationsApiRequest(
     if (operation === "daily_electronic_sources") return json(await dailyElectronicSources(payload, session));
     if (operation === "daily_business_details") return json(await dailyBusinessDetails(payload, session));
     if (operation === "daily_sheet_fill_blanks") return json(await fillDailySheetBlanks(payload, session));
+    if (operation === "daily_sheet_source_preview" || operation === "daily_sheet_source_correct")
+      return json(await dailyDraftSourceCorrection(payload, session, operation === "daily_sheet_source_correct"));
     if (operation === "daily_sheet_read") return json(await dailyOriginalReadPresentation("detail", await dailySheetRead(payload, session), payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
     if (operation === "history_import_preview") return json(await historyImportPreview(payload, session));
