@@ -50,7 +50,8 @@ let started = false;
         join public.zysyr_companies co on co.id=ua.company_id and co.status='active'
         join public.zysyr_stores st on st.id=ua.store_id and st.company_id=co.id and st.status='active' and st.deleted_at is null
         where ua.id=a and ua.company_id=c and ua.store_id=s and ua.active
-          and case cap when 'voucher.read' then ua.can_read when 'daily_report.write' then ua.can_write else false end) $$;
+          and case cap when 'voucher.read' then ua.can_read when 'daily_report.write' then ua.can_write
+            when 'voucher.review' then ua.can_write and ua.can_read else false end) $$;
     create function zysyr_private.assert_daily_entry_scope(a uuid,c uuid,s uuid) returns void language plpgsql as $$
       begin if not zysyr_private.account_has_capability(a,c,s,'daily_report.write') then
         raise exception using errcode='42501',message='DAILY_ENTRY_SCOPE_FORBIDDEN'; end if; end $$;
@@ -187,5 +188,65 @@ let started = false;
   reject(`update public.zysyr_daily_original_voids set reason='changed'`,/IMMUTABLE/);
   reject(`delete from public.zysyr_daily_original_orientation_revisions`,/IMMUTABLE/);
   assert.equal(snapshot('synthetic_financial'),before.synthetic_financial);
-  console.log('Daily original read PG17: exact scope, immutable audit, void/read exclusion, saved orientation, ACL/RLS and unchanged financial sentinel passed. Synthetic only.');
+  // Run the production register RPC (not a mock) on an isolated, minimal schema.
+  const draft = randomUUID(), day = '2026-08-01';
+  sql(`create table zysyr_user_accounts(id uuid primary key,company_id uuid,display_name text,login_name text);
+    insert into zysyr_user_accounts values(${q(Finance)},${q(C)},'Finance','synthetic');
+    create table zysyr_daily_reports(id uuid default gen_random_uuid(),company_id uuid,store_id uuid,report_date date,status text);
+    create table zysyr_daily_sheet_drafts(id uuid primary key,company_id uuid,store_id uuid,report_date date,status text,
+      edit_revision integer,source_voucher_id uuid,source_sha256 text,updated_by_user_id uuid,updated_at timestamptz,validation_result jsonb);
+    insert into zysyr_daily_sheet_drafts values(${q(draft)},${q(C)},${q(S)},${q(day)},'draft',4,null,null,null,null,'{"grand_total":1910}');
+    create table zysyr_daily_sheet_cells(draft_id uuid,value numeric);
+    insert into zysyr_daily_sheet_cells values(${q(draft)},1910),(${q(draft)},null);
+    create table zysyr_voucher_attachments(id uuid primary key,company_id uuid,store_id uuid,store text,record_type text,record_id uuid,
+      bucket_id text,object_path text,original_filename text,mime_type text,size_bytes bigint,sha256 text,immutable_version integer,note text,
+      uploaded_by text,uploaded_by_user_id uuid,ocr_status text,audit_status text,document_type text,
+      reviewed_at timestamptz,reviewed_by_user_id uuid,updated_by_user_id uuid,updated_at timestamptz);
+    create table zysyr_voucher_reviews(company_id uuid,store_id uuid,voucher_id uuid,review_version integer,decision text,document_type text,
+      candidate_fields jsonb,corrected_fields jsonb,field_confidences jsonb,reason text,reviewer_user_id uuid);
+    create table zysyr_daily_sheet_attachments(id uuid default gen_random_uuid(),company_id uuid,store_id uuid,draft_id uuid,voucher_id uuid,
+      attachment_kind text,note text,linked_by_user_id uuid);
+    create table zysyr_audit_events(company_id uuid,store_id uuid,actor_type text,actor_user_id uuid,channel text,entity_type text,
+      entity_id uuid,action text,after_json jsonb,reason text,sensitivity text);
+    create table synthetic_lock(locked boolean);
+    insert into synthetic_lock values(false);
+    create function zysyr_private.account_is_finance_in_scope(a uuid,c uuid,s uuid) returns boolean
+      language sql stable as $$ select zysyr_private.account_has_capability(a,c,s,'daily_report.write') $$;
+    create function zysyr_private.period_is_locked(c uuid,s uuid,d date) returns boolean
+      language sql stable as $$ select locked from public.synthetic_lock $$;`);
+  const register = fs.readFileSync('supabase/migrations/20260828030414_zysyr_daily_calendar_editor_and_attachments.sql','utf8');
+  sql(register.slice(register.indexOf('create or replace function public.zysyr_register_daily_sheet_attachment('),
+    register.indexOf('revoke execute on function public.zysyr_register_daily_sheet_attachment(')));
+  const bindMigration = fs.readdirSync('supabase/migrations').find(name => name.endsWith('_daily_bind_archived_original.sql'));
+  sql(fs.readFileSync('supabase/migrations/'+bindMigration,'utf8'));
+  const bind = ({actor=Finance, store=S, date=day, revision=4, archiveId=second.id}={}) =>
+    `select public.zysyr_bind_daily_archived_original(${q(actor)},${q(C)},${q(store)},${q(draft)},${q(date)},${revision},${q(archiveId)});`;
+  for (const role of ['anon','authenticated']) reject('set role '+role+'; '+bind(),/permission denied/);
+  reject('set role service_role; '+bind({actor:WriterOnly}),/FORBIDDEN/);
+  reject('set role service_role; '+bind({store:OtherS,actor:OtherWriter}),/SOURCE_UNAVAILABLE/);
+  reject('set role service_role; '+bind({date:'2026-08-02'}),/SOURCE_UNAVAILABLE/);
+  reject('set role service_role; '+bind({archiveId:first.id}),/SOURCE_UNAVAILABLE/);
+  reject('set role service_role; '+bind({archiveId:pending.id}),/SOURCE_UNAVAILABLE/);
+  reject('set role service_role; '+bind({revision:3}),/DRAFT_CHANGED/);
+  sql("update synthetic_lock set locked=true");
+  reject('set role service_role; '+bind(),/FINANCE_PERIOD_LOCKED/);
+  sql("update synthetic_lock set locked=false");
+  sql(`insert into zysyr_daily_reports(company_id,store_id,report_date,status) values(${q(C)},${q(S)},${q(day)},'approved');`);
+  reject('set role service_role; '+bind(),/DRAFT_CHANGED/);
+  sql("delete from zysyr_daily_reports");
+  assert.equal(sql("select count(*) from zysyr_voucher_attachments"),'0');
+  const bound = result('set role service_role; '+bind());
+  assert.deepEqual(bound,{draft_id:draft,archive_request_id:second.id,revision:5,bound:true,amounts_unchanged:true,posted:false,recognition_triggered:false});
+  assert.deepEqual(result(`select jsonb_build_array(d.status,d.edit_revision,d.source_voucher_id,d.validation_result,
+    v.object_path,v.ocr_status,v.audit_status) from zysyr_daily_sheet_drafts d join zysyr_voucher_attachments v on v.id=d.source_voucher_id`),
+    ['draft',5,second.id,{grand_total:1910},C+'/'+S+'/daily-originals/2026-08/'+day+'/'+second.id,'reviewed','approved']);
+  assert.deepEqual(result("select jsonb_agg(value order by value nulls last) from zysyr_daily_sheet_cells"),[1910,null]);
+  assert.equal(sql("select count(*) from zysyr_daily_reports"),'0');
+  assert.equal(sql("select count(*) from zysyr_daily_sheet_attachments where attachment_kind='original_report'"),'1');
+  assert.equal(sql("select count(*) from zysyr_voucher_reviews where decision='approved'"),'1');
+  assert.equal(sql("select count(*) from zysyr_audit_events where reason='财务预览确认绑定独立存档原图'"),'1');
+  reject('set role service_role; '+bind({revision:5}),/DRAFT_CHANGED/);
+  reject('set role service_role; '+manage('void',[second.id]),/DAILY_ARCHIVE_BOUND_TO_DRAFT/);
+  for (const table of [...tables,'synthetic_financial']) assert.equal(snapshot(table),before[table]);
+  console.log('Daily original PG17: exact scope, archive reuse, void guard, immutable archive and unchanged cells/ledger passed (synthetic only).');
 } finally { if (started) checked(docker(['rm','-f',container])); } })().catch(error => { console.error(error); process.exitCode=1; });

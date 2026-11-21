@@ -9,6 +9,13 @@
   var saveButtons = ['daily-detail-save', 'daily-detail-save-top'].map(function (id) { return document.getElementById(id); });
   var postButtons = ['daily-detail-confirm', 'daily-detail-confirm-top'].map(function (id) { return document.getElementById(id); });
   var autofillButton = document.getElementById('daily-detail-autofill');
+  var archiveBindButton = document.createElement('button');
+  archiveBindButton.id = 'daily-detail-bind-archive';
+  archiveBindButton.type = 'button';
+  archiveBindButton.className = 'ghost hidden';
+  archiveBindButton.textContent = '从存档选原图';
+  archiveBindButton.addEventListener('click', bindArchivedOriginal);
+  document.getElementById('daily-detail-upload')?.after(archiveBindButton);
   var sourceCorrectionButton = null;
   if (autofillButton) {
     sourceCorrectionButton = document.createElement('button');
@@ -314,7 +321,104 @@
       return item.voided && item.attachment_kind === 'original_report';
     }));
     return { electronic: false, reason: (voided ? '本张草稿的原图已作废。' : '本张草稿未绑定有效原件。')
-      + '请点击「上传 / 重传正确日报」，为本张草稿上传当天原始日报并完成原件审核。已保存的金额不受影响。' };
+      + (canBindArchive(sheet) ? '可点击「从存档选原图」预览后绑定，或' : '请')
+      + '点击「上传 / 重传正确日报」，为本张草稿上传当天原始日报并完成原件审核。已保存的金额不受影响。' };
+  }
+  function canBindArchive(sheet) {
+    return sheet.permissions?.bind_archived_original === true && state.user?.role === 'finance'
+      && !sheet.locked && sheet.draft.status === 'draft' && !sheet.draft.source_voucher_id;
+  }
+  function archivePreviewUrl(item) {
+    try {
+      var url = new URL(item.private_url);
+      return url.protocol === 'https:' && !url.username && !url.password ? url.href : null;
+    } catch (_) { return null; }
+  }
+  async function chooseArchivedOriginal(ctx, sheet) {
+    var options = (sheet.original_archive?.state === 'archived' && Array.isArray(sheet.archived_originals) ? sheet.archived_originals : [])
+      .filter(function (item) {
+        return item && item.report_date === ctx.date && !item.voided && ['image/jpeg', 'image/png'].includes(item.mime_type)
+          && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(item.request_id) && archivePreviewUrl(item);
+      });
+    if (!options.length) {
+      throw new Error(sheet.original_archive?.state === 'unavailable' || sheet.original_archive?.state === 'archived'
+        ? '本日存档原图暂时无法预览，请稍后重试。' : '本门店当天没有可绑定的存档原图，请上传正确日报。');
+    }
+    var dialog = document.createElement('dialog');
+    dialog.id = 'daily-archive-bind-dialog';
+    dialog.className = 'daily-project-review';
+    dialog.setAttribute('aria-labelledby', 'daily-archive-bind-title');
+    dialog.innerHTML = '<h2 id="daily-archive-bind-title">从存档选原图</h2><p data-archive-scope></p>'
+      + '<label>当天未作废的原图<select data-archive-select><option value="">请选择一张原图</option></select></label>'
+      + '<p data-archive-preview-status role="status">选图后请预览，确认是本门店当天的正确日报。</p><div data-archive-preview></div>'
+      + '<p>只绑定原件，不重新识别、不改金额、不入账。</p>'
+      + '<div class="compact-actions"><button class="ghost" type="button" data-archive-cancel>取消</button>'
+      + '<button type="button" data-archive-confirm disabled>确认绑定原图</button></div>';
+    var select = dialog.querySelector('[data-archive-select]'), preview = dialog.querySelector('[data-archive-preview]');
+    var status = dialog.querySelector('[data-archive-preview-status]'), confirm = dialog.querySelector('[data-archive-confirm]');
+    dialog.querySelector('[data-archive-scope]').textContent = ctx.store + ' · 营业日期 ' + ctx.date;
+    options.forEach(function (item, index) { select.add(new Option(item.original_filename, String(index))); });
+    document.body.append(dialog);
+    try {
+      return await new Promise(function (resolve) {
+        var selected = null;
+        select.onchange = function () {
+          selected = null;
+          confirm.disabled = true;
+          preview.replaceChildren();
+          if (!select.value) { status.textContent = '请选择一张原图预览。'; return; }
+          var item = options[Number(select.value)], img = document.createElement('img');
+          status.textContent = '正在加载原图…';
+          img.alt = item.original_filename + ' · 存档原图预览';
+          img.onload = function () {
+            if (preview.firstChild !== img || !img.naturalWidth) return;
+            selected = item;
+            status.textContent = '请核对原图上的门店和营业日期，确认后再绑定。';
+            confirm.disabled = false;
+          };
+          img.onerror = function () {
+            if (preview.firstChild !== img) return;
+            status.textContent = '原图加载失败，不能绑定。请关闭后重试。';
+          };
+          preview.append(img);
+          img.src = archivePreviewUrl(item);
+        };
+        dialog.querySelector('[data-archive-cancel]').onclick = function () { resolve(null); };
+        dialog.oncancel = function (event) { event.preventDefault(); resolve(null); };
+        confirm.onclick = function () { if (!confirm.disabled && selected) { confirm.disabled = true; resolve(selected); } };
+        dialog.showModal();
+      });
+    } finally { dialog.close(); dialog.remove(); }
+  }
+  async function bindArchivedOriginal() {
+    var sheet = state.imports.sheet;
+    if (!detailOpen() || !sheet || !canBindArchive(sheet) || sourceBusy() || dailySheetDirtyCount()) return;
+    var ctx = context(), user = state.user;
+    if (uncertainPosts.has(contextKey(ctx)) || !begin('archive-bind')) return;
+    function sameDraft() { return detailOpen() && isCurrent(ctx) && state.user === user && !dailySheetDirtyCount(); }
+    try {
+      var fresh = await checkBeforeWrite(ctx);
+      if (!sameDraft() || !canBindArchive(fresh)) throw new Error('当前日报已变化，请重新打开核对。');
+      var selected = await chooseArchivedOriginal(ctx, fresh);
+      if (!selected) return;
+      if (!sameDraft()) throw new Error('当前日报已变化，本次未绑定。');
+      var failure = null;
+      try {
+        await api('daily_sheet_attachment_bind_archive', { store: ctx.store, draft_id: ctx.id, report_date: ctx.date,
+          request_id: selected.request_id, expected_revision: ctx.revision, confirmed: true }, true);
+      } catch (error) { failure = error; }
+      // Read back the primary link. Never retry a write after a lost response.
+      var readback = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id }).catch(function () { return null; });
+      if (!sameDraft() || !readback || readback.draft.id !== ctx.id || readback.draft.report_date !== ctx.date
+        || readback.draft.status !== 'draft' || Number(readback.draft.edit_revision) !== ctx.revision + 1
+        || readback.draft.source_voucher_id !== selected.request_id || dailyPostingEvidence(readback).reason) {
+        throw failure || new Error('暂无法核对绑定结果，请重新打开日报查看；不要重复提交。');
+      }
+      applySheet(ctx, readback, true);
+      notice('存档原图已绑定。金额未修改，未重新识别，未入账。');
+      toast('存档原图已绑定，未入账');
+    } catch (error) { notice(error.message); toast(error.message); }
+    finally { end(); archiveBindButton.focus(); }
   }
   function localBlockReason(evidence) {
     var sheet = state.imports.sheet, c = calculateDailyControls(grid());
@@ -404,6 +508,10 @@
       sourceCorrectionButton.disabled = !canCorrectSource || !!active || dirty > 0 || sourceBusy();
       sourceCorrectionButton.title = dirty > 0 ? '请先保存手动填写的内容' : '按当前门店和日期核对收银来源，勾选后只保存草稿';
     }
+    var archiveBindable = canBindArchive(sheet) && !uncertain;
+    archiveBindButton.classList.toggle('hidden', !archiveBindable);
+    archiveBindButton.disabled = !archiveBindable || !!active || dirty > 0 || sourceBusy();
+    archiveBindButton.title = dirty > 0 ? '请先保存手动填写的内容' : '只选当前门店当天的有效存档原图';
     if (confirmed) document.getElementById('daily-detail-state').textContent = '已入账';
     lockControls();
   };
