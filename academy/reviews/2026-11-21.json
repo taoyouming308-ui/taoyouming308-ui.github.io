@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-21",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI发型教学资料编辑与来源、版权、隐私审校者；非第三方人工/真人烫发安全认证）",
+  "reviewedAt": "2026-11-21T00:49:59.676Z",
+  "approvalReference": "2026-11-21本轮逐篇核验2023 Journal of Investigative Dermatology DOI 10.1016/j.jid.2023.04.008、2025 Journal of Craniofacial Surgery DOI 10.1097/SCS.0000000000011231 和2009 Journal of Applied Polymer Science DOI 10.1002/app.30336的作者日期、可支持及不可支持的结论；模拟案例不使用真实顾客资料；逐张审核原创静态SVG仅几何教学，未伪称科学或真人安全证明。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "2023-08-09在线，Journal of Investigative Dermatology 143(10)，DOI 10.1016/j.jid.2023.04.008，同行评议遗传关联通讯研究，发旋方向反映毛囊取向；是自然差异证据而非美发工艺对照；支持：理解发旋/天然根向需要先单独观察，个体间存在稳定差异；不能证明：不能推断个人最佳分缝、最佳卷杠、药力或真人烫发安全参数"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "2025-03-17在线；Journal of Craniofacial Surgery 36(7)；DOI 10.1097/SCS.0000000000011231；125名东亚男性发际根向摄影测量，左右不对称存在人群与方法边界；支持：人的左右发际毛流可能有显著差异，不必为了视觉平衡机械复制同一技术角度；不能证明：不能推广为所有女性右侧根向特征，也不提供中长发烫发分区角度、杠径或安全药力"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "2009-05-07在线，Journal of Applied Polymer Science，DOI 10.1002/app.30336；离体人毛弯曲恢复与不同相对湿度/时间的实验和黏弹性模型；支持：同一分缝几何对比需要统一干湿状态、观察时间，避免环境混杂；不能证明：非整头分缝真人试验，不能证明改分缝永久改变毛囊方向或推算热烫温度时间"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮AI编辑独立设计的轻量静态SVG，包含仅几何/人物抽象示意；核对无第三方图库、外链、脚本、个人信息或实测数据"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮AI编辑独立设计的轻量静态SVG，包含仅几何/人物抽象示意；核对无第三方图库、外链、脚本、个人信息或实测数据"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮AI编辑独立设计的轻量静态SVG，包含仅几何/人物抽象示意；核对无第三方图库、外链、脚本、个人信息或实测数据"
+    }
+  ],
+  "contentSha256": "217ce616a9ec0c6c77cfc41e46cd3d5aecc125b62c766eab7fbec6c78da47b1b",
+  "assetSha256": {
+    "assets/2026-11-21/figure1.svg": "edb9d9b21b545f031bdb4a169d0b522c1c64c358a7ef7f751fa95a106d640dd5",
+    "assets/2026-11-21/figure2.svg": "44065e2c4fa69eeb73aafc5196f10d149177664f6af3bc8c0e3c7bd0f1bad319",
+    "assets/2026-11-21/figure3.svg": "156a7a0dfdb9ea4d86cc392facddf51eb79b112e350725d84292cdd95d6f9d76"
+  }
+}
