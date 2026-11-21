@@ -17,7 +17,12 @@ for(const width of [390,1280])for(const mode of ['petty','mapped','direct']){
    if(op==='expense_voucher_workspace')return {month:'2026-08',targets:mode==='direct'?[]:[target],items:items()};
    if(op==='cell_trace')return {report,item_category:'expense',mode:'input',target:{id:'cell-'+p.cell_address,cell_address:p.cell_address,label:'备用金 / 纸巾 / 合计',numeric_value:170.3,cell_kind:'input'},can_upload_vouchers:true,can_edit:true,evidence:mode==='direct'&&comboLinked?items().slice(0,2).map(i=>({...i,evidence_source:'voucher_attachment',trace_link_level:'page_confirmed',trace_source_locator:'manual-upload:combo'})):[],business_details:[]};
    if(op==='voucher_url'){if(comboLate)await new Promise(r=>window.comboRelease=r);return {url:comboImage,filename:p.voucher_id+'.png'};}
-   if(op==='monthly_voucher_library'&&p.action==='list')return {items:items().map(i=>({...i,already_linked:comboLinked&&['a','b'].includes(i.id)}))};
+   if(op==='monthly_voucher_library'&&p.action==='list'){
+    const pool=items().map(i=>({...i,archive_month:'2026-08',already_linked:comboLinked&&['a','b'].includes(i.id)}));
+    pool[0].candidate_fields.document_date='2026-07-31';
+    pool[1].candidate_fields.document_date='2026-09-01';
+    return {archive_month:p.month,items:[...pool,{...pool[1],id:'other-month',source_voucher_id:'other-month',original_filename:'other-month.png',archive_month:'2026-07'}]};
+   }
    if(op==='expense_voucher_combination_apply'||op==='monthly_voucher_library'&&p.action==='attach_combination'){if(comboFail)throw Error('synthetic group failure');comboLinked=true;return {combination_saved:true,saved:{inserted:2}};}
    throw Error('Unexpected API/write '+op);
   };

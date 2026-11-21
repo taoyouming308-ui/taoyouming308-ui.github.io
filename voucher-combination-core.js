@@ -55,10 +55,10 @@ export function normalizeVoucherPeriod(value, contextMonth) {
   const short=text.match(/^(0?[1-9]|1[0-2])\s*月?$/);
   return short&&/^20\d{2}-(0[1-9]|1[0-2])$/.test(contextMonth)?contextMonth.slice(0,4)+'-'+short[1].padStart(2,'0'):text;
 }
-export function rankVoucherLibrary(items, target, month) {
+export function rankVoucherLibrary(items, target, month, archiveScoped = false) {
   const goal = voucherCents(target.amount);
-  return items.map((item, index) => {
-    const recommendation = voucherRecommendation(item, target, month), amount = recommendation.amount_cents;
+  return items.filter(item => !archiveScoped || item.archive_month === month).map((item, index) => {
+    const recommendation = voucherRecommendation(item, target, archiveScoped ? '' : month), amount = recommendation.amount_cents;
     const difference = goal === null || amount === null ? Infinity : Math.abs(goal - amount);
     const tier = difference === 0 ? 0 : recommendation.relevance > 0 && !recommendation.foreign ? 1 : Number.isFinite(difference) ? 2 : 3;
     return { item, index, recommendation, difference, tier };
@@ -80,18 +80,19 @@ export function combinationTotal(items) {
   }
   return Number.isSafeInteger(total) ? total : null;
 }
-export function recommendVoucherCombinations(items, target, month, query = '') {
+export function recommendVoucherCombinations(items, target, month, query = '', archiveScoped = false) {
   const goal = voucherCents(target.amount);
   if (goal === null) return { groups: [], candidates: [], limited: false };
   const candidates = items.filter(item => {
-    const f = voucherFields(item), hint = voucherRecommendation(item, target, month), amount = hint.amount_cents;
+    if (archiveScoped && item.archive_month !== month) return false;
+    const f = voucherFields(item), hint = voucherRecommendation(item, target, archiveScoped ? '' : month), amount = hint.amount_cents;
     return amount !== null && amount <= goal && f.evidence_kind !== 'monthly_summary'
       && !['bank_summary', 'multiple_transactions', 'monthly_summary'].includes(f.document_kind)
-      && !hint.foreign && (!f.period_month || f.period_month === month)
+      && (archiveScoped || !hint.foreign && (!f.period_month || f.period_month === month))
       && (!(item.confirmed_target_id || item.expense_association) || sameVoucherTarget(item, target))
       && [item.original_filename, f.summary, f.counterparty, f.expense_category, f.amount].join(' ').toLowerCase().includes(query.trim().toLowerCase());
   }).map((item, index) => {
-    const hint = voucherRecommendation(item, target, month);
+    const hint = voucherRecommendation(item, target, archiveScoped ? '' : month);
     return { item, amount: hint.amount_cents, rank: hint.relevance * 100 - Math.min(32, hint.date_distance), index };
   }).sort((a, b) => b.rank - a.rank || a.index - b.index);
   // Bounded recommendations; manual selection still exposes the complete library.
