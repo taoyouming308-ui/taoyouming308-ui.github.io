@@ -31,7 +31,7 @@
     "promptSummary": "Same fictional adult Chinese woman in a horizontal current-state four-view sheet: true front, true left profile, true right profile and back; near-center-part collarbone straight long bob, slightly flat crown, lower-third weight touching shoulders, neutral dry finish and consistent documentary light"
   },
   "hashes": {
-    "feedRawSha256": "c40fe999c662981cb0f91bbff1edd362e10d563e412563a827768f96b8dd6b06",
+    "feedRawSha256": "eb27a8b257e7ed772b56452fb41bfcce07da58a512602d2ed6afc263c0ef73db",
     "caseCanonicalSha256": "4d746ec2f7349b19d10a37222a36a760d73920f273ddfa90e0c81288cb63e190"
   },
   "hashRules": "Raw file bytes for feed/image; recursively sorted object keys, compact UTF-8 JSON without trailing newline for case",

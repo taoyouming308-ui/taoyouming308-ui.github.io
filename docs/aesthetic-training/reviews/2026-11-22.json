@@ -1,0 +1,42 @@
+{
+  "batch": "aesthetic-2026-11-22",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "c71a6799cf1b106be8657906f3f49c87e8de8000",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, real hair diameter or density, garment friction, home reproducibility, or that any proposed haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional shoulder-neck and posterior-weight conflict case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "Earlier parsed feed objects remain preserved; one unique stable November 22 ID is appended",
+      "Visible current four-view hair, neckline and shoulder relationships are separated from fictional texture, routine and preference settings plus live confirmation needs",
+      "A/B benefits, costs, stop conditions and switch signals are explicit; no proposed haircut is presented as a completed makeover",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry state, complete head, baseline, neck and shoulders without depicting the reference or a design result",
+      "No user answer is invented; all five recap fields state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Actual skull, neck and shoulder dimensions, density, diameter, growth direction, natural-dry shrinkage and garment friction are not established by the image; case-only settings require live verification",
+      "Collar, scarf, turning, low-tie and first-wash tests cannot reproduce every garment, humidity, sleep or eight-week state",
+      "Preparer audit is not independent scientific, medical, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain mandatory"
+    ]
+  },
+  "imageReview": {
+    "file": "img/aesthetic-training/2026-11-22-shoulder-neck-weight-conflict.webp",
+    "sha256": "229d5fcb42f5768a9e442a33c6f50c1af3519c26d17af0e1d8d4c6f230941162",
+    "dimensions": "2172x724",
+    "bytes": 113794,
+    "rights": "Original AI-generated fictional teaching image; no real customer or business data"
+  },
+  "hashes": {
+    "feedRawSha256": "eb27a8b257e7ed772b56452fb41bfcce07da58a512602d2ed6afc263c0ef73db",
+    "caseCanonicalSha256": "a546b05068ff79537d3eef5a983774867ce0152c9a6ce09a406f2cc5c868144d"
+  },
+  "localChecks": {
+    "content": "check-version-sync, release-integrity, smoke-test-app, test-aesthetic-daily, test-perm-academy, check-agent-sync-status, app UI system and diff whitespace checks pass with 46 cases",
+    "browser": "test-aesthetic-daily-browser could not launch because the pinned Chromium executable is absent locally; the identical browser regression remains mandatory in protected exact-head CI",
+    "protectedCI": "pending updated exact-head pull-request run; no pass is claimed"
+  }
+}
