@@ -10,12 +10,13 @@ const { chromium } = require('playwright');
 
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'operations.html'), 'utf8');
+const saveSource = fs.readFileSync(path.join(root, 'operations-monthly-save.js'), 'utf8');
 const apiSource = fs.readFileSync(path.join(root, 'supabase/functions/operations-api/index.ts'), 'utf8');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260913113354_zysyr_monthly_editable_names.sql'), 'utf8');
 for (const marker of [
   'data-monthly-text-cell', 'monthlyTextChanged', 'monthly_text_save',
   'editable_text_cells', '保存本月修改', '编辑月报',
-]) assert.ok(source.includes(marker), 'missing UI marker ' + marker);
+]) assert.ok((source + saveSource).includes(marker), 'missing UI marker ' + marker);
 for (const marker of ['monthlyEditableNameCells', 'monthlyTextSave', 'zysyr_monthly_text_revisions']) {
   assert.ok(apiSource.includes(marker), 'missing API marker ' + marker);
 }
@@ -77,7 +78,7 @@ let browser;
   await page.waitForFunction(() => state.user && state.user.role === 'finance');
   await page.evaluate(() => renderAll());
   await page.locator('#monthly-edit-toggle').waitFor();
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const display = state.data.monthly_report.display_data;
     display.editable_text_cells = [
       { cell_address: 'B3', row_number: 3, column_number: 2, cell_role: 'income_item', original_text: '美发收入', current_text: '美发收入', revision: null },
@@ -98,11 +99,13 @@ let browser;
           const row = Number(change.address.match(/\d+$/)[0]) - 1;
           fixtureOverview.monthly_report.display_data.values[row][column] = change.value;
         }
-        return { saved: { count: payload.cells.length } };
+        return { report_id: payload.report_id, saved: { count: payload.cells.length,
+          saved: payload.cells.map(change => ({ cell_address: change.address, after_text: change.value })) } };
       }
       if (operation === 'overview') return JSON.parse(JSON.stringify(fixtureOverview));
       throw new Error('Unexpected operation ' + operation);
     };
+    await loadOverview();
     state.monthlyEditMode = true;
     renderMonthlyAuditControls(true);
   });
@@ -127,6 +130,21 @@ let browser;
   assert.equal(await page.locator('#monthly-sheet').getByText('剪发收入', { exact: true }).count(), 1);
   assert.equal(await page.locator('#monthly-sheet').getByText('新员工', { exact: true }).count(), 1);
   assert.equal(await page.locator('#monthly-sheet').getByText('新品牌', { exact: true }).count(), 1);
+  await page.evaluate(() => { state.monthlyEditMode=true; renderMonthlyAuditControls(true); });
+  await page.locator('input[data-monthly-text-cell="B3"]').fill('本次名称');
+  await page.locator('input[data-monthly-text-cell="F12"]').fill('已确认名称');
+  await page.evaluate(() => {
+    const cells = fixtureOverview.monthly_report.display_data.editable_text_cells;
+    Object.assign(cells.find(c=>c.cell_address==='B3'), {current_text:'后台已改名', revision:{revision:2}});
+    Object.assign(cells.find(c=>c.cell_address==='F12'), {current_text:'已确认名称', revision:{revision:2}});
+  });
+  page.once('dialog', dialog => dialog.accept('核对剩余名称'));
+  await page.locator('#monthly-save-cells').click();
+  const results = page.locator('#monthly-save-result');
+  await results.getByRole('button',{name:'重新核对 B3'}).waitFor();
+  assert.match(await results.locator('[data-monthly-save-cell="B3"]').innerText(), /后台已改名.*你的输入：本次名称/);
+  assert.match(await results.locator('[data-monthly-save-cell="F12"]').innerText(), /未重复提交/);
+  assert.equal(await page.evaluate(()=>savedText.length),1,'already persisted names never go back into the batch');
   assert.deepEqual(errors, []);
   console.log('v500 browser: income/expense item, blank staff and detail names edit, audit payload, save/readback and fixed-cell guards passed');
 })().catch(error => {

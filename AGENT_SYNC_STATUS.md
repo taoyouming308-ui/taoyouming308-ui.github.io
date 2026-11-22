@@ -1,3 +1,9 @@
+## 2026-11-22 · Monthly per-cell save recovery (App version: v684; release candidate)
+
+- Owner: Codex. Protected main 3398b61b/v683 checked, clean isolated worktree and recovery archive complete. User authorizes Pages publication after checks, not production edit tests.
+- One explicit save, per-cell read/compare, guarded existing finance writes, no automatic write replay. Continue safe independent amounts, retain pending edits in the open page, and show persistent per-cell outcomes. Require an explicit recheck before rebasing a changed cell; never carry pending edits to a replacement report or another account.
+- Existing month authorization, audit, append-only writes, and text batch transaction are unchanged. No schema, Edge, data or ledger deployment. Use synthetic browser regressions, exact-head protected CI and Pages readback.
+
 ## 2026-11-22 · Repair customer source-field authority (App version: v683 unchanged; review candidate)
 
 - Isolated branch from current protected main c71a6799; baseline version and release checks and local recovery archive completed before edits. No Pages, schema, or production data changed during preparation.
