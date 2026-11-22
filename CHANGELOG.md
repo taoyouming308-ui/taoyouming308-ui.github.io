@@ -1,3 +1,9 @@
+## v687 · Supabase gateway routing qualification (unpublished candidate)
+
+- Accept the measured internal Supabase TLS-termination URL only through explicit server configuration, exact project, host and fixed path. Public browser configuration still requires the pinned HTTPS origin.
+- Actual Chromium cross-origin preflight, resolve, JPEG return/decode and wrong-capability rejection pass against an isolated synthetic Edge handler. No real employee, customer, Storage or model authority is inferred.
+- The temporary transport probe was replaced with inert JWT-protected version7 and read back. Node16/Deno16 cover codec and ingress; full local and exact-head CI remain separate gates.
+
 ## v686 · Hosted HEIF qualification and fixed Edge transport (unpublished candidate)
 
 - Add default-closed, pinned WASM HEIF decoding with verified metadata-free JPEG/PNG outputs and an 8 MiB / 12.58 MP boundary. Preserve the native worker and its separate limits.

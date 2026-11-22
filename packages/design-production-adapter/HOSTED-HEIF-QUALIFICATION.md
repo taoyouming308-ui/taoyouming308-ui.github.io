@@ -32,7 +32,7 @@ Eleven Node cases and the same eleven Deno cases cover actual synthetic HEIF dec
 multi-frame rejection and malformed JPEG/PNG/zlib boundaries. Independent
 synthetic HEIFs cover all eight container rotations/mirrors. Descriptive EXIF
 without a HEIF transform is not treated as JPEG orientation; this follows the
-HEIF presentation rule and avoids a second unintended rotation. Four Edge-routing
+HEIF presentation rule and avoids a second unintended rotation. Five Edge-routing
 cases plus the existing 26 client cases pass; the routing cases also pass in Deno.
 
 Fixed public samples are pinned to pillow_heif commit
@@ -64,7 +64,17 @@ the person permitted to confirm that binding is pending clarification. Managemen
 authority must not automatically grant photo viewing.
 
 `edge-ingress.mjs` and the explicitly configured client base path prepare the
-existing fixed HTTP routes for `/functions/v1/design-api`. They are routing only,
+existing fixed HTTP routes for `/functions/v1/design-api`. The measured gateway rewrites a public HTTPS request to an internal HTTP URL with
+host `edge-runtime.supabase.com` and `/design-api/api/design/` path. Only an
+explicit server-side `allowSupabaseGatewayRewrite: true` admits that exact tuple;
+the browser still pins the public HTTPS project origin. A real headless Chromium
+run passed preflight, service resolution, JPEG response and browser decode, plus
+wrong synthetic capability denial. Its page/modules and business handler were
+synthetic fixtures, with no customer data, employee login or Storage/model calls.
+The owned transport probe was closed to an inert JWT-protected version7 and read
+back; local capability files were removed.
+
+These modules are routing only,
 remain default-closed and do not provision the original workflow's SQL, independent
 receipts, private Storage adapter or a live Edge runtime. Preserve the original
 App URL, existing login, booking sync and unrelated business functions. Complete
