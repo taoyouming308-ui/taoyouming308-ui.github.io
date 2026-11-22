@@ -1,3 +1,8 @@
+## 2026-11-22 · Daily report opening feedback (App version: v685; local candidate)
+
+- Owner: Codex. Based on protected main 43b1c9b0/v684; baseline checks and recovery archive complete. Only frontend interaction feedback; no live publication requested and no production data writes.
+- Date buttons display scoped in-flight/error feedback, ignore a repeated click on the pending date and discard stale responses as before. Daily view and entry form buttons show immediate pending labels. No API, recognition, save or posting changes.
+
 ## 2026-11-22 · Monthly per-cell save recovery (App version: v684; release candidate)
 
 - Owner: Codex. Protected main 3398b61b/v683 checked, clean isolated worktree and recovery archive complete. User authorizes Pages publication after checks, not production edit tests.
