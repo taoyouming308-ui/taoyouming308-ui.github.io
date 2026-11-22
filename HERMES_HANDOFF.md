@@ -1,3 +1,7 @@
+## 2026-11-22 · Customer missing-values correction (local review candidate)
+
+The deployed 02:08 booking source already differs in due-date selection only, and the old pinned digest correctly defers customer acquisition. Keep that booking file byte-for-byte in the runtime. Review the exact customer field-authority fix, the matching guard pin, and the narrow known-preimage installer together. Restore neither by changing the pin alone nor by disabling the guard. Synthetic tests, protected CI, coordinated cutover, and later natural readbacks are separate milestones. See the first section of `docs/operations/mgj-source-turns.md`. No scheduler, appointment data, daily finance sync, or outbound changes are authorized here.
+
 ## 2026-11-20 approved request-scoped source coordination candidate
 
 PR163 is normally merged as `0aa2d212`. Its customer main SHA `7abffe237c5e8dc4b54109ed05af913c65fa8f9f96abc8a967474219f7a8169f` and resume module SHA `04c5c88d01d7d4e4ae583992343ae05d28c26001120e8a27dacb274f2e6228b7` were installed at14:29; later bounded and natural customer attempts still deferred behind the whole booking batch. Those live checks supersede the earlier preparation snapshots below, but are not evidence of complete backlog recovery.

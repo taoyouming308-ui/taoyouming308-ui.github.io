@@ -48,6 +48,7 @@ import urllib.parse
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation
 
 try:
     import mgj_private_customer as private_customer
@@ -649,6 +650,63 @@ def int_number(value, default=0):
         return int(float(value))
     except (TypeError, ValueError):
         return default
+
+
+def observed_nonnegative_number(value, *, whole=False, maximum_whole=2**53 - 1):
+    """Return a validated source value, including an explicit zero, or None."""
+    if type(value) not in (int, float, str):
+        return None
+    if isinstance(value, str) and (not value.strip() or not re.fullmatch(
+            r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?", value.strip())):
+        return None
+    try:
+        parsed = Decimal(str(value))
+        if not parsed.is_finite() or parsed < 0:
+            return None
+        if whole:
+            if parsed > maximum_whole or parsed != parsed.to_integral_value():
+                return None
+            return int(parsed)
+        result = float(parsed)
+        if not math.isfinite(result) or (result == 0 and parsed != 0):
+            return None
+        return 0.0 if result == 0 else result
+    except (InvalidOperation, OverflowError, ValueError):
+        return None
+
+
+MAX_PROFILE_VISITS = 10_000_000  # signed Edge validateProfile bound
+
+
+def observed_derived_total(visits, avg_fee):
+    if visits is None or avg_fee is None:
+        return None
+    total = visits * avg_fee
+    if not math.isfinite(total):
+        return None
+    rounded = round(total, 2)
+    if rounded == 0 and visits > 0 and avg_fee > 0:
+        # A nonzero observation that cannot be represented at cent precision
+        # cannot prove a zero balance.
+        return None
+    return rounded
+
+
+def member_detail_statistics(member_info):
+    """Return only statistics supported by explicit, valid source fields."""
+    visits = observed_nonnegative_number(
+        member_info.get("consumetimes"), whole=True, maximum_whole=MAX_PROFILE_VISITS,
+    )
+    avg_fee = observed_nonnegative_number(member_info.get("avgfee"))
+    observed = {}
+    if visits is not None:
+        observed["total_visits"] = visits
+    if avg_fee is not None:
+        observed["avg_fee"] = avg_fee
+    total = observed_derived_total(visits, avg_fee)
+    if total is not None:
+        observed["total_consumption"] = total
+    return observed
 
 
 def timestamp_text(timestamp_ms):
@@ -1369,11 +1427,7 @@ def _get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS, use_res
             except Exception:
                 pass
 
-        consumetimes = int(member_info.get("consumetimes", 0) or 0)
-        avgfee = float(member_info.get("avgfee", 0) or 0)
-
-        # total_consumption = consumetimes × avgfee（这是唯一历史总消费来源）
-        total_consumption = round(consumetimes * avgfee, 2)
+        observed_stats = member_detail_statistics(member_info)
 
         # 最后到店时间（毫秒时间戳）
         last_ts = member_info.get("lastconsumetime", 0)
@@ -1381,33 +1435,39 @@ def _get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS, use_res
         if last_ts and last_ts > 1000000000000:
             last_visit = time.strftime("%Y-%m-%d %H:%M", time.localtime(last_ts / 1000))
 
-        # 疗程套餐。memberDetail成功时，空数组也是权威结果。
-        treats = member_info.get("treatMentItems", []) or []
+        # Only an explicit, parseable list may replace an existing package list.
+        treats = member_info.get("treatMentItems")
+        packages_complete = isinstance(treats, list)
         card_packages = []
-        for t in treats:
-            item_name = t.get("itemname", "").strip()
-            leavetimes = int(t.get("leavetimes", 0) or 0)
-            sumtimes = int(t.get("sumtimes", 0) or 0)
-            if item_name and sumtimes > 0:
-                package_name = str(t.get("treatPackageName") or "").strip()
-                source_id = (
-                    t.get("id")
-                    or t.get("treatPackageId")
-                    or t.get("packageId")
-                    or t.get("itemid")
-                )
-                card_packages.append({
-                    "id": str(source_id or f"{cust_id}:{item_name}:{sumtimes}"),
-                    "name": item_name,
-                    "package_name": package_name,
-                    "total": sumtimes,
-                    "left": leavetimes,
-                    "used": max(0, sumtimes - leavetimes),
-                    "shop": str(t.get("treatShopName") or SHOP_NAMES.get(shop_id, "")),
-                    "expire_date": timestamp_date(t.get("validdate")),
-                    "bought_at": timestamp_date(t.get("buyDate")),
-                    "status": "active" if leavetimes > 0 else "used",
-                })
+        for t in treats if packages_complete else ():
+            if not isinstance(t, dict) or not isinstance(t.get("itemname"), str):
+                packages_complete = False
+                break
+            item_name = t["itemname"].strip()
+            leavetimes = observed_nonnegative_number(t.get("leavetimes"), whole=True)
+            sumtimes = observed_nonnegative_number(t.get("sumtimes"), whole=True)
+            if not item_name or sumtimes is None or sumtimes <= 0 or leavetimes is None:
+                packages_complete = False
+                break
+            package_name = str(t.get("treatPackageName") or "").strip()
+            source_id = (
+                t.get("id")
+                or t.get("treatPackageId")
+                or t.get("packageId")
+                or t.get("itemid")
+            )
+            card_packages.append({
+                "id": str(source_id or f"{cust_id}:{item_name}:{sumtimes}"),
+                "name": item_name,
+                "package_name": package_name,
+                "total": sumtimes,
+                "left": leavetimes,
+                "used": max(0, sumtimes - leavetimes),
+                "shop": str(t.get("treatShopName") or SHOP_NAMES.get(shop_id, "")),
+                "expire_date": timestamp_date(t.get("validdate")),
+                "bought_at": timestamp_date(t.get("buyDate")),
+                "status": "active" if leavetimes > 0 else "used",
+            })
 
         cards = detail_data.get("cards") or []
         card_id = choose_member_card(cards, mem_id)
@@ -1441,15 +1501,18 @@ def _get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS, use_res
             "name": name,
             "shop_name": SHOP_NAMES.get(shop_id, ""),
             "barber_name": str(member_info.get("mgjlastserver") or ""),
-            "total_visits": consumetimes,
-            "total_consumption": total_consumption,
-            "avg_fee": avgfee,
+            # Keep numeric defaults for legacy display/log callers; only the
+            # separate observed values may drive memberDetail write decisions.
+            "total_visits": observed_stats.get("total_visits", 0),
+            "total_consumption": observed_stats.get("total_consumption", 0),
+            "avg_fee": observed_stats.get("avg_fee", 0),
+            "_member_detail_stats": observed_stats,
             "last_visit_date": last_visit if last_visit else None,
             "card_packages": card_packages,
             "service_history": service_history,
             "source": "memberDetail",
             "source_customer_id": str(cust_id),
-            "_packages_complete": True,
+            "_packages_complete": packages_complete,
             "_history_complete": history_complete,
             "_history_resume_receipt": history_receipt,
             "_history_error": history_error,
@@ -1480,7 +1543,7 @@ def _get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS, use_res
             "source_customer_id": str(cust_id),
             "_packages_complete": bool(cashier.get("treats")),
             "_history_complete": False,
-            "_note": "现金页回退：缺少total_visits和avg_fee"
+            "_note": "现金页回退：缺少total_visits和avg_fee",
         }
 
     return {"found": False, "message": "查询客户详情失败"}
@@ -1545,6 +1608,10 @@ def merge_history(existing_history, incoming_history):
 
 
 def merge_notes(existing_notes, avg_fee, source_customer_id):
+    # The existing notes format stores integers; do not render a positive
+    # average as a falsely authoritative zero.
+    if avg_fee is not None and avg_fee > 0 and f"{avg_fee:.0f}" == "0":
+        avg_fee = None
     if isinstance(existing_notes, (dict, list)):
         existing_text = json.dumps(existing_notes, ensure_ascii=False)
     else:
@@ -1552,9 +1619,9 @@ def merge_notes(existing_notes, avg_fee, source_customer_id):
     parts = [
         part.strip()
         for part in re.split(r"\s*\|\s*", existing_text)
-        if part.strip() and not part.strip().startswith("均消¥")
+        if part.strip() and (avg_fee is None or not part.strip().startswith("均消¥"))
     ]
-    if avg_fee > 0:
+    if avg_fee is not None:
         parts.insert(0, f"均消¥{avg_fee:.0f}")
     if source_customer_id and not any(part.startswith("美管加客户ID:") for part in parts):
         parts.append(f"美管加客户ID:{source_customer_id}")
@@ -1633,8 +1700,10 @@ def merge_profile(existing, incoming, fill_missing_only=False):
         "name": existing.get("name") or incoming.get("name") or "",
         "shop_name": existing.get("shop_name") or incoming.get("shop_name") or "",
         "barber_name": existing.get("barber_name") or incoming.get("barber_name") or "",
-        "total_visits": existing.get("total_visits") or 0,
-        "total_consumption": existing.get("total_consumption") or 0,
+        "total_visits": observed_nonnegative_number(
+            existing.get("total_visits"), whole=True, maximum_whole=MAX_PROFILE_VISITS,
+        ),
+        "total_consumption": observed_nonnegative_number(existing.get("total_consumption")),
         "last_visit_date": existing.get("last_visit_date") or incoming.get("last_visit_date"),
         "card_packages": existing_packages,
         "service_history": existing_history,
@@ -1648,14 +1717,34 @@ def merge_profile(existing, incoming, fill_missing_only=False):
         profile["barber_name"] = incoming["barber_name"]
     if not fill_missing_only and incoming.get("last_visit_date"):
         profile["last_visit_date"] = incoming["last_visit_date"]
-    if int_number(incoming.get("total_visits")) > 0 and (
-        not fill_missing_only or int_number(existing.get("total_visits")) <= 0
-    ):
-        profile["total_visits"] = int_number(incoming.get("total_visits"))
-    if number(incoming.get("total_consumption")) > 0 and (
-        not fill_missing_only or number(existing.get("total_consumption")) <= 0
-    ):
-        profile["total_consumption"] = number(incoming.get("total_consumption"))
+    stats = {}
+    if incoming.get("source") == "memberDetail":
+        observed = incoming.get("_member_detail_stats")
+        if isinstance(observed, dict):
+            for field in ("total_visits", "avg_fee"):
+                value = observed_nonnegative_number(
+                    observed.get(field), whole=field == "total_visits", maximum_whole=MAX_PROFILE_VISITS,
+                )
+                if value is not None:
+                    stats[field] = value
+        # A derived total is authoritative only when both validated operands
+        # are also known. Don't trust a standalone total in this source.
+        total = observed_derived_total(stats.get("total_visits"), stats.get("avg_fee"))
+        if total is not None:
+            stats["total_consumption"] = total
+    else:
+        # Existing fallback contract: a positive value may fill/update; a
+        # fallback placeholder zero cannot erase archived statistics.
+        for field in ("total_visits", "total_consumption", "avg_fee"):
+            value = observed_nonnegative_number(
+                incoming.get(field), whole=field == "total_visits", maximum_whole=MAX_PROFILE_VISITS,
+            )
+            if value is not None and value > 0:
+                stats[field] = value
+
+    for field in ("total_visits", "total_consumption"):
+        if field in stats and (not fill_missing_only or profile[field] is None or profile[field] <= 0):
+            profile[field] = stats[field]
     if incoming.get("_packages_complete") and (not fill_missing_only or not existing_packages):
         profile["card_packages"] = parse_array(incoming.get("card_packages"))
     if incoming.get("_history_complete") and (not fill_missing_only or not existing_history):
@@ -1666,10 +1755,10 @@ def merge_profile(existing, incoming, fill_missing_only=False):
     if fill_missing_only and existing.get("notes"):
         profile["notes"] = existing["notes"]
     else:
+        # avg_fee has no column in this projection; update the existing
+        # average marker for explicit zero too, and preserve it when unknown.
         profile["notes"] = merge_notes(
-            existing.get("notes"),
-            number(incoming.get("avg_fee")),
-            incoming.get("source_customer_id"),
+            existing.get("notes"), stats.get("avg_fee"), incoming.get("source_customer_id"),
         )
     return profile
 
@@ -1695,6 +1784,11 @@ def upsert_customer(data, fill_missing_only=False):
 
     existing = rows[0] if rows else None
     profile = merge_profile(existing, data, fill_missing_only=fill_missing_only)
+    if profile["total_visits"] is None or profile["total_consumption"] is None:
+        # The signed Edge requires a complete numeric profile. Leave a new
+        # or legacy-null row untouched if there is not enough evidence to
+        # construct one, and use the ordinary per-customer retry path.
+        return False, "客户统计字段缺少可靠数值，未写入档案，保留重试"
 
     try:
         if existing:

@@ -479,14 +479,16 @@ def fetch_reservation_pair(server, cookie, shop, date_text, today_text):
 
 
 def scheduled_dates(cadence, now=None):
-    """Today every tick; at most one overdue future day, oldest first."""
+    """Today + the near future dates every tick; keep one farther date on a low-frequency sweep."""
     now = time.time() if now is None else now
     dates = reservation_date_keys()
     history = cadence.get("dates", {})
     due = [d for d in dates[1:] if now - history.get(d, {}).get("success_at", 0) >= FUTURE_INTERVAL_SECONDS
            and now >= history.get(d, {}).get("retry_after", 0)]
-    due.sort(key=lambda d: (history.get(d, {}).get("success_at", 0), d))
-    return dates[:1] + due[:1]
+    due_set = set(due)
+    near_due = [d for d in dates[1:4] if d in due_set]
+    far_due = [d for d in dates[4:] if d in due_set]
+    return dates[:1] + near_due + far_due[:1]
 
 
 def sync_bookings(dates=None, cadence=None):

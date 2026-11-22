@@ -1,3 +1,10 @@
+## 2026-11-22 · Repair customer source-field authority (App version: v683 unchanged; review candidate)
+
+- Isolated branch from current protected main c71a6799; baseline version and release checks and local recovery archive completed before edits. No Pages, schema, or production data changed during preparation.
+- Missing, blank, or invalid source statistics cannot replace known figures. Explicit valid zero is distinct; derived totals require both inputs. Missing or invalid package payloads preserve known packages. Fully known customer profiles retain the existing signed wire schema.
+- Canonicalize the deployed booking cadence without changing its runtime file, pin its exact reviewed hash while keeping the shared process guard, and use only the exact-preimage coordinated installer after protected validation. Do not force a crawl, change schedules, reset queues, or infer that omitted bookings were cancelled.
+- Require a naturally successful customer batch and write/readback evidence before calling customer synchronization restored. Booking and daily-consumption freshness and deletion audits are separate checks.
+
 ## 2026-11-21 · Bind an existing archived photo to a daily-report draft (App version: v683; release candidate)
 
 - Owner: Codex. Fresh protected main 295bfd36/v682, clean baseline, starting checks and daily recovery archive complete. User authorizes protected publication after checks, not binding any real draft during verification.

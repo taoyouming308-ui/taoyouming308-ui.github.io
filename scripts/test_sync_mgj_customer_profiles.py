@@ -33,6 +33,14 @@ def tearDownModule():
     _isolation_directory.cleanup()
 
 
+# Run field-authority cases through the established local and protected CI suite.
+try:
+    from scripts.test_mgj_customer_stats import MergeTests as SourceFieldAuthorityTests
+    from scripts.test_install_mgj_source_turn_repin import Cutover as KnownCutoverTests
+except ModuleNotFoundError:
+    from test_mgj_customer_stats import MergeTests as SourceFieldAuthorityTests
+    from test_install_mgj_source_turn_repin import Cutover as KnownCutoverTests
+
 class MergeProfileTests(unittest.TestCase):
     def setUp(self):
         self.existing = {
