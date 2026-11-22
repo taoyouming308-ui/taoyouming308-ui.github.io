@@ -3,8 +3,8 @@
   "date": "2026-11-22",
   "status": "approved",
   "reviewedBy": "ChatGPT（2026-11-22本轮AI课程来源、隐私与版权编辑审校者，非人工独立实验或真人烫发安全审查）",
-  "reviewedAt": "2026-11-22T01:02:08.773Z",
-  "approvalReference": "本轮逐篇核查PubMed 2025 PMID 40070297、Wiley 2022 DOI 10.1111/ics.12806及PubMed 2008 PMID 18818850；审查浮沉推断不能替代仪器孔隙测试，案例均为虚构，三幅SVG为本轮原创并检查无第三方素材或脚本。",
+  "reviewedAt": "2026-11-22T01:03:32.202Z",
+  "approvalReference": "本轮逐篇核查PubMed 2025 PMID 40070297、Wiley 2022 DOI 10.1111/ics.12806及PubMed 2008 PMID 18818850；审查浮沉推断不能替代仪器孔隙测试，案例均为虚构，三幅SVG为本轮原创并检查无第三方素材或脚本。；预备流程校验发现来源发表日期不得用YYYY-MM格式，已按原刊2008年修改为年份2008、其余历史说明保留。",
   "privacyVerified": true,
   "sourceChecks": [
     {
@@ -40,7 +40,7 @@
       "basis": "本轮独立生成并审阅 assets/2026-11-22/figure3.svg，检查静态SVG标签/外链/脚本/虚构人物与原创标注；不冒充真人效果或试验。"
     }
   ],
-  "contentSha256": "28e681b9ca4e739ee3eed87ad06d543895b4aa6609981752cb329507e6120163",
+  "contentSha256": "69b370d4fbbdb4a2b0a2289d7eb71e2f8589a4aa16ee82ee5d585428e5357bd5",
   "assetSha256": {
     "assets/2026-11-22/figure1.svg": "c258769bdd26c1cb74715d8e3cf12fa476da3c165331325bd6c098d8150a2a75",
     "assets/2026-11-22/figure2.svg": "02475f63a46b3a5d1c656f1ff01c04f678ce3bf87209be5714fecf9e761c668b",
