@@ -90,9 +90,10 @@ context.grid=()=>({querySelectorAll:()=>[{value:'0',classList:{contains:()=>fals
 assert.equal(context.pendingCandidates().length,1,'visible source zero remains an explicit review candidate rather than skipped blank');
 
 vm.runInContext(review.slice(review.indexOf('  function projectReviewState('),review.indexOf('  function controlDifferences(')),context);
-vm.runInContext(review.slice(review.indexOf('  function localBlockReason('),review.indexOf('  var renderControlsBase')),context);
+vm.runInContext(review.slice(review.indexOf('  function dailyPostingEvidence('),review.indexOf('  var renderControlsBase')),context);
 context.state.user={role:'finance'};context.state.imports.sheet.permissions={write:true};
 context.state.imports.sheet.draft.status='draft';context.state.imports.sheet.draft.source_voucher_id='synthetic-reviewed-original';
+context.state.imports.sheet.attachments=[{id:'synthetic-reviewed-original',audit_status:'approved',document_type:'daily_report',attachment_kind:'original_report',voided:false}];
 context.grid=()=>({querySelectorAll:()=>fields,querySelector:()=>fields.find(x=>x.dataset.section==='summary'&&x.dataset.columnCode==='card_subtotal')});
 set(true,{sales:0,grand:100,payment:100,channelsComplete:false});
 assert.match(context.localBlockReason(),/收款来源核实服务须可用/);

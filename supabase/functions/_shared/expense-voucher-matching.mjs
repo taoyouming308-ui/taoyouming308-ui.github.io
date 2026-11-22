@@ -62,6 +62,14 @@ export function expenseSourceTargets(source, legacy = []) {
         electronic_cell:electronic?{report_id:source.electronic_report.id,cell_id:electronic.id,cell_address:electronic.cell_address,amount:electronic.amount,revision:electronic.revision}:null});
     }
   }
+  // The displayed electronic report exists independently of an archived-source
+  // selection. Keep old source identities, and expose uncovered cells as manual
+  // evidence targets rather than pretending a source selection was confirmed.
+  const projected = new Set(targets.map(t=>t.electronic_cell?.cell_id).filter(Boolean));
+  for (const target of source.electronic_report?.targets || []) {
+    if (target.target_kind !== 'monthly_cell' || target.period_month !== source.month || projected.has(target.cell_id)) continue;
+    targets.push({...target,manual_only:true,aggregate:true});
+  }
   return targets.map(t=>({...t,target_key:expenseTargetKey(t)}));
 }
 export function expenseComponents(candidate) {
@@ -72,7 +80,7 @@ export function expenseComponents(candidate) {
 export function matchExpenseComponent(candidate, targets, month) {
   const date=text(candidate.document_date), amount=cents(candidate.amount);
   const category=expenseCategory(candidate.expense_category || candidate.summary || candidate.counterparty);
-  const usable=targets.filter(t=>t.period_month===month);
+  const usable=targets.filter(t=>t.period_month===month && !t.disabled);
   const scored=usable.map(t=>{
     const sameAmount=amount>0 && amount===cents(t.amount), sameDate=!!date && date===t.transaction_date;
     const printedCategory=categoryLabel(candidate.expense_category),targetCategory=categoryLabel(t.category||t.summary);
@@ -85,7 +93,7 @@ export function matchExpenseComponent(candidate, targets, month) {
   const recommendations=scored.filter(x=>x.score>0).slice(0,8).map(x=>({target_kind:x.target.target_kind,target_id:x.target.id,score:x.score,
     reason:[x.sameAmount?'金额一致':'',x.sameDate?'日期一致':'',x.sameCategory?'费用类别一致':'',x.sameNumber?'凭证号一致':''].filter(Boolean).join('、')}));
   const result=(state,reason,target=null,eligible=false)=>({state,reason,target_kind:target?.target_kind||null,target_id:target?.id||null,
-    unique_exact:eligible,auto_eligible:eligible,candidates:recommendations,expense_category:category});
+    unique_exact:eligible&&!target?.manual_only,auto_eligible:eligible&&!target?.manual_only,candidates:recommendations,expense_category:category});
   if(candidate.arithmetic_conflict)return result('needs_review','原文分店金额与总计不一致，需核对分摊，未自动对应');
   if(candidate.evidence_kind==='monthly_summary'){
     if(candidate.period_month!==month)return result('cross_month','汇总所属期间不是当前月份，未自动对应');

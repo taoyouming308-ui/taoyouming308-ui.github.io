@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="672">
+<html lang="zh-CN" data-version="686">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,8 +1067,8 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=672" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
-<link rel="stylesheet" href="customer-design-archive.css?v=672" media="print" onload="this.media='all'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=686" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link rel="stylesheet" href="customer-design-archive.css?v=686" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -3179,14 +3179,14 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=672"></script>
-<script src="customer-design-archive.js?v=672"></script>
-<script defer src="aesthetic-study.js?v=672"></script>
-<script defer src="aesthetic-daily.js?v=672"></script>
-<script defer src="hair-calculator-dialog.js?v=672"></script>
-<script src="aesthetic-knowledge.v1.js?v=672"></script>
-<script src="hair-vision-training.v1.js?v=672"></script>
-<script src="aesthetic-growth.v2.js?v=672"></script>
+<script src="employee-reports.js?v=686"></script>
+<script src="customer-design-archive.js?v=686"></script>
+<script defer src="aesthetic-study.js?v=686"></script>
+<script defer src="aesthetic-daily.js?v=686"></script>
+<script defer src="hair-calculator-dialog.js?v=686"></script>
+<script src="aesthetic-knowledge.v1.js?v=686"></script>
+<script src="hair-vision-training.v1.js?v=686"></script>
+<script src="aesthetic-growth.v2.js?v=686"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -13300,7 +13300,7 @@ window.renderHairServicePhoto = function(photoType) {
     var target = buildVersionUrl(v);
     // A waiting shell must not replace a document with unsaved business inputs.
     if (window.ZysyrAppShell && window.ZysyrAppShell.requestUpdate()) {
-      if (banner) { banner.removeAttribute('data-updating'); banner.textContent = '界面更新准备中，点此重试'; }
+      if (banner) { banner.removeAttribute('data-updating'); banner.style.display = 'none'; }
       return;
     }
     if (!confirm('更新会重新打开页面。请先保存未提交内容，确定继续吗？')) {
@@ -13332,6 +13332,7 @@ window.renderHairServicePhoto = function(photoType) {
     localStorage.setItem('app-max-version', Math.max(MAX_VER, v));
     var banner = document.getElementById('update-banner');
     if (!banner) return;
+    if (window.ZysyrAppShell && window.ZysyrAppShell.hasUpdatePrompt && window.ZysyrAppShell.hasUpdatePrompt()) { banner.style.display = 'none'; return; }
     banner.textContent = '🔄 有新版本 v' + v + '，点此刷新';
     banner.style.display = 'block';
     banner.onclick = function() {
@@ -13432,8 +13433,8 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<script defer src="data-read-client.js?v=672"></script>
-<script defer src="app-shell-client.js?v=672"></script>
-<script defer src="ai-design-entry.js?v=672"></script>
+<script defer src="data-read-client.js?v=686"></script>
+<script defer src="app-shell-client.js?v=686"></script>
+<script defer src="ai-design-entry.js?v=686"></script>
 </body>
 </html>

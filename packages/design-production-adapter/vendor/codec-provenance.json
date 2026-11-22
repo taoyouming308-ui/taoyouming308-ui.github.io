@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "design-hosted-codec-vendor-v1",
+  "dependencies": [
+    {
+      "name": "libheif-js",
+      "version": "1.23.5",
+      "registry": "https://registry.npmjs.org/libheif-js/1.23.5",
+      "source": "https://github.com/catdad-experiments/libheif-js",
+      "integrity": "sha512-umXZPthnWZtF3iG/5mQG+AZ2V6i0UeYpo3z2CkggTEgL8dKmIIwJT6TDuAMuabXa1yTW8uJ1ZAgR+CxNTklYYw==",
+      "sourceCommit": "d8ec4bc3bc5bf8055975577bccbbc7e1d7313c2d",
+      "wasmBuildSource": "https://github.com/catdad-experiments/libheif-emscripten/tree/v1.23.5"
+    },
+    {
+      "name": "jpeg-js",
+      "version": "0.4.4",
+      "registry": "https://registry.npmjs.org/jpeg-js/0.4.4",
+      "source": "https://github.com/jpeg-js/jpeg-js",
+      "integrity": "sha512-WZzeDOEtTOBK4Mdsar0IqEU5sMr3vSV2RqkAIzUEV2BHnUfKGyswWFPFwK5EeDo93K3FohSHbLAjj0s1Wzd+dg=="
+    },
+    {
+      "name": "pako",
+      "version": "2.1.0",
+      "registry": "https://registry.npmjs.org/pako/2.1.0",
+      "source": "https://github.com/nodeca/pako/tree/2.1.0",
+      "integrity": "sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug=="
+    }
+  ],
+  "files": [
+    {
+      "path": "libheif-1.23.5.mjs",
+      "sha256": "095194187be00d3e36335b8ad7f5552d70655e5e2159486d7d36cd4daa47bba9",
+      "upstreamUnmodified": true
+    },
+    {
+      "path": "libheif-LICENSE.txt",
+      "sha256": "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118",
+      "upstreamUnmodified": true
+    },
+    {
+      "path": "jpeg-encoder-0.4.4.cjs",
+      "sha256": "00bde8df2517eca556669ab6fc27b414e9ba3fc52a0a71e1e37ec7c5f19c3d34",
+      "upstreamUnmodified": true
+    },
+    {
+      "path": "jpeg-decoder-0.4.4.cjs",
+      "sha256": "a3f175fd6f62d142aad94d3bd90f3a30be4e076baf9b6a6fa31c8e84d9d4aa9f",
+      "upstreamUnmodified": true
+    },
+    {
+      "path": "jpeg-LICENSE.txt",
+      "sha256": "c0a8512eabe960492fefd4f287523eb3b5ca1518ca37ef0ec83344cd7f089cb8",
+      "upstreamUnmodified": true
+    },
+    {
+      "path": "pako-2.1.0.mjs",
+      "sha256": "94d300905740b5f3d1200df0bc79348319d080bce8e6474ed852bda4c22690ee",
+      "upstreamUnmodified": true
+    },
+    {
+      "path": "pako-LICENSE.txt",
+      "sha256": "a04665b3b2de56c66730c1f720f528175739e4104f79073614aa611da1e85539",
+      "upstreamUnmodified": true
+    },
+    {
+      "path": "libheif-GPL-3.0.txt",
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "upstreamUnmodified": true
+    }
+  ]
+}

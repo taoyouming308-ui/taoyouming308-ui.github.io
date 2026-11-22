@@ -9,10 +9,11 @@ const crypto = require('node:crypto');
 const source = fs.readFileSync(path.join(__dirname, '../supabase/functions/operations-api/index.ts'), 'utf8');
 const names = ['cleanText', 'excelCellText', 'numericCellValue', 'formulaCellText', 'mergeCoordinates', 'columnLetters', 'formulaPrecedents', 'reportCellLabel', 'monthlyEditableBlankCells', 'worksheetByCleanName', 'workbookDisplay'];
 const snippets = names.map(name => { const start = source.indexOf(`${name === 'workbookDisplay' ? 'async ' : ''}function ${name}(`); assert.ok(start >= 0); return source.slice(start, source.indexOf('\n}', start) + 2); }).join('\n');
-const sandbox = { ExcelJS, exactArrayBuffer: b => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) };
+const sandbox = { ExcelJS, JSZip, exactArrayBuffer: b => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) };
 vm.createContext(sandbox); vm.runInContext(stripTypeScriptTypes(snippets), sandbox);
 const clone = x => JSON.parse(JSON.stringify(x));
 (async () => {
+  Object.assign(sandbox, await import('../supabase/functions/_shared/petty-detail-xlsx.mjs'));
   const { captureMonthlySource, verifyMonthlyUpload, translateSharedFormula, verifySavedMonthlyUpload } = await import('../supabase/functions/_shared/monthly-upload-verification.mjs');
   const deps = { loadZip: b => JSZip.loadAsync(b) };
   const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');

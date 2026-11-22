@@ -109,7 +109,8 @@
     "test:design-phone-app1": "node scripts/test-design-phone-backend-browser.mjs --cross-origin-api --full-recovery --stream-recovery",
     "test:design-phone-https": "node scripts/test-design-phone-backend-browser.mjs --https-ingress --full-recovery --stream-recovery",
     "test:design-live-employee": "node --test scripts/test-design-live-employee.mjs",
-    "test:design-live-employee-postgres": "node scripts/test-design-live-employee-postgres.mjs"
+    "test:design-live-employee-postgres": "node scripts/test-design-live-employee-postgres.mjs",
+    "test:design-hosted-heif": "node scripts/prepare-design-hosted-codecs.mjs && node --test scripts/test-design-hosted-heif.mjs scripts/test-design-edge-ingress.mjs"
   },
   "devDependencies": {
     "exceljs": "4.4.0",

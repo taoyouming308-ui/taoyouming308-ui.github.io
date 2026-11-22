@@ -4,9 +4,10 @@ import { recognizePettyVoucherOpenAI, PETTY_VOUCHER_OPENAI_MODEL } from '../_sha
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import ExcelJS from "exceljs";
 import { parseDetailCSV, previewDetailRows, detailKey } from "../_shared/petty-detail-import.mjs";
-import { loadPettyDetailWorkbook } from "../_shared/petty-detail-xlsx.mjs";
+import { loadPettyDetailWorkbook, loadCompatibleWorkbook, compatibleWorkbookXml } from "../_shared/petty-detail-xlsx.mjs";
 import { buildExpenseVoucherWorkspace, expenseMatchPlan } from "../_shared/expense-voucher-workspace.mjs";
 import { monthlyCellVoucherLibrary } from "../_shared/monthly-cell-voucher-library.mjs";
+import { readMonthlyVoucherTargets } from "../_shared/monthly-voucher-targets.mjs";
 import { expenseCombinationPlan } from "../_shared/expense-voucher-combinations.mjs";
 import { recoverVoucherDateCandidate,voucherCodexCandidates } from "../_shared/zysyr-voucher-codex.mjs";
 import JSZip from "jszip";
@@ -25,6 +26,7 @@ import { MONTHLY_SOURCE_OPERATIONS, monthlySourceArchive, monthlySourceWorksheet
 import { dailyOriginalReadBridge } from "../_shared/daily-original-read-bridge.ts";
 import { reportSourceReview } from "../_shared/report-source-review.mjs";
 import { captureMonthlySource, verifyMonthlyUpload, verifySavedMonthlyUpload } from "../_shared/monthly-upload-verification.mjs";
+import { assertUploadSourceStore } from "../_shared/upload-store-guard.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -2495,7 +2497,7 @@ async function activeWorkbookSheetName(bytes: Uint8Array): Promise<string> {
     const archive = await JSZip.loadAsync(exactArrayBuffer(bytes));
     const entry = archive.file("xl/workbook.xml");
     if (!entry) throw new Error("missing xl/workbook.xml");
-    workbookXml = await entry.async("string");
+    workbookXml = compatibleWorkbookXml(await entry.async("string"));
   } catch {
     throw new Error("Excel 文件无法识别，请确认文件未损坏且为 XLSX 格式");
   }
@@ -2512,9 +2514,9 @@ async function activeWorkbookSheetName(bytes: Uint8Array): Promise<string> {
 }
 
 async function workbookDisplay(bytes: Uint8Array, reportType: string, storeName = "", requestedSheet = ""): Promise<JsonRecord> {
-  const workbook = new ExcelJS.Workbook();
+  let workbook: ExcelJS.Workbook;
   try {
-    await workbook.xlsx.load(exactArrayBuffer(bytes));
+    workbook = await loadCompatibleWorkbook(bytes, ExcelJS, JSZip);
   } catch {
     throw new Error("Excel 文件无法识别，请确认文件未损坏且为 XLSX 格式");
   }
@@ -2712,6 +2714,42 @@ function reportDateValue(payload: JsonRecord, reportType: string): string {
   return raw;
 }
 
+function reportUploadStoreHeader(values: unknown, sheetName?: unknown): string {
+  const labelPattern = /^(?:门店|店铺|分店)(?:名称)?\s*[:：]?\s*$/;
+  const inlineLabelPattern = /^(?:门店|店铺|分店)(?:名称)?\s*[:：]/;
+  const headers: string[] = [];
+  const label = cleanText(sheetName, 120);
+  const isStoreTitle = (text: string): boolean => {
+    const title = text.normalize("NFKC").replace(/\s/gu, "")
+      .replace(/^20\d{2}(?:[-./年]\d{1,2}(?:[-./月]\d{1,2}日?)?月?)?[:_·—-]*/, "");
+    // The shop can appear before a branch descriptor or after the report title.
+    return /^(?:自由手艺人|向里造型)(?:$|.{0,40}(?:业绩报表|日报|月报|工资表|盈亏))/.test(title)
+      || /^(?:业绩报表|业绩日报|日报|月报|工资表|盈亏统计|盈亏表).{0,40}(?:自由手艺人|向里造型)/.test(title);
+  };
+  const rows = Array.isArray(values) ? values : [];
+  rows.slice(0, 5).forEach((row, rowIndex) => {
+    if (!Array.isArray(row)) return;
+    const cells = row.slice(0, 30).map((value) => cleanText(value, 200));
+    cells.forEach((value, index) => {
+      if (inlineLabelPattern.test(value) || (rowIndex < 3 && isStoreTitle(value))) headers.push(value);
+      if (labelPattern.test(value) && cells[index + 1]) headers.push(cells[index + 1]);
+    });
+  });
+  return headers.length ? headers.join("\n") : isStoreTitle(label) ? label : "";
+}
+
+async function dailyAttachmentWorkbookStoreHeader(bytes: Uint8Array): Promise<string> {
+  const active = await activeWorkbookSheetName(bytes);
+  const workbook = await loadCompatibleWorkbook(bytes, ExcelJS, JSZip);
+  const sheet = worksheetByCleanName(workbook, active);
+  if (!sheet) throw new Error("Excel 当前工作表无法读取，请核对后重试");
+  const values = Array.from({ length: 5 }, (_, row) => Array.from({ length: 30 }, (_column, column) => {
+    const cell = sheet.getCell(row + 1, column + 1);
+    return excelCellText(cell.result !== undefined ? cell.result : cell.value);
+  }));
+  return reportUploadStoreHeader(values, sheet.name);
+}
+
 async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect = false): Promise<JsonRecord> {
   if (!canUploadReports(session)) throw new Error("只有财务账号可以上传门店报表");
   const store = await selectedStoreInfo(session, payload);
@@ -2727,6 +2765,7 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("报表文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("报表文件必须小于 10MB");
   const storeName = cleanText(store.name, 100);
+  if (autoDetect || reportType === "daily") assertUploadSourceStore(storeName, payload.source_store);
   let detection: JsonRecord | null = null;
   let displayData: JsonRecord;
   if (autoDetect) {
@@ -2751,8 +2790,11 @@ async function uploadReport(payload: JsonRecord, session: JsonRecord, autoDetect
     }
   } else {
     if (!["daily", "performance", "salary", "monthly_profit_loss"].includes(reportType)) throw new Error("报表类型无效");
-    displayData = mime === docxMime ? await docxDisplay(bytes) : await workbookDisplay(bytes, reportType, storeName);
+    const activeSheet = mime === xlsxMime && reportType === "daily" ? await activeWorkbookSheetName(bytes) : "";
+    displayData = mime === docxMime ? await docxDisplay(bytes) : await workbookDisplay(bytes, reportType, storeName, activeSheet);
   }
+  if (autoDetect || reportType === "daily") assertUploadSourceStore(storeName, payload.source_store, filename,
+    reportUploadStoreHeader(displayData.values, displayData.sheet_name));
   const reportDate = autoDetect ? cleanText(detection?.report_date, 10) : reportDateValue(payload, reportType);
   if (!validDate(reportDate)) throw new Error("自动识别未得到有效报表日期");
   const companyId = cleanText(store.company_id, 40);
@@ -4107,7 +4149,7 @@ async function assertBusinessVoucherTarget(
   if (!rows.length) throw new Error("业务记录不存在、已冲销或不属于当前门店");
 }
 
-async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+async function uploadVoucher(payload: JsonRecord, session: JsonRecord, batchArchiveNote?: string): Promise<JsonRecord> {
   const store = await selectedStoreInfo(session, payload);
   const recordType = cleanText(payload.record_type, 20) || "unassigned";
   const recordId = cleanText(payload.record_id, 100);
@@ -4121,10 +4163,13 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const businessId = cleanText(payload.business_id, 40);
   const businessLinkReason = cleanText(payload.business_link_reason ?? payload.note, 500);
   if (!canUploadVouchers(session)) throw new Error("只有财务账号可以上传凭证");
+  const note = batchArchiveNote ?? cleanText(payload.note, 500);
+  if (batchArchiveNote === undefined && note.startsWith("petty_cash_batch|")) throw new Error("凭证归档月份请从本月批量上传入口确认");
   if (!["unassigned", "report"].includes(recordType)
     || (recordType === "report" && !/^[0-9a-f-]{36}$/i.test(recordId))
     || (recordType === "unassigned" && recordId)) throw new Error("凭证关联记录无效");
   if (!["image/jpeg", "image/png", "application/pdf"].includes(mime)) throw new Error("凭证仅支持 JPG、PNG 或 PDF");
+  assertUploadSourceStore(store.name, payload.source_store, filename);
   const companyId = cleanText(store.company_id, 40);
   const storeId = cleanText(store.id, 40);
   if (businessType || businessId) {
@@ -4149,9 +4194,10 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
   const duplicates = await restRows(`zysyr_voucher_attachments?select=id,store_id,original_filename&company_id=eq.${companyId}&sha256=eq.${digest}&limit=1`);
   if (duplicates.length) {
     const existing = duplicates[0];
+    if (cleanText(existing.store_id, 40) !== storeId) throw new Error("同一凭证已归属其他门店，请核对原件所属门店");
     // Explicit cell supplements reuse the exact original; they never re-register,
     // re-recognize, approve, move old links or change an amount.
-    if (!monthlyCellId || cleanText(existing.store_id, 40) !== storeId) {
+    if (!monthlyCellId) {
       throw new Error(`该文件已上传：${cleanText(existing.original_filename, 200) || "同一凭证"}`);
     }
     const existingId = cleanText(existing.id, 40);
@@ -4191,7 +4237,7 @@ async function uploadVoucher(payload: JsonRecord, session: JsonRecord): Promise<
       p_mime_type: mime,
       p_size_bytes: bytes.length,
       p_sha256: digest,
-      p_note: cleanText(payload.note, 500),
+      p_note: note,
     }),
   });
   if (!metadata.ok) {
@@ -4322,7 +4368,7 @@ async function readReportSourceReview(payload: JsonRecord, session: JsonRecord):
       hash:sha256Bytes,
       loadZip:async(bytes:Uint8Array) => await JSZip.loadAsync(exactArrayBuffer(bytes)),
       validateWorkbook:(bytes:Uint8Array) => monthlySourceWorksheetNames(bytes,async(b:Uint8Array)=>await JSZip.loadAsync(exactArrayBuffer(b))),
-      loadWorkbook:async(bytes:Uint8Array) => { const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(exactArrayBuffer(bytes));return workbook; },
+      loadWorkbook:async(bytes:Uint8Array) => loadCompatibleWorkbook(bytes, ExcelJS, JSZip),
       historyRead:historyImportRead,
   });
 }
@@ -4345,10 +4391,9 @@ async function uploadPettyCashBatchVoucher(payload: JsonRecord, session: JsonRec
     record_id: null,
     business_type: "",
     business_id: "",
-    note: pettyCashBatchNote(month, batchId, cleanText(payload.filename, 200)),
     skip_ocr: false,
     defer_ocr_wake: true,
-  }, session);
+  }, session, pettyCashBatchNote(month, batchId, cleanText(payload.filename, 200)));
   return { ...result, batch_id: batchId, target_month: month };
 }
 
@@ -4494,23 +4539,25 @@ async function confirmPettyCashBatchVoucher(payload: JsonRecord, session: JsonRe
   return { saved, candidate_only_before_confirmation: true, human_confirmed: true, amount_changed: false };
 }
 
+async function projectVoucherMonthlyDisplay(report: JsonRecord, cells: JsonRecord[], revisions: JsonRecord[]): Promise<JsonRecord> {
+  const company=String(report.company_id),store=String(report.store_id),month=String(report.report_date).slice(0,7);
+  const [adjustments,daily,textRevisions]=await Promise.all([
+    monthlyIncomeAdjustments(company,store,month),confirmedDailyRollup(company,store,month),
+    restRowsAll(`zysyr_monthly_text_revisions?select=id,cell_address,cell_role,revision,base_text,before_text,after_text&company_id=eq.${company}&store_id=eq.${store}&report_id=eq.${report.id}&order=cell_address.asc,revision.desc&limit=5000`,5000),
+  ]);
+  // Reuse the same formulas, effective names and confirmed-source adjustments as
+  // the monthly page. A voucher selector must not display stale cached amounts.
+  return effectiveMonthlyDisplay(report.display_data,cells,revisions,adjustments,daily,textRevisions);
+}
+
 async function expenseVoucherWorkspace(payload: JsonRecord, session: JsonRecord, sourceOverride?: JsonRecord): Promise<JsonRecord> {
   const base=await pettyCashBatchStatus(payload,session);
   const store=await selectedStoreInfo(session,payload),month=cleanText(payload.month,7);
   let source: JsonRecord=sourceOverride||{};
   if(!sourceOverride){try{source=await readReportSourceReview({...payload,kind:"expenses"},session);}catch{source={status:"unavailable",message:"月报开支来源暂不可读，未自动匹配，请稍后刷新"};}}
-  if(source.status==="ready"){
-    try{
-      const reports=await restRows(`zysyr_report_uploads?select=id,sha256&company_id=eq.${store.company_id}&store_id=eq.${store.id}&report_type=eq.monthly_profit_loss&report_date=eq.${month}-01&order=version.desc&limit=1`);
-      if(reports[0]){
-        const report=reports[0];
-        const [cells,revisions]=await Promise.all([
-          restRowsAll(`zysyr_report_cells?select=id,cell_address,label,numeric_value&company_id=eq.${store.company_id}&store_id=eq.${store.id}&report_id=eq.${report.id}&column_number=eq.3&limit=300`,300),
-          restRowsAll(`zysyr_monthly_cell_revisions?select=source_cell_id,revision,after_amount&company_id=eq.${store.company_id}&store_id=eq.${store.id}&report_id=eq.${report.id}&order=revision.desc&limit=5000`,5000)]);
-        source.electronic_report={...report,cells:cells.map(cell=>{const prior=revisions.find(r=>r.source_cell_id===cell.id);return {...cell,amount:prior?prior.after_amount:cell.numeric_value,revision:prior?.revision||0};})};
-      }
-    }catch{source.electronic_projection_status="unavailable";}
-  }
+  // An uploaded monthly report must not disappear from voucher choices simply
+  // because the separate archived-original selection has not been designated.
+  source.electronic_report=await readMonthlyVoucherTargets(store,month,{rows:restRows,all:restRowsAll,category:monthlyItemCategory,project:projectVoucherMonthlyDisplay});
   const links=await restRowsAll(`zysyr_expense_voucher_matches?select=id,voucher_id,component_index,source_task_id,target_kind,target_id,target_snapshot,corrected_fields,mode,status,created_at&company_id=eq.${store.company_id}&store_id=eq.${store.id}&period_month=eq.${month}-01&order=created_at.desc&limit=5000`,5000);
   const recoverable=(base.items as JsonRecord[]).filter(item=>{const fields=(item.candidate_fields||{}) as JsonRecord;
     return !item.confirmed_target_id&&item.audit_status==="pending"&&item.task_status==="succeeded"
@@ -4603,6 +4650,7 @@ async function reanalyzeExpenseVouchers(payload: JsonRecord,session: JsonRecord)
 async function monthlyVoucherLibrary(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   return monthlyCellVoucherLibrary(payload, session, { canUpload: canUploadVouchers, canRead: (actor: JsonRecord) => hasAuthCapability(actor, "voucher.read"),
     store: selectedStoreInfo, rows: restRows, all: restRowsAll, save: financeRpcSaved, category: monthlyItemCategory,
+    project: projectVoucherMonthlyDisplay,
     effective: (store: JsonRecord,month: string,report: string) => monthlyAdjustmentContext(String(store.company_id),String(store.id),month,report,false) });
 }
 
@@ -4746,6 +4794,9 @@ async function financeRpcSaved(path: string, body: JsonRecord): Promise<JsonReco
     const sqlState = cleanText(error.code, 20);
     if (sqlState === "23505" && code.includes("zysyr_report_cells")) throw new Error("日报归档单元格位置重复，本次未入账；请更新页面后重试（DAILY_ARCHIVE_COORDINATE_CONFLICT）");
     console.error("finance rpc failed", path, response.status, sqlState);
+    if (sqlState === "57014" && path === "rpc/zysyr_fill_daily_sheet_blanks") throw new Error("自动填写超时，请重新打开日报查看当前草稿");
+    if (["57014", "55P03"].includes(sqlState) && path === "rpc/zysyr_correct_daily_draft_from_source")
+      throw new Error("日报来源核对超时，请重新打开草稿核对状态后再试");
     if (sqlState === "57014") throw new Error("入账核对超时，本次数据库事务已回滚，草稿仍保留；请重新打开日报核对状态后再提交，不要连续点击");
     if (code === "FINANCE_SCOPE_FORBIDDEN") throw new Error("只有当前门店财务账号可以维护正式财务记录");
     if (code === "FINANCE_PERIOD_LOCKED") throw new Error("该月份已锁账，不能继续修改");
@@ -5702,6 +5753,7 @@ async function dailyOriginalArchive(operation: string, payload: JsonRecord, sess
   const date = cleanText(payload.report_date, 10), filename = cleanText(payload.filename, 200), mime = cleanText(payload.mime_type, 120);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date) throw new Error("请确认有效归档日期");
   if (!filename || !["image/jpeg", "image/png"].includes(mime)) throw new Error("原图支持 JPG 或 PNG");
+  assertUploadSourceStore(cleanText(store.name, 120), payload.source_store, filename);
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("归档文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("归档文件必须小于 10MB");
@@ -5752,8 +5804,45 @@ async function dailyOriginalManage(operation: string, payload: JsonRecord, sessi
     p_degrees: degrees, p_reason: reason,
   }) });
   const data = await response.json() as JsonRecord;
+  if (!response.ok && data.message === "DAILY_ARCHIVE_BOUND_TO_DRAFT") {
+    throw new Error("这张存档原图已被一张未入账日报绑定，请先在日报中作废对应原件，再作废独立存档。");
+  }
   if (!response.ok) throw new Error(`日报原图操作未完成：${cleanText(data.message, 160) || response.status}`);
   return data;
+}
+
+async function bindDailyArchivedOriginal(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  const forbidden = "仅有日报编辑及凭证审核权限的财务账号可绑定存档原图";
+  requireFinanceCapability(session, "daily_report.write", forbidden);
+  if (!hasAuthCapability(session, "voucher.review")) throw new Error(forbidden);
+  const date = cleanText(payload.report_date, 20);
+  const revision = payload.expected_revision;
+  if (payload.confirmed !== true || !validDate(date) || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date ||
+    typeof revision !== "number" || !Number.isInteger(revision) || revision < 0 || revision > 2147483646) {
+    throw new Error("请重新打开日报，预览正确原图后再确认绑定");
+  }
+  const draftId = uuidValue(payload.draft_id, "请选择有效的日报草稿");
+  const archiveId = uuidValue(payload.request_id, "请选择有效的存档原图");
+  const store = await selectedStoreInfo(session, payload);
+  if (cleanText(payload.store, 100) !== store.name) throw new Error("当前门店不一致，请重新打开日报");
+  const response = await rest("rpc/zysyr_bind_daily_archived_original", { method: "POST", body: JSON.stringify({
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_company_id: cleanText(store.company_id, 40),
+    p_store_id: cleanText(store.id, 40), p_draft_id: draftId, p_report_date: date,
+    p_expected_revision: revision, p_archive_request_id: archiveId,
+  }) });
+  const result = await response.json() as JsonRecord;
+  if (!response.ok) {
+    if (result.message === "DAILY_ARCHIVE_BIND_SOURCE_UNAVAILABLE") throw new Error("原图已作废或与当前门店、日期不符，请重新选择");
+    if (result.message === "DAILY_ARCHIVE_BIND_DRAFT_CHANGED") throw new Error("日报已更新、已有绑定原件或已入账，请重新打开核对");
+    if (result.message === "FINANCE_PERIOD_LOCKED") throw new Error("本月已锁账，不能绑定原图");
+    if (result.message === "VOUCHER_DUPLICATE_FILE") throw new Error("相同原图已登记为凭证，不能重复绑定，请先核对已有凭证");
+    if (result.code === "42501") throw new Error(forbidden);
+    throw new Error("暂未能确认存档原图绑定结果，请刷新日报核对");
+  }
+  if (result.bound !== true || result.draft_id !== draftId || result.archive_request_id !== archiveId ||
+    result.revision !== revision + 1 || result.amounts_unchanged !== true || result.posted !== false ||
+    result.recognition_triggered !== false) throw new Error("绑定回执不一致，请刷新日报核对");
+  return result;
 }
 
 async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -5768,6 +5857,8 @@ async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonReco
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"];
   if (!allowed.includes(mime)) throw new Error("原始日报支持 JPG、PNG、PDF 或 XLSX");
   if (!filename) throw new Error("原始日报文件名无效");
+  const storeName = cleanText(store.name, 100);
+  assertUploadSourceStore(storeName, payload.source_store, mime.includes("spreadsheetml") ? undefined : filename);
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,report_date,status&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   if (!drafts[0]) throw new Error("电子日报不存在或不属于当前门店");
   if (cleanText(drafts[0].status, 20) === "cancelled") throw new Error("已取消的日报不能补传原件");
@@ -5777,6 +5868,10 @@ async function uploadDailySheetAttachment(payload: JsonRecord, session: JsonReco
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始日报文件内容无效"); }
   if (!bytes.length || bytes.length > MAX_VOUCHER_BYTES) throw new Error("原始日报文件必须小于 10MB");
+  if (mime.includes("spreadsheetml")) {
+    const header = await dailyAttachmentWorkbookStoreHeader(bytes);
+    assertUploadSourceStore(storeName, payload.source_store, filename, header);
+  }
   const digest = await sha256Bytes(bytes);
   const duplicates = await restRows(`zysyr_voucher_attachments?select=id,original_filename&company_id=eq.${companyId}&sha256=eq.${digest}&limit=1`);
   if (duplicates.length) throw new Error(`该原始资料已上传：${cleanText(duplicates[0].original_filename, 200) || "同一文件"}`);
@@ -5885,6 +5980,108 @@ async function dailyBusinessDetails(payload: JsonRecord, session: JsonRecord): P
   return {...projectBusinessDay(source),readonly:true,finance_confirmation_required:true,automatic_posting_enabled:false};
 }
 
+let dailyFillBlanksAvailability: { ready: boolean; expires: number } | undefined;
+let dailyFillBlanksProbe: Promise<boolean> | undefined;
+
+function canAdvertiseDailyFillBlanks(): Promise<boolean> {
+  if (dailyFillBlanksAvailability && dailyFillBlanksAvailability.expires > Date.now()) {
+    return Promise.resolve(dailyFillBlanksAvailability.ready);
+  }
+  if (dailyFillBlanksProbe) return dailyFillBlanksProbe;
+  // The hosted gateway handles OPTIONS before PostgREST. A read-only GET with
+  // an invalid revision and nil IDs reaches only the SQL argument guard.
+  const nil = "00000000-0000-0000-0000-000000000000";
+  const path = `rpc/zysyr_fill_daily_sheet_blanks?p_company_id=${nil}&p_store_id=${nil}&p_actor_user_id=${nil}&p_draft_id=${nil}&p_day=1900-01-01&p_expected_revision=-1`;
+  dailyFillBlanksProbe = (async () => {
+    let ready = false;
+    try {
+      const response = await rest(path, { method: "GET", signal: AbortSignal.timeout(2000) });
+      if (response.status === 400) {
+        const error = await response.json() as JsonRecord;
+        ready = error.code === "22023" && error.message === "AUTOFILL_SCOPE_INVALID";
+      }
+    } catch { /* The daily report remains available without autofill. */ }
+    dailyFillBlanksAvailability = { ready, expires: Date.now() + (ready ? 300_000 : 30_000) };
+    return ready;
+  })().finally(() => { dailyFillBlanksProbe = undefined; });
+  return dailyFillBlanksProbe;
+}
+
+async function fillDailySheetBlanks(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "只有当前门店的财务账号可以自动填写日报");
+  const store = await selectedStoreInfo(session, payload);
+  const storeName = cleanText(store.name, 100);
+  if (cleanText(payload.store, 100) !== storeName) throw new Error("当前门店已变化，请重新打开日报");
+  const day = cleanText(payload.report_date, 32);
+  const revision = payload.expected_revision;
+  const draftId = uuidValue(payload.draft_id, "请选择日报草稿")?.toLowerCase();
+  if (!validDate(day) || new Date(day + "T00:00:00Z").toISOString().slice(0, 10) !== day
+    || typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0 || revision > 2147483647) {
+    throw new Error("日报日期或版本无效，请重新打开后再自动填写");
+  }
+  const result = await financeRpcSaved("rpc/zysyr_fill_daily_sheet_blanks", {
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_actor_user_id: cleanText(session.auth_account_id, 40), p_draft_id: draftId,
+    p_day: day, p_expected_revision: revision,
+  });
+  const status = cleanText(result.status, 60);
+  const allowed = ["draft_filled", "draft_changed", "source_unavailable_or_changed", "source_conflict", "no_fillable_blanks",
+    "period_locked", "confirmed_preserved", "manual_draft_preserved", "multiple_drafts_preserved", "source_too_large",
+    "store_not_connected", "date_not_supported"];
+  if (!allowed.includes(status) || result.automatic_posting_enabled !== false
+    || (status === "draft_filled" && (result.draft_id !== draftId || result.revision !== revision + 1
+      || typeof result.filled_value_count !== "number" || !Number.isSafeInteger(result.filled_value_count)
+      || result.filled_value_count < 1 || result.filled_value_count > 1000
+      || result.formal_ledger_amount_changed !== false))) {
+    throw new Error("自动填写回执未能核实，请重新打开日报查看最新草稿");
+  }
+  return { status, draft_id: draftId, report_date: day, store: storeName,
+    revision: status === "draft_filled" ? result.revision : revision,
+    filled_value_count: status === "draft_filled" ? result.filled_value_count : 0 };
+}
+
+async function dailyDraftSourceCorrection(payload: JsonRecord, session: JsonRecord, apply: boolean): Promise<JsonRecord> {
+  requireFinanceCapability(session, "daily_report.write", "仅当前门店财务可以按收银来源纠正日报草稿");
+  const store = await selectedStoreInfo(session, payload);
+  const storeName = cleanText(store.name, 100), date = cleanText(payload.report_date, 32);
+  const draftId = uuidValue(payload.draft_id, "请选择日报草稿")?.toLowerCase();
+  const revision = payload.expected_revision;
+  if (!draftId || cleanText(payload.store, 100) !== storeName || !validDate(date)
+    || typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 0 || revision >= 2147483647) {
+    throw new Error("日报门店、日期或版本已变化，请重新打开后核对");
+  }
+  let selected: string[] | null = null, token: string | null = null;
+  if (apply) {
+    token = typeof payload.source_token === "string" ? payload.source_token : "";
+    if (payload.confirmed !== true || !/^[a-f0-9]{64}$/.test(token) || !Array.isArray(payload.selected_ids)
+      || payload.selected_ids.length < 1 || payload.selected_ids.length > 1000) throw new Error("请勾选并确认需要纠正的差异");
+    selected = payload.selected_ids.map(id => {
+      const normalized = uuidValue(id, "日报差异编号无效")?.toLowerCase();
+      if (!normalized) throw new Error("日报差异编号无效");
+      return normalized;
+    });
+    if (new Set(selected).size !== selected.length) throw new Error("日报差异编号重复，请重新核对");
+  }
+  const result = await financeRpcSaved("rpc/zysyr_correct_daily_draft_from_source", {
+    p_company_id: cleanText(store.company_id, 40), p_store_id: cleanText(store.id, 40),
+    p_actor_user_id: cleanText(session.auth_account_id, 40),
+    p_draft_id: draftId, p_day: date, p_expected_revision: revision, p_source_token: token, p_selected: selected,
+  });
+  const status = cleanText(result.status, 40);
+  const scope = { store: storeName, report_date: date, draft_id: draftId };
+  if (["draft_changed", "not_editable", "source_unavailable", "source_changed"].includes(status)) return { status, ...scope };
+  if (!apply && status === "preview" && result.draft_id === draftId && result.revision === revision
+    && /^[a-f0-9]{64}$/.test(cleanText(result.source_token, 64)) && Array.isArray(result.items) && result.items.length <= 1000) {
+    return { ...scope, status, revision, source_token: result.source_token,
+      source_fetched_at: result.source_fetched_at, items: result.items };
+  }
+  if (apply && status === "saved" && result.draft_id === draftId && result.revision === revision + 1
+    && result.changed_cells === selected?.length && result.formal_ledger_amount_changed === false) {
+    return { ...scope, status, revision: result.revision, changed_cells: result.changed_cells, formal_ledger_amount_changed: false };
+  }
+  throw new Error("日报核对回执无法确认，请重新打开草稿查看，不要重复提交");
+}
+
 async function dailySheetData(companyId: string, storeId: string, draftId: string, readHistory = false): Promise<JsonRecord> {
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,autofill_view:ocr_raw_result->autofill,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = drafts[0];
@@ -5983,7 +6180,7 @@ async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): 
   if (!validDate(reportDate) || !reason) throw new Error("请填写日报日期和建表原因");
   if (voucherId) await approvedDailyVoucher(companyId, storeId, voucherId);
   const existing = await restRows(`zysyr_daily_sheet_drafts?select=id,status&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=eq.${reportDate}&status=in.(draft,confirmed)&order=created_at.desc&limit=1`);
-  if (existing[0]) return dailySheetData(companyId, storeId, cleanText(existing[0].id, 40));
+  if (existing[0]) return dailySheetRead({ store: store.name, draft_id: existing[0].id }, session);
   const employees = await restRowsAll(`zysyr_employees?select=name,position,employee_code&company_id=eq.${companyId}&store_id=eq.${storeId}&employment_status=eq.active&deleted_at=is.null&order=employee_code.asc,name.asc&limit=200`, 200);
   const nameSeeds: JsonRecord[] = [];
   for (const employee of employees) {
@@ -5995,12 +6192,12 @@ async function createDailySheetDraft(payload: JsonRecord, session: JsonRecord): 
   const extraction: JsonRecord = { parsed: { report_date: reportDate, notes: "人工逐格填写空白日报模板", cells: nameSeeds },
     response_id: null, model: "manual-entry-v1", usage: null };
   return saveDailySheetExtraction({ companyId, storeId, actorId, reportDate, voucherId, reason,
-    extraction, provider: "manual-entry", storeName: cleanText(store.name, 100) });
+    extraction, provider: "manual-entry", storeName: cleanText(store.name, 100), session });
 }
 
 async function saveDailySheetExtraction(input: {
   companyId: string; storeId: string; actorId: string; reportDate: string; voucherId: string | null;
-  reason: string; extraction: JsonRecord; provider?: string; storeName?: string;
+  reason: string; extraction: JsonRecord; provider?: string; storeName?: string; session: JsonRecord;
 }): Promise<JsonRecord> {
   const { companyId, storeId, actorId, reportDate, voucherId, reason, extraction } = input;
   const parsed = extraction.parsed as JsonRecord;
@@ -6016,7 +6213,10 @@ async function saveDailySheetExtraction(input: {
     p_cells: dailySheetSeeds(extraction, cleanText(input.storeName, 100)), p_reason: reason,
   });
   const result = await dailySheetData(companyId, storeId, cleanText(saved.id, 40));
-  return { ...result, readonly: false, permissions: { write: true, upload_original: true, void_original: true, save_orientation: true },
+  const canUseSource = cleanText(input.session.operations_role, 40) === "finance"
+    && (result.draft as JsonRecord).status === "draft" && result.locked !== true;
+  return { ...result, readonly: false, permissions: { write: true, upload_original: true, void_original: true, save_orientation: true,
+    draft_source_correction: canUseSource, fill_blanks: canUseSource && await canAdvertiseDailyFillBlanks() },
     detected_date: validDate(detectedDate) ? detectedDate : null,
     date_mismatch: validDate(detectedDate) && detectedDate !== reportDate };
 }
@@ -6731,8 +6931,13 @@ async function dailySheetRead(payload: JsonRecord, session: JsonRecord): Promise
     && cleanText((data.draft as JsonRecord).status, 20) === "draft"
     && (data.locked !== true || hasUnlockApproval);
   return { ...data, readonly: !writable, permissions: { write: writable, read_history: canReadDailyHistory(session),
+    draft_source_correction: writable && data.locked !== true && cleanText(session.operations_role, 40) === "finance",
+    fill_blanks: writable && data.locked !== true && cleanText(session.operations_role, 40) === "finance"
+      && await canAdvertiseDailyFillBlanks(),
     correct_confirmed: canCorrectConfirmedDaily(session) && cleanText((data.draft as JsonRecord).status, 20) === "confirmed" && data.locked !== true,
     upload_original: hasAuthCapability(session, "daily_report.write"),
+    bind_archived_original: writable && data.locked !== true && cleanText(session.operations_role, 40) === "finance"
+      && hasAuthCapability(session, "voucher.review"),
     void_original: writable, save_orientation: hasAuthCapability(session, "daily_report.write") },
     daily_unlock_approved: hasUnlockApproval, daily_unlock_request_id: approvals[0]?.id ?? null };
 }
@@ -7071,6 +7276,9 @@ async function historyImportEvidenceUpload(payload: JsonRecord, session: JsonRec
   const extension = extensionByMime[mime];
   if (!extension || !new RegExp(`\\.${extension === "jpg" ? "jpe?g" : extension}$`, "i").test(filename)) throw new Error("凭证包支持 DOCX、PDF、JPG 或 PNG");
   if (!reason) throw new Error("上传历史凭证包必须填写说明");
+  assertUploadSourceStore(store.name, payload.source_store, filename);
+  const batches = await restRows(`zysyr_history_import_batches?select=id&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${batchId}&limit=1`);
+  if (!batches.length) throw new Error("凭证包对应的导入批次不存在或不属于当前门店");
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("历史凭证包内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个历史凭证包必须小于 10MB");
@@ -7136,6 +7344,7 @@ async function historyMonthlyAttachmentUpload(payload: JsonRecord, session: Json
     throw new Error("月报照片支持 JPG、PNG 或 PDF");
   }
   if (!reason) throw new Error("补传月报照片必须填写说明");
+  assertUploadSourceStore(store.name, payload.source_store, filename);
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("月报照片内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个月报照片或 PDF 必须小于 10MB");
@@ -7202,6 +7411,7 @@ async function historyLedgerEvidenceUpload(payload: JsonRecord, session: JsonRec
     throw new Error("原始凭证支持 JPG、PNG 或 PDF");
   }
   if (!reason) throw new Error("补传原始凭证必须填写原因");
+  assertUploadSourceStore(store.name, payload.source_store, filename);
   let bytes: Uint8Array;
   try { bytes = decodeBase64(cleanText(payload.base64, 15000000)); } catch { throw new Error("原始凭证内容无效"); }
   if (!bytes.length || bytes.length > MAX_REPORT_BYTES) throw new Error("单个原始凭证必须小于 10MB");
@@ -7405,6 +7615,7 @@ const OPERATIONS_API_LOG_OPERATIONS = new Set(`
 expense_voucher_combination_apply monthly_voucher_library expense_voucher_workspace expense_voucher_reanalyze expense_voucher_match_apply expense_voucher_match_void expense_voucher_failures_retry voucher_ai_settings_read voucher_ai_settings_save
 monthly_review_status monthly_review_inbox monthly_review_preview monthly_review_publish monthly_review_confirm
 daily_electronic_sources
+daily_sheet_fill_blanks daily_sheet_source_preview daily_sheet_source_correct daily_sheet_attachment_bind_archive
 daily_business_details
 daily_sheet_correct daily_sheet_correction_status
 report_source_review monthly_source_archive_upload monthly_source_archive_resume monthly_source_archive_status monthly_source_archive_list monthly_source_archive_url monthly_source_archive_select monthly_source_archive_selection_status ai_analysis_request analysis_center attendance_record business_evidence_rule_save cash_opening_balance_save catalog cell_trace cell_trace_batch cell_trace_save check_record commission_rule_save daily_attachment_orientation_save daily_recognition_item_retry daily_recognition_job_control daily_recognition_job_next daily_recognition_job_read daily_recognition_job_start daily_recognition_worker_next daily_recognition_worker_read daily_report_review daily_report_save daily_original_archive_upload daily_original_archive_resume daily_original_archive_status daily_original_archive_list daily_original_archive_url daily_original_archive_void daily_original_archive_orientation_save daily_sheet_attachment_upload daily_sheet_attachment_void daily_sheet_confirm daily_sheet_create daily_sheet_get daily_sheet_import_candidates daily_sheet_month daily_sheet_read daily_sheet_recognize daily_sheet_save daily_sheet_cash_review employee_purchase_record employee_save expense_category_save expense_import expense_payment_confirm expense_review expense_save expense_submit finance_record_reverse finance_voucher_link finance_workbench goods_receipt_post history_evidence_images history_import_confirm history_import_correct history_import_evidence_upload history_import_file_url history_import_month_confirm history_import_post history_import_preview history_import_read history_import_review history_import_sheet_preview history_ledger_evidence_page_link history_ledger_evidence_upload history_ledger_reverse history_ledger_revise history_monthly_attachment_upload history_monthly_cell_save import_center inventory_center inventory_payment_confirm inventory_payment_reverse inventory_record_reverse inventory_usage_record login logout monthly_cell_save monthly_cell_unlock_decide monthly_cell_unlock_request monthly_draft_create monthly_editable_slots_prepare monthly_evidence_rule_save monthly_generate monthly_income_adjustment_save monthly_summary monthly_text_save monthly_transition overview payroll_center payroll_record_reverse penalty_reward_record performance_record expense_voucher_workspace expense_voucher_match_apply expense_voucher_match_void expense_voucher_failures_retry petty_detail_import_preview petty_detail_import_confirm petty_cash_batch_confirm petty_cash_batch_status petty_cash_batch_upload petty_cash_record petty_cash_report photo_daily_import product_save purchase_order_save purchase_order_transition question_create question_respond report_acknowledge report_cells report_lineage report_upload report_upload_auto report_url salary_generate salary_sheet_attachment_upload salary_sheet_confirm_lock salary_sheet_create salary_sheet_read salary_sheet_revision_begin salary_sheet_save salary_sheet_unlock_decide salary_sheet_unlock_request salary_transition service_item_save session shareholder_register shareholder_registration_list shareholder_registration_review stock_transfer_post store_create store_save supplier_save voucher_center voucher_ocr_retry voucher_ocr_wake voucher_review voucher_upload voucher_url
@@ -7612,11 +7823,15 @@ async function handleOperationsApiRequest(
     if (["daily_original_archive_upload", "daily_original_archive_resume", "daily_original_archive_status", "daily_original_archive_list", "daily_original_archive_url"].includes(operation)) return json(await dailyOriginalArchive(operation, payload, session));
     if (["daily_original_archive_void", "daily_original_archive_orientation_save"].includes(operation)) return json(await dailyOriginalManage(operation, payload, session));
     if (operation === "daily_sheet_attachment_upload") return json(await uploadDailySheetAttachment(payload, session));
+    if (operation === "daily_sheet_attachment_bind_archive") return json(await bindDailyArchivedOriginal(payload, session));
     if (operation === "daily_sheet_attachment_void") return json(await voidDailySheetAttachment(payload, session));
     if (operation === "daily_attachment_orientation_save") return json(await saveDailyAttachmentOrientation(payload, session));
     if (operation === "daily_sheet_month") return json(await dailyOriginalReadPresentation("month", await dailySheetMonth(payload, session), payload, session));
     if (operation === "daily_electronic_sources") return json(await dailyElectronicSources(payload, session));
     if (operation === "daily_business_details") return json(await dailyBusinessDetails(payload, session));
+    if (operation === "daily_sheet_fill_blanks") return json(await fillDailySheetBlanks(payload, session));
+    if (operation === "daily_sheet_source_preview" || operation === "daily_sheet_source_correct")
+      return json(await dailyDraftSourceCorrection(payload, session, operation === "daily_sheet_source_correct"));
     if (operation === "daily_sheet_read") return json(await dailyOriginalReadPresentation("detail", await dailySheetRead(payload, session), payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
     if (operation === "history_import_preview") return json(await historyImportPreview(payload, session));
@@ -7640,6 +7855,9 @@ async function handleOperationsApiRequest(
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     const message = publicRequestError(error);
+    if (error instanceof Error && "code" in error && error.code === "UPLOAD_SOURCE_STORE_REJECTED") {
+      return json({ error: message, code: error.code }, 400);
+    }
     const accountDisabled = /账号已停用|离职/.test(message);
     const sessionInvalid = /Supabase Auth 登录已失效|^请重新登录|登录已过期/.test(message)
       || (Object.prototype.hasOwnProperty.call(payload, "employee_session_token") && /员工登录已失效|门店变化/.test(message));

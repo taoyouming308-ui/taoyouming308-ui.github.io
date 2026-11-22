@@ -5,10 +5,15 @@ const {stripTypeScriptTypes}=require('node:module'),{chromium}=require('playwrig
 module.exports=async function({sql,json,q,C,S,A,D,V,U}){
  const root=path.resolve(__dirname,'..'),calls=[],uploads=[];
  const service="set request.jwt.claim.role='service_role';";
- const read=()=>json(service+`select jsonb_build_object('draft',(select to_jsonb(d) from zysyr_daily_sheet_drafts d where id='${D}'),
+ const read=()=>{
+  const sheet=json(service+`select jsonb_build_object('draft',(select to_jsonb(d) from zysyr_daily_sheet_drafts d where id='${D}'),
  'cells',(select jsonb_agg(to_jsonb(c) order by c.row_number,c.column_number,c.row_key) from zysyr_daily_sheet_cells c where draft_id='${D}'),
  'cash_review',public.zysyr_daily_cash_review_status('${C}','${S}','${D}'),'permissions',jsonb_build_object('write',true,'upload_original',true),
  'history','[]'::jsonb,'attachments','[]'::jsonb,'locked',false);`);
+  // Match the production daily-read receipt for the seeded approved original.
+  if(sheet.draft.source_voucher_id===V)sheet.attachments=[{id:V,audit_status:'approved',document_type:'daily_report',attachment_kind:'original_report',voided:false}];
+  return sheet;
+ };
  const session={operations_role:'finance',auth_account_id:A,auth_user_id:U,auth_capabilities:['daily_report.write']};
  const context={console,crypto:require('node:crypto').webcrypto,SUPABASE_URL:'http://synthetic-storage',SERVICE_KEY:'synthetic',REPORT_BUCKET:'zysyr-reports',
   cleanText:(v,n)=>String(v??'').trim().slice(0,n),safeCellText:(v,n)=>String(v??'').slice(0,n),uuidValue:v=>{if(!/^[a-f0-9-]{36}$/.test(v))throw Error('invalid identity');return v;},

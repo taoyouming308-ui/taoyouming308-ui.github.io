@@ -1,3 +1,11 @@
+## Current hosted continuation (2026-11-22)
+
+The independent employee-session authentication endpoint is deployed. Photo
+permissions and the prepared workflow remain closed. The bounded hosted HEIF
+alternative now has actual cloud preview/tiny-image qualification; see
+[measured boundary and remaining integration](HOSTED-HEIF-QUALIFICATION.md).
+The original native worker and business services are unchanged.
+
 # Prepared server adapters: not deployed or enabled
 
 ## Current local phone/staging continuation (unpublished)

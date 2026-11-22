@@ -8,6 +8,23 @@
   var syncMessage = '';
   var saveButtons = ['daily-detail-save', 'daily-detail-save-top'].map(function (id) { return document.getElementById(id); });
   var postButtons = ['daily-detail-confirm', 'daily-detail-confirm-top'].map(function (id) { return document.getElementById(id); });
+  var autofillButton = document.getElementById('daily-detail-autofill');
+  var archiveBindButton = document.createElement('button');
+  archiveBindButton.id = 'daily-detail-bind-archive';
+  archiveBindButton.type = 'button';
+  archiveBindButton.className = 'ghost hidden';
+  archiveBindButton.textContent = '从存档选原图';
+  archiveBindButton.addEventListener('click', bindArchivedOriginal);
+  document.getElementById('daily-detail-upload')?.after(archiveBindButton);
+  var sourceCorrectionButton = null;
+  if (autofillButton) {
+    sourceCorrectionButton = document.createElement('button');
+    sourceCorrectionButton.id = 'daily-detail-source-correct';
+    sourceCorrectionButton.type = 'button';
+    sourceCorrectionButton.className = 'secondary hidden';
+    sourceCorrectionButton.textContent = '核对并纠正';
+    autofillButton.after(sourceCorrectionButton);
+  }
 
   function grid() { return document.getElementById('daily-detail-grid'); }
   function pendingCandidates() {
@@ -53,7 +70,12 @@
     // Signed image URLs change on reads; they are not a financial revision.
     return JSON.stringify([sheet.draft.edit_revision, sheet.draft.status, sheet.draft.source_voucher_id,
       sheet.draft.validation_result, sheet.cells, sheet.permissions, sheet.locked, sheet.daily_unlock_approved, sheet.cash_review, sheet.project_review,
-      (sheet.attachments || []).map(function (item) { return [item.id, item.voucher_id, item.voided, item.audit_status]; })]);
+      dailyAttachmentState(sheet)]);
+  }
+  function dailyAttachmentState(sheet) {
+    return (sheet.attachments || []).map(function (item) {
+      return [item.id, item.voucher_id, item.voided, item.audit_status, item.document_type, item.attachment_kind];
+    });
   }
   function sourceBusy() { return !!(window.ZysyrDailySourceActions && window.ZysyrDailySourceActions.busy()); }
   function syncStatus(message) {
@@ -280,21 +302,136 @@
     return c.cashMode && c.cardSales == null && !!grid().querySelector('[data-section="summary"][data-column-code="card_subtotal"]')
       && canReviewNumeric(calculateDailyControls(grid(), true));
   }
-  function localBlockReason() {
+  function dailyPostingEvidence(sheet) {
+    var primary = String(sheet.draft.source_voucher_id || '');
+    if (!primary && sheet.cash_review?.electronic_ready === true && sheet.cash_review.source_token) {
+      return { electronic: true, reason: '' };
+    }
+    var attachments = sheet.attachments || [];
+    // A reference in the date archive (or approval of a different attachment)
+    // does not make it the approved, active original bound to this draft.
+    var bound = primary && attachments.find(function (item) {
+      return String(item.voucher_id || item.id || '') === primary;
+    });
+    if (bound && !bound.voided && bound.audit_status === 'approved' &&
+      bound.document_type === 'daily_report' && bound.attachment_kind === 'original_report') {
+      return { electronic: false, reason: '' };
+    }
+    var voided = (bound && bound.voided) || (!primary && attachments.some(function (item) {
+      return item.voided && item.attachment_kind === 'original_report';
+    }));
+    return { electronic: false, reason: (voided ? '本张草稿的原图已作废。' : '本张草稿未绑定有效原件。')
+      + (canBindArchive(sheet) ? '可点击「从存档选原图」预览后绑定，或' : '请')
+      + '点击「上传 / 重传正确日报」，为本张草稿上传当天原始日报并完成原件审核。已保存的金额不受影响。' };
+  }
+  function canBindArchive(sheet) {
+    return sheet.permissions?.bind_archived_original === true && state.user?.role === 'finance'
+      && !sheet.locked && sheet.draft.status === 'draft' && !sheet.draft.source_voucher_id;
+  }
+  function archivePreviewUrl(item) {
+    try {
+      var url = new URL(item.private_url);
+      return url.protocol === 'https:' && !url.username && !url.password ? url.href : null;
+    } catch (_) { return null; }
+  }
+  async function chooseArchivedOriginal(ctx, sheet) {
+    var options = (sheet.original_archive?.state === 'archived' && Array.isArray(sheet.archived_originals) ? sheet.archived_originals : [])
+      .filter(function (item) {
+        return item && item.report_date === ctx.date && !item.voided && ['image/jpeg', 'image/png'].includes(item.mime_type)
+          && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(item.request_id) && archivePreviewUrl(item);
+      });
+    if (!options.length) {
+      throw new Error(sheet.original_archive?.state === 'unavailable' || sheet.original_archive?.state === 'archived'
+        ? '本日存档原图暂时无法预览，请稍后重试。' : '本门店当天没有可绑定的存档原图，请上传正确日报。');
+    }
+    var dialog = document.createElement('dialog');
+    dialog.id = 'daily-archive-bind-dialog';
+    dialog.className = 'daily-project-review';
+    dialog.setAttribute('aria-labelledby', 'daily-archive-bind-title');
+    dialog.innerHTML = '<h2 id="daily-archive-bind-title">从存档选原图</h2><p data-archive-scope></p>'
+      + '<label>当天未作废的原图<select data-archive-select><option value="">请选择一张原图</option></select></label>'
+      + '<p data-archive-preview-status role="status">选图后请预览，确认是本门店当天的正确日报。</p><div data-archive-preview></div>'
+      + '<p>只绑定原件，不重新识别、不改金额、不入账。</p>'
+      + '<div class="compact-actions"><button class="ghost" type="button" data-archive-cancel>取消</button>'
+      + '<button type="button" data-archive-confirm disabled>确认绑定原图</button></div>';
+    var select = dialog.querySelector('[data-archive-select]'), preview = dialog.querySelector('[data-archive-preview]');
+    var status = dialog.querySelector('[data-archive-preview-status]'), confirm = dialog.querySelector('[data-archive-confirm]');
+    dialog.querySelector('[data-archive-scope]').textContent = ctx.store + ' · 营业日期 ' + ctx.date;
+    options.forEach(function (item, index) { select.add(new Option(item.original_filename, String(index))); });
+    document.body.append(dialog);
+    try {
+      return await new Promise(function (resolve) {
+        var selected = null;
+        select.onchange = function () {
+          selected = null;
+          confirm.disabled = true;
+          preview.replaceChildren();
+          if (!select.value) { status.textContent = '请选择一张原图预览。'; return; }
+          var item = options[Number(select.value)], img = document.createElement('img');
+          status.textContent = '正在加载原图…';
+          img.alt = item.original_filename + ' · 存档原图预览';
+          img.onload = function () {
+            if (preview.firstChild !== img || !img.naturalWidth) return;
+            selected = item;
+            status.textContent = '请核对原图上的门店和营业日期，确认后再绑定。';
+            confirm.disabled = false;
+          };
+          img.onerror = function () {
+            if (preview.firstChild !== img) return;
+            status.textContent = '原图加载失败，不能绑定。请关闭后重试。';
+          };
+          preview.append(img);
+          img.src = archivePreviewUrl(item);
+        };
+        dialog.querySelector('[data-archive-cancel]').onclick = function () { resolve(null); };
+        dialog.oncancel = function (event) { event.preventDefault(); resolve(null); };
+        confirm.onclick = function () { if (!confirm.disabled && selected) { confirm.disabled = true; resolve(selected); } };
+        dialog.showModal();
+      });
+    } finally { dialog.close(); dialog.remove(); }
+  }
+  async function bindArchivedOriginal() {
+    var sheet = state.imports.sheet;
+    if (!detailOpen() || !sheet || !canBindArchive(sheet) || sourceBusy() || dailySheetDirtyCount()) return;
+    var ctx = context(), user = state.user;
+    if (uncertainPosts.has(contextKey(ctx)) || !begin('archive-bind')) return;
+    function sameDraft() { return detailOpen() && isCurrent(ctx) && state.user === user && !dailySheetDirtyCount(); }
+    try {
+      var fresh = await checkBeforeWrite(ctx);
+      if (!sameDraft() || !canBindArchive(fresh)) throw new Error('当前日报已变化，请重新打开核对。');
+      var selected = await chooseArchivedOriginal(ctx, fresh);
+      if (!selected) return;
+      if (!sameDraft()) throw new Error('当前日报已变化，本次未绑定。');
+      var failure = null;
+      try {
+        await api('daily_sheet_attachment_bind_archive', { store: ctx.store, draft_id: ctx.id, report_date: ctx.date,
+          request_id: selected.request_id, expected_revision: ctx.revision, confirmed: true }, true);
+      } catch (error) { failure = error; }
+      // Read back the primary link. Never retry a write after a lost response.
+      var readback = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id }).catch(function () { return null; });
+      if (!sameDraft() || !readback || readback.draft.id !== ctx.id || readback.draft.report_date !== ctx.date
+        || readback.draft.status !== 'draft' || Number(readback.draft.edit_revision) !== ctx.revision + 1
+        || readback.draft.source_voucher_id !== selected.request_id || dailyPostingEvidence(readback).reason) {
+        throw failure || new Error('暂无法核对绑定结果，请重新打开日报查看；不要重复提交。');
+      }
+      applySheet(ctx, readback, true);
+      notice('存档原图已绑定。金额未修改，未重新识别，未入账。');
+      toast('存档原图已绑定，未入账');
+    } catch (error) { notice(error.message); toast(error.message); }
+    finally { end(); archiveBindButton.focus(); }
+  }
+  function localBlockReason(evidence) {
     var sheet = state.imports.sheet, c = calculateDailyControls(grid());
     if (sheet.draft.status === 'confirmed') return '这张日报已入账。';
     if (!(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance') return '仅财务账号可以入账。';
     if (sheet.locked) return '本月已锁账，暂不能入账；请先完成解锁审批。';
-    var approved = !!sheet.draft.source_voucher_id || (sheet.attachments || []).some(function (item) {
-      return item.audit_status === 'approved' && item.document_type === 'daily_report';
-    });
-    var electronic = sheet.cash_review?.electronic_ready === true && !sheet.draft.source_voucher_id;
-    if (!approved && !electronic) return sheet.cash_review?.electronic_reason || '请先上传当天原始日报，并完成原件审核；有电子来源的日报须先完成来源核对。';
+    evidence = evidence || dailyPostingEvidence(sheet);
+    if (evidence.reason) return evidence.reason;
     var project = projectReviewState();
     if (project.required && !project.ready) return project.reason;
     if (!c.valid) {
       if (canReviewNumeric(c) && !c.sourceMissing) return '';
-      if ((canReviewNumeric(c) && c.sourceMissing) || blankSalesReady()) return sheet.cash_review?.source_token && (sheet.cash_review?.original_ready || electronic) ? '' : '原件或电子来源尚未就绪；收款来源核实服务须可用。';
+      if ((canReviewNumeric(c) && c.sourceMissing) || blankSalesReady()) return sheet.cash_review?.source_token && (sheet.cash_review?.original_ready || evidence.electronic) ? '' : '原件或电子来源尚未就绪；收款来源核实服务须可用。';
       var differences = controlDifferences(c);
       return differences.length ? '请核对：' + differences.map(function (item) { return item.message; }).join('；') + '。' : c.missing ? '尚有未核实字段，请核对来源及候选数据；空白不按0处理。' : '合计仍有差异，请核对红色金额及员工、项目小计。';
     }
@@ -339,7 +476,7 @@
       if (calculateDailyControls(grid()).earnedMode) help.textContent = '日报实做＝现金业绩＋实际获得卡金业绩；两处总计另含充值售卡实收。卡金消费按获得业绩，不按原始划卡额。月报美发收入只取现金流，不含卡金。未知字段保留待核对，本表未自动入账。';
     }
     help.classList.toggle('hidden', !help.textContent);
-    var reason = localBlockReason(), salesBlank = !confirmed && blankSalesReady();
+    var evidence = dailyPostingEvidence(sheet), reason = localBlockReason(evidence), salesBlank = !confirmed && blankSalesReady();
     document.getElementById('daily-detail-confirm-help').textContent = confirmed
       ? '已入账，已计入当天及月报；更正需走修订流程。'
       : uncertain ? '上次入账结果待查询；点击“入账”先查询结果。'
@@ -347,15 +484,34 @@
       || (salesBlank ? '合计已一致；点击入账时确认充值售卡空白的含义，普通无业务明细无需补0。' : '') || '保存草稿：留存修改，可继续编辑。入账：核对后计入当天和月报。';
     postButtons.forEach(function (button) {
       button.textContent = confirmed ? '已入账' : active === 'post' ? '正在入账…' : '入账';
-      button.disabled = confirmed || !(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance' || !!active;
+      button.disabled = confirmed || !(sheet.permissions && sheet.permissions.write) || state.user.role !== 'finance' || !!active || (!uncertain && !!evidence.reason);
       button.dataset.blockReason = confirmed ? '' : reason;
       button.classList.toggle('blocked-action', !confirmed && !!reason);
-      button.title = confirmed ? '此日报已经入账' : '核对后保存并入账，自动更新月报';
+      button.setAttribute('aria-describedby', 'daily-detail-confirm-help');
+      button.title = confirmed ? '此日报已经入账' : uncertain ? '查询上次入账结果' : reason || '核对后保存并入账，自动更新月报';
     });
     saveButtons.forEach(function (button) {
       button.textContent = active === 'save' ? '正在保存…' : '保存草稿';
       button.disabled = !writable || dirty === 0 || !!active;
     });
+    if (autofillButton) {
+      var canAutofill = sheet.permissions?.fill_blanks === true && state.user.role === 'finance' && writable && !sheet.locked;
+      autofillButton.classList.toggle('hidden', !canAutofill);
+      autofillButton.disabled = !canAutofill || !!active || dirty > 0 || sourceBusy();
+      autofillButton.textContent = active === 'autofill' ? '正在补空白…' : '补空白';
+      autofillButton.title = dirty > 0 ? '请先保存手动填写的内容' : '用已同步的收银数据补填当天草稿空白';
+    }
+    if (sourceCorrectionButton) {
+      var canCorrectSource = sheet.permissions?.draft_source_correction === true && state.user.role === 'finance'
+        && sheet.draft.status === 'draft' && writable && !sheet.locked;
+      sourceCorrectionButton.classList.toggle('hidden', !canCorrectSource);
+      sourceCorrectionButton.disabled = !canCorrectSource || !!active || dirty > 0 || sourceBusy();
+      sourceCorrectionButton.title = dirty > 0 ? '请先保存手动填写的内容' : '按当前门店和日期核对收银来源，勾选后只保存草稿';
+    }
+    var archiveBindable = canBindArchive(sheet) && !uncertain;
+    archiveBindButton.classList.toggle('hidden', !archiveBindable);
+    archiveBindButton.disabled = !archiveBindable || !!active || dirty > 0 || sourceBusy();
+    archiveBindButton.title = dirty > 0 ? '请先保存手动填写的内容' : '只选当前门店当天的有效存档原图';
     if (confirmed) document.getElementById('daily-detail-state').textContent = '已入账';
     lockControls();
   };
@@ -390,7 +546,7 @@
   function saveGuard(sheet) {
     return JSON.stringify([sheet.draft.status, sheet.draft.template_code, sheet.draft.source_voucher_id,
       sheet.permissions, sheet.locked, sheet.daily_unlock_approved,
-      (sheet.attachments || []).map(function (item) { return [item.id, item.voucher_id, item.voided, item.audit_status]; })]);
+      dailyAttachmentState(sheet)]);
   }
   function verifyCommittedDraft(ctx, sheet, snapshot, edits) {
     var previous = state.imports.sheet;
@@ -507,7 +663,7 @@
       finally { end(); }
       return;
     }
-    var reason = localBlockReason();
+    var evidence = dailyPostingEvidence(sheet), reason = localBlockReason(evidence);
     if (reason) { showProblem(reason); return; }
     if (isLocalPreview() || ctx.id.indexOf('preview') === 0) { notice('当前是本地预览，不能正式入账。'); return; }
     var projectConsent;
@@ -515,7 +671,7 @@
     catch (error) { showProblem(error.message); return; }
     if (projectConsent === false) { notice('已取消复核，填写内容未修改，尚未入账。'); return; }
     var c = calculateDailyControls(grid());
-    var electronic = sheet.cash_review?.electronic_ready === true && !sheet.draft.source_voucher_id;
+    var electronic = evidence.electronic;
     // Evidence routing is independent of the amount-calculation policy. Legacy
     // source drafts can have reviewed electronic evidence without cash candidates.
     var cashConsent = (electronic || c.cashMode) ? { statement: electronic ? 'electronic-channels-sales-v1' : 'cash-original-channels-sales-v1', source_token: sheet.cash_review?.source_token, request_id: crypto.randomUUID() } : null;
@@ -589,6 +745,159 @@
       } else if (isCurrent(ctx)) showProblem('尚未入账：' + error.message + '。请核对后重试。');
     } finally { end(); }
   };
+
+  async function autofillDailySheet() {
+    var sheet = state.imports.sheet;
+    if (!detailOpen() || !sheet || !sheet.permissions?.write || sheet.permissions.fill_blanks !== true
+      || sheet.locked || sheet.draft.status !== 'draft'
+      || state.user.role !== 'finance' || sourceBusy() || active) return;
+    if (dailySheetDirtyCount()) { notice('请先保存手动填写的内容，再自动填写空白。'); return; }
+    if (isLocalPreview()) { notice('本地预览没有已同步的收银数据。'); return; }
+    if (!begin('autofill')) return;
+    var ctx = context();
+    notice('正在核对本店当天已同步的收银数据…');
+    try {
+      var result = await api('daily_sheet_fill_blanks', {
+        store: ctx.store, report_date: ctx.date, draft_id: ctx.id, expected_revision: ctx.revision
+      });
+      if (!detailOpen() || !isCurrent(ctx) || state.imports.sheet !== sheet) return;
+      if (!result || result.store !== ctx.store || result.report_date !== ctx.date || result.draft_id !== ctx.id) {
+        throw new Error('未能核实填写结果，请重新打开日报预览当前草稿。');
+      }
+      if (result.status === 'draft_filled') {
+        try {
+          var fresh = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+          if (!detailOpen() || !isCurrent(ctx) || state.imports.sheet !== sheet) return;
+          var freshRevision = Number(fresh?.draft?.edit_revision);
+          if (result.revision !== ctx.revision + 1 || !Number.isSafeInteger(freshRevision) || freshRevision < result.revision) {
+            throw new Error('日报读回版本未更新');
+          }
+          applySheet(ctx, fresh, true);
+          notice(fresh.draft.status === 'confirmed' ? '已读取最新日报，这张日报已入账。'
+            : '已补填 ' + result.filled_value_count + ' 格并保存草稿。请核对新增数值及仍留空的项目。');
+        } catch (_) {
+          if (detailOpen() && isCurrent(ctx)) notice('自动填写已保存，最新草稿暂时未读回，请刷新日报查看。');
+        }
+        return;
+      }
+      var messages = {
+        draft_changed: '该日报已由其他页面更新，请刷新并重新核对后再填写。',
+        source_unavailable_or_changed: '本店当天的收银明细尚未同步齐全，或源单据刚更新。请等同步完成后再试。',
+        source_conflict: '已填内容与最新收银明细有差异。请先用「核对并纠正」检查差异，再处理空白。',
+        no_fillable_blanks: '当前没有可用已同步数据补填的空格。请核对仍留空的项目。',
+        period_locked: '该月份已锁账。',
+        confirmed_preserved: '当天已有待审核或已入账的正式日报，请刷新核对。',
+        manual_draft_preserved: '该草稿已有人工或原图识别内容。请通过下方「电子来源核对」逐项核对。',
+        multiple_drafts_preserved: '当天有多份草稿。请先核对需要采用的日报。',
+        source_too_large: '当天的收银明细量超出自动填写范围，请通过下方「电子来源核对」查看。',
+        store_not_connected: '当前门店尚未接入收银明细。',
+        date_not_supported: '这个日期不在当前收银明细的同步范围内。'
+      };
+      notice(messages[result.status] || '未能核实填写结果，请刷新日报查看。');
+    } catch (error) {
+      if (detailOpen() && isCurrent(ctx)) notice(error.message);
+    } finally {
+      end();
+    }
+  }
+  if (autofillButton) autofillButton.addEventListener('click', autofillDailySheet);
+
+  async function correctDraftFromSource() {
+    var sheet = state.imports.sheet, user = state.user, session = state.session;
+    if (!detailOpen() || !sheet || !sheet.permissions?.write || sheet.permissions.draft_source_correction !== true
+      || sheet.locked || sheet.draft.status !== 'draft' || user?.role !== 'finance' || sourceBusy() || active) return;
+    if (dailySheetDirtyCount()) { notice('请先保存手动填写的内容，再核对并纠正。'); return; }
+    if (isLocalPreview()) { notice('本地预览没有已同步的收银来源。'); return; }
+    var ctx = context(), dialog, submitted = false, saved = false;
+    var scope = { store: ctx.store, report_date: ctx.date, draft_id: ctx.id, expected_revision: ctx.revision };
+    var current = function () {
+      return detailOpen() && isCurrent(ctx) && state.imports.sheet === sheet && state.user === user
+        && state.session === session && !dailySheetDirtyCount() && !sourceBusy();
+    };
+    var sameScope = function (r) { return r && r.store === ctx.store && r.report_date === ctx.date && r.draft_id === ctx.id; };
+    var messages = {
+      draft_changed: '日报草稿已变化，请刷新核对后重新生成建议。',
+      not_editable: '日报已入账、已提交审核或月份已锁账，草稿未改动。',
+      source_unavailable: '本店当天收银来源尚未核实完整，草稿未改动。',
+      source_changed: '收银来源或差异已变化，草稿未改动。请重新核对并勾选。'
+    };
+    if (!begin('source-correct')) return;
+    notice('正在核对本店当天收银来源，暂不改动草稿…');
+    try {
+      var preview = await api('daily_sheet_source_preview', scope);
+      if (!current()) return;
+      if (!sameScope(preview)) throw new Error('日报范围不一致，请重新打开核对。');
+      if (messages[preview.status]) { notice(messages[preview.status]); return; }
+      if (preview.status !== 'preview' || preview.revision !== ctx.revision || !/^[a-f0-9]{64}$/.test(preview.source_token || '')
+        || !Array.isArray(preview.items) || preview.items.length > 1000) throw new Error('未能核实日报来源预览。');
+      var items = preview.items;
+      if (!items.length) { notice('没有可安全纠正的已填差异。空白、来源不明确和无法对应的栏目均未改动。'); return; }
+      var inputs = new Map(Array.from(grid().querySelectorAll('[data-daily-cell]')).map(function (input) { return [input.dataset.dailyCell, input]; }));
+      if (new Set(items.map(function (item) { return item.cell_id; })).size !== items.length || items.some(function (item) {
+        var input = inputs.get(item.cell_id);
+        return !input || input.dataset.section !== 'stylist' || input.dataset.role !== 'staff_value'
+          || !Number.isFinite(item.before_value) || !Number.isFinite(item.suggested_value)
+          || item.suggested_value <= 0 || dailyInputValue(input) !== item.before_value;
+      })) throw new Error('建议与当前表格不一致，请重新打开核对。');
+      dialog = document.createElement('dialog');
+      dialog.id = 'daily-draft-source-review';
+      dialog.className = 'daily-project-review';
+      dialog.setAttribute('aria-labelledby', 'daily-draft-source-review-title');
+      dialog.innerHTML = '<h2 id="daily-draft-source-review-title">核对并纠正日报草稿</h2><p>'
+        + esc(ctx.store + ' · ' + ctx.date) + '。依据：同店同日已核对的收银项目明细'
+        + (preview.source_fetched_at ? '（同步于 ' + esc(formatDateTime(preview.source_fetched_at)) + '）' : '')
+        + '。请对照原图，只勾选确认有误的格子。</p><div class="daily-project-review-items">'
+        + items.map(function (item, index) {
+          return '<label class="daily-project-review-item"><input type="checkbox" data-draft-correction-item="' + index
+            + '"><span><strong>' + esc(item.row_label + ' · ' + item.column_label) + '</strong><span>当前 '
+            + item.before_value.toFixed(2) + ' 元 → 建议 ' + item.suggested_value.toFixed(2) + ' 元</span></span></label>';
+        }).join('') + '</div><p>只更新勾选的明细格，不覆盖其他填写值、不直接改合计、不入账。保存后请复核差额。</p>'
+        + '<div class="compact-actions"><button type="button" data-draft-correction-cancel>取消</button>'
+        + '<button type="button" data-draft-correction-save disabled>保存所选纠正</button></div>';
+      document.body.appendChild(dialog);
+      var selected = await new Promise(function (resolve) {
+        var button = dialog.querySelector('[data-draft-correction-save]');
+        var chosen = function () { return Array.from(dialog.querySelectorAll('[data-draft-correction-item]:checked')).map(function (input) { return items[Number(input.dataset.draftCorrectionItem)]; }); };
+        dialog.onchange = function () { button.disabled = !chosen().length; };
+        dialog.oncancel = function (event) { event.preventDefault(); resolve([]); };
+        dialog.querySelector('[data-draft-correction-cancel]').onclick = function () { resolve([]); };
+        button.onclick = function () { if (!button.disabled) resolve(chosen()); };
+        dialog.showModal();
+      });
+      dialog.close();
+      dialog.remove();
+      if (!current()) return;
+      if (!selected.length) { notice('已取消，日报草稿未改动。'); return; }
+      notice('正在重新校验来源和草稿版本，保存所选纠正…');
+      submitted = true;
+      var result = await api('daily_sheet_source_correct', Object.assign({}, scope, {
+        source_token: preview.source_token, selected_ids: selected.map(function (item) { return item.cell_id; }), confirmed: true
+      }));
+      if (!current()) return;
+      if (!sameScope(result)) throw new Error('日报回执范围不一致。');
+      if (messages[result.status]) { notice(messages[result.status]); return; }
+      if (result.status !== 'saved' || result.revision !== ctx.revision + 1 || result.changed_cells !== selected.length
+        || result.formal_ledger_amount_changed !== false) throw new Error('未能确认草稿保存结果。');
+      saved = true;
+      var fresh = await api('daily_sheet_read', { store: ctx.store, draft_id: ctx.id });
+      if (!current()) return;
+      if (!fresh || String(fresh.draft?.id) !== ctx.id || fresh.draft.report_date !== ctx.date
+        || fresh.draft.status !== 'draft' || Number(fresh.draft.edit_revision) !== result.revision
+        || !selected.every(function (item) { return (fresh.cells || []).some(function (cell) {
+          return cell.id === item.cell_id && cell.manual_override === true && cell.corrected_numeric != null && Number(cell.corrected_numeric) === item.suggested_value;
+        }); })) throw new Error('草稿回读和确认结果不一致。');
+      applySheet(ctx, fresh, true);
+      notice('已纠正 ' + selected.length + ' 格并保存草稿，未入账。请核对剩余差额。');
+    } catch (error) {
+      if (current()) notice(saved ? '纠正已保存，但未能核实最新草稿，请刷新核对，不要重复提交。'
+        : submitted ? '本次纠正结果待核验，请刷新草稿核对，不要重复提交。' : '未修改草稿：' + error.message);
+    } finally {
+      if (dialog?.isConnected) { dialog.close(); dialog.remove(); }
+      end();
+      if (sourceCorrectionButton.isConnected && detailOpen() && !sourceCorrectionButton.disabled) sourceCorrectionButton.focus({preventScroll:true});
+    }
+  }
+  if (sourceCorrectionButton) sourceCorrectionButton.addEventListener('click', correctDraftFromSource);
 
   var renderCalendarBase = renderDailyReportCalendar;
   renderDailyReportCalendar = function (data) {

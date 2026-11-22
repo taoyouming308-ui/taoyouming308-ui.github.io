@@ -1,3 +1,164 @@
+## 2026-11-22 · Hosted HEIF continuation (App version: v686; unpublished candidate)
+
+- Current owner: Codex. Last synchronized base checked: github/main 5baf4ec (v685), merged into the isolated candidate after a verified daily recovery archive. Original dirty checkout and production booking/customer workers are untouched.
+- Owner authorizes continuing the existing App toward deployment, preserving production/booking sync, with API/model keys configured by owner last. Photo access is only the responsible employee for this service; no management override for viewing. The separate question of who confirms a stable service/customer/employee binding remains pending; do not guess by name or phone.
+- Default-closed hosted HEIF codec now accepts up to8MiB /12582912 pixels /one frame and reconstructs a768-edge JPEG plus108-edge RGBA PNG. Pinned libheif1.23.5, jpeg-js0.4.4 and Pako2.1.0 provenance/licenses are recorded. Native Linux worker remains unchanged.
+- Actual Edge node:zlib ignores info:true; an independent streaming decoder now verifies PNG Adler/CRC, exact output and whole single-stream consumption. Node9/Deno9 codec tests and actual cloud fixed-public/synthetic samples pass, including12MP/genericHEIF/10bit/12bit/metadata/repeat/8MiB/multi-image denial. JPEG bytes and decoded tiny pixels match local. One network interruption was preserved and bounded follow-up passed.
+- Temporary codec probe is inert version14 with JWT required, read back; temporary capability files removed. No customer photo, production Storage object or model call. design-employee-authority v1 remains the deployed authentication-only endpoint; its existing source and RPC are unchanged.
+- Explicit fixed Edge API base path and default-closed ingress adapter reuse original HTTP authentication and route authorization. Node Edge/client30 and Deno Edge4 pass. This is routing preparation, not an installed workflow database or live photo API.
+- Business-sync115 and smoke pass against current production source; full tracked publication gate and exact-head protected CI remain to run for this commit. Physical iPhone, real employee positive, formal binding/independent receipts/private Storage/workflow deployment and owner key setup remain distinct acceptance gates. See HOSTED-HEIF-QUALIFICATION.md.
+
+## 2026-11-22 · Daily report opening feedback (App version: v685; local candidate)
+
+- Owner: Codex. Based on protected main 43b1c9b0/v684; baseline checks and recovery archive complete. Only frontend interaction feedback; no live publication requested and no production data writes.
+- Date buttons display scoped in-flight/error feedback, ignore a repeated click on the pending date and discard stale responses as before. Daily view and entry form buttons show immediate pending labels. No API, recognition, save or posting changes.
+
+## 2026-11-22 · Monthly per-cell save recovery (App version: v684; release candidate)
+
+- Owner: Codex. Protected main 3398b61b/v683 checked, clean isolated worktree and recovery archive complete. User authorizes Pages publication after checks, not production edit tests.
+- One explicit save, per-cell read/compare, guarded existing finance writes, no automatic write replay. Continue safe independent amounts, retain pending edits in the open page, and show persistent per-cell outcomes. Require an explicit recheck before rebasing a changed cell; never carry pending edits to a replacement report or another account.
+- Existing month authorization, audit, append-only writes, and text batch transaction are unchanged. No schema, Edge, data or ledger deployment. Use synthetic browser regressions, exact-head protected CI and Pages readback.
+
+## 2026-11-22 · Repair customer source-field authority (App version: v683 unchanged; review candidate)
+
+- Isolated branch from current protected main c71a6799; baseline version and release checks and local recovery archive completed before edits. No Pages, schema, or production data changed during preparation.
+- Missing, blank, or invalid source statistics cannot replace known figures. Explicit valid zero is distinct; derived totals require both inputs. Missing or invalid package payloads preserve known packages. Fully known customer profiles retain the existing signed wire schema.
+- Canonicalize the deployed booking cadence without changing its runtime file, pin its exact reviewed hash while keeping the shared process guard, and use only the exact-preimage coordinated installer after protected validation. Do not force a crawl, change schedules, reset queues, or infer that omitted bookings were cancelled.
+- Require a naturally successful customer batch and write/readback evidence before calling customer synchronization restored. Booking and daily-consumption freshness and deletion audits are separate checks.
+
+## 2026-11-21 · Bind an existing archived photo to a daily-report draft (App version: v683; release candidate)
+
+- Owner: Codex. Fresh protected main 295bfd36/v682, clean baseline, starting checks and daily recovery archive complete. User authorizes protected publication after checks, not binding any real draft during verification.
+- Finance with daily write and voucher review can preview a completed, same-store/same-date, non-void archived photo and explicitly bind it to an unlocked draft with no primary original. The service-only transaction checks scope and revision, serializes with archive void, and creates an audited reference to the existing private storage object.
+- No upload, OCR, edits to financial cells or reports, migration backfill, or automatic posting. Continue to distinguish archive references from actual draft evidence. Existing approved and posted records remain untouched.
+- Validate with the real register function in isolated PG17, synthetic HTTP and desktop/mobile tests, protected CI, deployed Edge and Pages readback. Deploy the additive migration before the compatible Edge handler and the UI. Do not validate production through a real binding.
+
+## 2026-11-21 · Reject voided or unbound daily originals before posting (App version: v682; release candidate)
+
+- Owner: Codex. Baseline protected main 2f7629af/v681, clean tracked worktree, mandatory start checks and daily backup completed. User authorized production publication after checks.
+- Only the approved, active original actually referenced by the draft authorizes the photo-based route. Independent archive references and unattached/voided/incorrect documents never satisfy this gate. A ready electronic source still follows its existing confirmation path; uncertain prior posting can still be queried.
+- Show the existing upload/replacement action in a persistent status before posting; guard both actions and the direct handler without disabling draft edits or saves. Pure Pages change: no database, Edge, attachment, amount, or ledger writes in deployment or live verification.
+
+## 2026-11-21 · Evidence-based daily draft correction (App version: v681; local candidate)
+
+- Owner: Codex; based on fresh protected main d6acedb2/v680. Baseline release checks and daily recovery archive completed. User authorized the repair, not production publication.
+- Keep blank fill separate. Finance previews current-value/source-value differences for uniquely matched stylist project cells in the same store/date, explicitly selects cells, and receives a revision-checked draft-only save and readback. No changes to existing vouchers, originals, ledger, posting state or other reports.
+- Never write from client-supplied numbers. The service RPC re-reads the authorized source and verifies the selection, snapshot fingerprint and draft revision under the existing lock ordering; the audited draft saver performs the write. No data backfill.
+- Synthetic PostgreSQL passed 59 safety groups; the scoped Edge contracts, frozen Deno check and the 390/1280 browser correction flow passed. These are not live accounting or deployment checks.
+- Production sequence after approval and protected checks: apply only the new RPC migration, confirm its service-only visibility, deploy compatible operations-api, then publish and verify Pages. Do not exercise a real draft write as a deployment probe.
+
+## 2026-11-21 · Scope monthly voucher picker to archive month (App version: v680; approved release candidate)
+
+- Owner: Codex, isolated from protected e2335569/v679 after a fresh fetch, baseline checks and daily backup. User authorized release after checks; no business data changes.
+- The month selected on batch upload is the authoritative archive month. Monthly evidence list, combination suggestions and new selected-original links use the stored batch designation, not the OCR or printed date, filename, receipt time or mutable report association. Existing evidence traces and completed links remain untouched. Unscoped older originals are not guessed into the monthly picker; explicit direct supplemental uploads are outside this candidate list.
+- Validate report/cell/store and archive membership server-side before a new single or combination link. Unrelated voucher audit and legacy per-transaction matching retain their original rules. No migration, OCR, permissions, objects, accounting columns or ledger changes.
+- Release via exact-head protected validation, compatible Edge source first and normal Pages publication next. Public file hashes, deployed source and scoped read-only checks are separate acceptance stages.
+
+## 2026-11-20 · Green monthly evidence completion (App version: v679; approved release candidate)
+
+- User requested the same green card treatment as existing completed voucher associations and explicitly approved publication after checks. Isolated from protected f75932e0/v678; clean tracked baseline, starting gates and daily recovery archive passed.
+- Current authoritative monthly-cell links display a separate monthly-evidenced green state and an explicit already-linked label; whole-original evidence remains distinct from transaction confirmation, approval and posting. The selected linked report/cell cannot be submitted again; another target remains an explicit manual action. Preserve historical links, fields and split-payment review status.
+- After the existing exact-original readback returns its four strict success flags, project only that verified link into the current scope and fence earlier workspace reads. Do not wait on unrelated petty report loading, force-refresh, retain a permanent evidence overlay, or turn an uncertain write acknowledgement green. A later fresh authoritative response remains the source of truth.
+- Browser coverage checks actual green styles, reload restoration, strict success/uncertainty, duplicate/no replay, split originals, target changes, scope races and old-module compatibility with synthetic data. No Edge, schema, worker or financial-data update is required. Full local and protected exact-head checks plus Pages byte readback are required before reporting live.
+
+## 2026-11-20 · Monthly voucher release compatibility (App version: v678; approved release candidate)
+
+- User explicitly approved production publication after backup and checks. Scope remains monthly voucher category/detail choices only; no financial data, original images, amounts, approval or posting changes.
+- Pre-publication independent review identified an old eager workspace module plus new lazy evidence module race. Capability-gate the new monthly evidence actions so old open pages continue to render existing transaction controls and ask for a safe user-chosen update before using new monthly evidence actions. Do not force-refresh.
+- v677 passed the full local gate and reached only the repair branch. It was not merged or deployed. This v678 follow-up preserves normal non-force publication and must pass the full gate and protected exact-head CI again before deployment. Deploy the backward-compatible operations-api first, then normal Pages publication; verify both live outputs separately.
+
+## 2026-11-20 · Restore electronic monthly voucher targets (App version: v677; local candidate)
+
+- Owner: Codex. Isolated fix/voucher-monthly-targets-20261120 from protected f14cf9c0/v676. Start gates and daily recovery archive passed; unrelated worktrees preserved. User requested repair; publication remains a separate confirmation.
+- Root cause confirmed read-only: the displayed current uploaded report exists while the independently designated archived monthly source is absent, so monthly_source-only candidate generation omitted the monthly columns. Read the current scoped report independently and add manual-only monthly_cell targets; keep original source IDs, historical links and petty transaction targets.
+- Reuse the existing audited evidence-only attachment RPC through a guarded expense_workspace context. Confirm current store/month/report/cell, explicitly attest the entire original, then read back that original's latest cell linkage. No manufactured source selection, new ledger, amount write, approval, posting or schema migration. Whole-original evidence remains separate from split-payment confirmations; unknown blank slots are not zero. Existing salary and summary classification policies remain unchanged.
+- Candidate tests cover missing source selection, actual monthly grid shape, unknown and explicit zero, current-report scope, historical links, denied auto/combination paths, split originals, stale UI scopes and uncertain responses. The actual monthly projection is reused for changed formula amounts and editable names; a real-function synthetic regression verifies formula200-to300, renamed details and blanks preserved. New focused cases join the shared finance manifest.
+- Final frozen Deno2.9.6 check and complete shared pre-push gate passed, including169/169 finance commands, 390/1280 browser scenarios and existing app/auth/business regressions. Use ZYSYR_HOOK_PYTHON=/usr/bin/python3 for this Mac's preinstalled cryptography48 dependency; the first default-Homebrew attempt stopped on a missing dependency, not a business assertion. Independent review found and resolved the formula projection issue; no remaining blocking finding. All write tests use synthetic fixtures; no production deployment or financial write occurred.
+- Release requires protected latest-main integration, normal publication, compatible operations-api deployment (new shared reader included), Pages exact-byte readback and real-device acceptance. Do not claim this local candidate is live.
+
+## 2026-11-20 · Batch voucher source confirmation (App version: v676)
+
+- Owner: Codex. Isolated fix/upload-store-dialog-20261120; baseline checks and daily backup passed. Preserves protected mainc36c4365/v675, its daily-original inline layout and customer source-turn modules unchanged. Previous241d33ca and5f784d55 passed full local and protected gates; revalidate the merged v676 head before publication.
+- One explicit, non-default source-store choice covers the displayed exact batch file list. Scoped closure authorizes only original file objects, one send each, original batch/store/month/session; wrong store, cancellation and stale scope fail closed. Ordinary per-record uploads keep their existing per-file proof. No database, OCR, financial amount, matching or posting changes.
+- Synthetic browser checks at390/1280 cover20-file single confirmation, wrong store, foreign file, repeated send, cancellation and stale month plus existing session/account isolation. Full release gates and protected publication/readback required before calling live.
+- Old open shells loading the new lazy module retain their existing per-file API confirmation; new shells use the exact-batch closure. The real batch UI regression covers both paths without bypassing source-store selection.
+
+## 2026-11-20 · Inline archived originals in daily reports (App version: v675; local candidate)
+
+- Owner: Codex. Isolated branch from protected github/main 83ce6ce3. Full daily recovery archive and baseline checks completed before edits.
+- Daily detail displays the same-store, same-day archived original beside the sheet on wide content or just before it on narrow content. Eagerly request the first usable photo. Archive zoom, rotation and single-photo void retain their existing controls.
+- Existing details keep the same scoped read. When the date has no draft yet, its legacy create response automatically reads the new draft’s archive metadata before the first display. Preserve financial data and the new draft if archive presentation is unavailable.
+- Verify browser rendering, role boundaries, calendar creation, stale results and image failures with synthetic fixtures. Static Pages release, with no migration or Edge deployment.
+
+## 2026-11-20 · Void archived originals in daily detail (App version: v673; local candidate)
+
+- Owner: Codex. Isolated branch from protected github/main 6b9a4469. Baseline and daily recovery archive verified before edits.
+- Add single-photo void next to the archived original in daily detail. Reuse the scoped and audited archive operation. Reconcile the result for that original and refresh the current date without rebuilding the editable draft.
+- Verify finance/read-only views, cancellation and uncertain responses on synthetic data before protected publication. No real report or original is changed by release verification.
+
+## 2026-11-20 · Source-store checks for daily reports and expense evidence (App version: v671; local candidate)
+
+- Owner: Codex. Isolated fix/store-proof-20261120 built on the tested v670 rollout branch; November20 daily backup and release baseline checks completed. Recheck protected main before publishing.
+- Explicit source-store selection before submitting daily photos, original files, and voucher details. Monthly archive checks each photo independently and preserves the observed shop in its existing audit note. Revalidate the captured target after auth refresh and stop queued uploads on scope change.
+- Finance Edge rejects declarations and authoritative original labels that contradict the scoped target before any storage write. Daily Excel reads the active sheet's first structural rows. Files without a source label require human confirmation in the updated UI; no new OCR provider or file transmission. Existing voucher identity and same-store linkage still apply.
+- Autofill stays available only after the existing v670 Finance RPC is detected by a bounded safe read, so the store check can ship independently. No schema change in the v671 change set. Test requirements include original-file upload, resumed batch, evidence scoping, pending-migration and stale-scope regressions.
+
+## 2026-11-20 · Request-scoped source turns (App version: v673 unchanged; local candidate)
+
+- Owner: Codex. User approved queue optimization after PR163 was normally merged and its two-file customer runtime installed, but bounded attempts and the natural14:33 run still had no completed customer cloud readback. Isolated `fix/customer-sync-fairqueue-20261120` from protected `0aa2d212`; November20 backup and baseline gates passed. Preserve the prior resume module and unrelated work.
+- Root cause: the whole booking batch lock includes Supabase begin/commit waits, while customer readiness treated it as continuous source use. New private request gate and booking-intent lock cover actual Meiguanjia exchanges only. Customer reads are nonblocking and recheck intent; announced bookings take priority after an already-started customer read (existing max10s). No zero-delay or strict whole-batch latency claim.
+- Keep booking60s schedule/attempt gate,90s scheduled budget, customer105s budget, source10s bound,30s request/persistence reserve, daily freshness/cooldown and all source validation. Readiness now shares the original customer deadline instead of20s/two-episode limits. Unsafe daily state or an unknown booking-script hash fails closed; no automatic queue reset, new frequency, source-business writes or inventory enablement.
+- Three runtime targets only: canonical booking, canonical customer as `sync_mgj_all.py`, and `mgj_source_turns.py`. Dedicated known-preimage/four-lock installer requires no active booking/customer processes, private backups and readback. Full protected publication, installation, bounded customer content readback and continuing natural booking/daily health are separate acceptance stages, not implied by synthetic test success. See `docs/operations/mgj-source-turns.md`.
+-74 new synthetic tests pass, plus185 customer/history/installer regressions and58 common/booking/keepalive tests (sets overlap; do not sum as unique tests). Independent integrated lock-order review and process-exit experiment found no blocker. Actual installer read-only preflight returned `check_ready`; runtime was not changed by that check. Full shared gate and production acceptance remain pending in this preparation snapshot.
+- The full shared gate passed on the initial v671 candidate, including166/166 finance tasks. Removed a redundant new workflow step because the existing protected complete-gate step already executes the new tests; no workflow permission changes or test bypass. Incorporated concurrent protected `83ce6ce3`/v673 normally, preserving all frontend updates and unchanged three target runtime hashes. Repeat the full gate on this final integrated head before publication.
+
+## 2026-11-20 · Customer backlog recovery (App version: v671 unchanged; in development)
+
+- Owner: Codex; user authorized bounded customer synchronization repair. Isolated `fix/customer-sync-backlog-20261120` from protected main `dd5c8bae`; initial gates and daily recovery archive passed. Incorporated concurrent protected `4fa790a6`/v670, `6b9a4469`/v671 and booking recovery `73561472` without changing their frontend/SQL/Edge files. Customer target hashes remain unchanged; repeat the normal gate on the final merged head. Do not deploy the unrelated finance or booking backend from this task. Merge the existing customer-only transport/fairness source without replacing unrelated running workers.
+- Read-only runtime verification supersedes the November17 candidate labels below: deployed `sync_mgj_all.py` already equals candidate `d6fe05fb` (SHA256 `89a51806212cf335f1ba2c38c3dbe0880cf77996cda72a8c350bf6627da6a338`). Current customer cron is minute03/33 and recent services minute14, not the historical schedules below. Booking runtime uses a newer protocol2 recovery; preserve its exact bytes and healthy source/cloud equality.
+- Diagnosis: completed annual history windows are discarded on bounded source-priority deferral, so long histories restart each attempt. Added private scope-bound72-hour, checksum/CAS history progress, cross-day tails, fresh latest365-day completion check and frozen recent-detail selection. Cache ack follows both signed archive write and service projection. Same source validation,105-second budget/cadence/priority; existing services8-detail path unchanged. Needs-review and not-yet-due retries cannot reenter through deferred progress.
+-57 new synthetic tests plus112 existing customer/window/coordination/cutover tests pass, with two independent reviews and no blocking finding. Customer-only known-preimage/four-lock installer read-only preflight and the complete shared gate pass, including165/165 finance tasks on v670. Preparation snapshot on November20: protected publication and runtime installation/readback are separate remaining acceptance stages; recheck exact hashes and private installer receipts for current live status. No queue reset, source-business write, inventory enablement, frontend, schema or financial changes. See `docs/operations/customer-history-resume.md` for boundaries and acceptance.
+
+## 2026-11-20 · Daily report actions and temporary update notices (App version: v670; local candidate)
+
+- Owner: Codex. Isolated fix/daily-actions-20261120 based on protected github/main dd5c8bae (v669), including the November20 academy publication. Version/integrity/handoff checks and the November20 recovery archive completed before edits.
+- Make ready, failed and delayed shell notices temporary. Keep the same-tab dismissal and natural worker activation. Already-open pre-v669 documents keep their old behavior until closed and reopened.
+- Expose batch void at the top of the monthly original archive. Select recorded originals and verified upload receipts by scoped request ID, review the selection, then use the existing audited transactional void. Uncertain responses reconcile by readback.
+- Add explicit daily draft autofill for the selected store/date/revision using the existing synchronized projections and immutable audit. Preserve manual, recognized and posted data. Missing or conflicting source yields an actionable result, and the new RPC requires the existing finance write grant. Scheduled projection behavior remains covered by regression.
+- Verify the final protected commit, scoped SQL/Edge release and public Pages files separately. The button requires the new Edge permission receipt so Pages can ship while the migration is pending. Apply and verify that migration before deploying the new Edge function. No real report mutation or archive deletion is part of acceptance.
+
+<!-- academy-reviewed-inputs:8724d84e3df655532d155eaffb9da8b0f0070950541785bbf833f50f346d9c67 -->
+## 2026-11-20 · Reviewed academy publication candidate (App version: v669 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 8c1d38ccf225c22109169d4a952474800f6f9851.
+- Dates: 2026-11-20. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
+## 2026-11-19 · Appointment sync recovery (App version: v669 unchanged)
+
+- Owner: Codex, isolated fix/booking-sync-recovery-20261119 based on main 8c1d38cc and integrated with main dd5c8bae. Daily source backup created before edits; unrelated worktrees and v669 shell fixes preserved.
+- The scheduled booking-only budget is 90s (supersedes 55s); the two-phase protocol includes lease acquisition before each source read. macOS Python 3.9 parses PostgreSQL fractional timestamp precision explicitly.
+- Canonical v2 client requires an explicit complete source list, safe IDs/status/date/store, obtains a server lease before source read, and commits exact store/day atomically. Signed endpoint rejects legacy v1; service-role direct booking writes revoked while SELECT remains. RPC concurrency fences and idempotent receipts prevent stale replay; private trigger preserves changed/deleted old rows with reasons. Protocol receipts retain only hashes and expire after one day; business audit rows are retained.
+- Targeted installer preflights known runtime hashes and duplicate schedulers, backs up four booking-only files, converts legacy entrypoint to same guarded runner, and installs com.hermes.booking-sync every 60s under gui/501. Existing independent daily-consumption launchd, credentials, cadence, customer jobs and business originals remain untouched. No full core installer run.
+- Candidate checks: 61 Python sync/installer/keepalive/customer tests, 20 mocked signature/edge assertions, 34 isolated PG16 protocol/permissions/atomic-rollback assertions, actual edge-runtime offline compilation, booking UI and employee data-scope tests. Production migration, signed Edge function and canonical runtime were deployed and read back. Complete source-to-mirror field digests matched, and natural scheduled runs continued healthy on the following day. Final protected merge remains pending; real device UI acceptance was not observed.
+
+## 2026-11-19 · Dismissible and truthful shell update notices (App version: v669; local candidate)
+
+- Owner: Codex. Isolated fix/update-notice-lifecycle-20261119 from protected github/main d256efa0 / published v668. Start version/integrity/handoff checks and the existing November19 daily backup passed before edits; prior worktrees and acceptance artifacts preserved.
+- Reproduced the screenshot behavior against the actual old client: an update check with no installing/waiting worker still displays preparation instructions. Main update click adds another false preparing pill; waiting notices have no dismissal. Distinguish checked/checking/installing/waiting/error/delayed, bound progress text, observe already-installing and failed workers, and deduplicate explicit checks.
+- One shared notice replaces duplicate main prompts. The explicit Later action stores only a version-scoped public UI preference in sessionStorage; same-tab navigation honors it and explicit checks can reopen it. First install stays quiet; unavailable storage and the verified uncontrolled-page fallback remain supported. No worker runtime, activation, cache scope, account state, API/backend, business data, drafts or schema changes; no automatic refresh/takeover.
+- Synthetic lifecycle tests and actual three-entry Chromium/WebKit loopback tests pass, including390/1366 layout/clickability, no-change completion, dismissal/navigation, failed install, existing input, offline/auth denial, multi-tab natural activation, exact resource versions and downgrade guard. WebKit is desktop engine evidence, not iPhone hardware acceptance. Normal full pre-push, final-head protected checks, normal merge and Pages/exact-byte readback remain required before claiming publication.
+
+## 2026-11-19 · Monthly XLSX namespace compatibility (App version: v668; local candidate)
+
+- Owner: Codex. Clean isolated fix/monthly-xlsx-compat-20261119 based on protected github/main f67afc0e; start version/integrity/handoff checks and November19 daily recovery archive passed before edits. Prior v667 app/content and original worktrees are preserved.
+- The exact local July Xiangli XLSX uses ns0 workbook elements, ns1 relationship attributes and prefixed package relationships/types. Existing metadata regex and raw ExcelJS4 reader reject these valid aliases. Reuse the bounded in-memory XLSX compatibility loader for report display/current sheet and source review; add URI-based package and attribute canonicalization, preserve foreign namespace boundaries and reject conflicting aliases.
+- Source archive metadata and the independent original-XML amount/formula audit resolve relationship aliases without reserializing original bytes. Synthetic tests cover active month, types/relationships, exact-byte archive, ordinary passthrough, cached zero, unknown cache and merged cells. Local real original passes271 cell/97 formula comparisons and2026-07 detection; its SHA256 is unchanged. No private workbook or business values committed, no production report submission, associations, amounts, schema or ledger writes.
+- Frozen Deno check and targeted tests pass. Normal full pre-push/protected checks, merge, canonical32-file backend and Pages/readback remain required before claiming publication. No forced refresh of user forms.
+
+
 ## 2026-11-19 · Current employee session authority (App version: v672; unpublished candidate)
 
 - Current owner: Codex. User authorizes completing HEIF/production employee integration and release, preserving production/appointment sync and owner-only final model key setup. User chooses an existing server and will supply a secure connection entry; request is pending. No invented host, borrowed booking worker or repeated release permission.
@@ -56,6 +217,25 @@
 - Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
 - A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
 
+## 2026-11-17 · Bounded customer fairness candidate (not deployed)
+
+- Formal isolated candidate adds all-mode customer coordinator, per-request legacy session/source locks, two readiness waits totaling20s inside105s. Preserve booking/daily priority and current customer1/31/service16 schedules. No production changes or public push.
+- Request factory re-reads one locked session snapshot and derives employee/shop with credential identity checks. Ambiguous sent requests, HTML/non-JSON/malformed replies and429 stop without fallback/replay. Partial history remains protected.
+-99 focused tests pass; isolated and formal independent reviews passed. Full pre-push gate passed locally2026-11-17 04:03 +08:00, including152/152 finance tests and126 final Python tests. No production deployment or public push. Four-lock guard is only a primitive: actual launcher pause receipts, empty old-process inventory, atomic install and exact trigger restoration are required by docs/operations/customer-fairness-cutover.md.
+
+## 2026-11-17 · Customer coordination candidate (not deployed)
+
+- Integrated reviewed source pacing and nonblocking shared-source coordination onto main 1cb33fd7, preserving appointment repair and existing shared session-lock behavior. No production schedule/runtime changes or public push.
+- Verified TLS and exact read endpoints remain; subprocess wall time capped at10s per read, existing batch budget105s applied to all modes. Daily due/booking active yields, waits happen outside source lock; advisory priority still permits one already-started bounded request.
+- Persist deferred customers separately with0600 atomic files, retain old failure queue, deduplicate compensation, preserve first-deferred age and alert persistent transport deferral. All modes write terminal state and release outer shared lock. No claimed absolute starvation or zero-interference guarantee.
+-73 customer/coordination unit tests pass. Independent final formal-diff review passed. Full unchanged pre-push gate plus new coordination tests passed on 2026-11-17 01:28 +08:00 (finance152/152 and final100 Python tests). No push or production deployment; no real-source acceptance yet; runtime remains prior a6c58df candidate.
+
+## 2026-11-17 · Customer source reads and bounded history recovery (v663 unchanged)
+
+- Isolated owner branch `fix/customer-source-transport-20261117`, base protected main c80358ad. Original developer tree and appointment repair preserved; daily recovery archive and version/integrity/handoff gates passed.
+- Customer search requires the existing browser user-agent; source reads use exact host/path allowlists, verified TLS, no redirects. Multipart reads remove legacy insecure TLS and use only the three existing read endpoints. Curl exceptions no longer serialize cookie-bearing command arguments.
+- Source history now rejects ranges exceeding one year. Read non-overlapping windows of at most 365 days, require all windows before complete status, check dates and duplicate IDs, preserve old history on failure/budget exhaustion. Partial history/packages or failed service projection retain retry instead of reporting success.
+- 56 isolated unit tests pass. Two-transport source probes, two complete nine-window history samples and existing limited runtime recovery are documented privately without customer identifiers. Runtime connection-only recovery updated 6 profiles; one not-found and one deferred by budget remain; old needs-review queue is not reset. History runtime candidate deployed with matching hash; two source-history samples and one merged cache readback passed. Natural services batch passed 3/0; next normal batch was partial 3/2/3 due temporary-body cleanup and source rate limiting. Follow-up uses stdin request bodies, requires explicit successful HTTP status, and yields the current batch on source JSON/HTTP 429 including search without retry or second-shop probing; full publication gates remain pending. No source-business writes, appointment edits, credentials, security settings, scheduling, frontend or financial changes.
 <!-- academy-reviewed-inputs:951c7fd3f64ea877cf0086c9ecf63494ae20f64f9af7b4b32530e4974eabb5e5 -->
 
 ## 2026-11-18 · Changing shoulder line and stable haircut baseline (App version: v667 unchanged)

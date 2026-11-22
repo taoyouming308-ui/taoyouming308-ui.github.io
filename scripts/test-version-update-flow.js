@@ -122,6 +122,7 @@ async function settle() {
   const controlled = createScenario(637, 637, 638, '', {requestUpdate(){requests++;return true;}});
   await settle(); controlled.banner.onclick(); await settle(); controlled.banner.onclick(); await settle();
   if (requests !== 2 || controlled.replacements.length) fail('shell update must stay retryable without navigating dirty pages');
+  if (controlled.banner.style.display !== 'none' || controlled.banner.textContent.includes('界面更新准备中')) fail('shell-owned update must not leave a second misleading preparation banner');
   const unavailable = createScenario(637,637,638,'',{requestUpdate(){return false;}});
   await settle(); unavailable.banner.onclick(); await settle();
   if (!unavailable.replacements.length) fail('uncontrolled unavailable shell must retain confirmed network update fallback');

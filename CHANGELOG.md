@@ -1,3 +1,129 @@
+## v686 · Hosted HEIF qualification and fixed Edge transport (unpublished candidate)
+
+- Add default-closed, pinned WASM HEIF decoding with verified metadata-free JPEG/PNG outputs and an 8 MiB / 12.58 MP boundary. Preserve the native worker and its separate limits.
+- Preserve complete compressed-stream verification on the measured Edge runtime using an independent bounded decoder; include dependency hashes, licenses and replacement/build references.
+- Add explicit fixed Edge base-path support and a default-closed adapter to the original authenticated HTTP routes. No new photo grant, production workflow/schema, model call or App activation.
+- Reconcile current production v685 and preserve all intervening business and booking changes. Employee auth-only deployment is independently verified; service-binding issuer policy remains pending.
+- Acceptance: Node codec9, Deno codec9, Edge/client30, Deno Edge4, cloud fixed-corpus9 outcomes plus missing-capability denial, business-sync115. Full publication gates and exact-head protected CI are separate checks.
+
+## v685 · 2026-11-22 · 日报打开反馈（本地候选）
+
+- 日历日期和日报入口点击后立即显示打开状态；同一日期等待期间不重复请求，失败保留提示并可重试。既有日报读取、填写和入账逻辑不变。
+
+## v684 · 2026-11-22 · 月报逐格保存与失败恢复
+
+- 保存后常驻显示每格结果；能安全保存的格继续处理，失败或冲突保留此页输入与原因。重新核对单格只更新比对基准，不会代为提交。
+- 已确认或读回相同值的格子不重复写；回执不明先查保存状态。换版本不套用旧输入；现有权限、锁账、审核、账目与服务端接口不变。
+
+## v683 · 2026-11-22 · 顾客同步缺值保护（后端候选，App 版本不变）
+
+- 到店次数、消费额和均消区分真实零值与未返回；不能确认时保留已有数字。此前正常的预约写入及消费同步不改。
+- 本机切换只走已审定的精确版本与既有保护流程；通过自然批次的云端回读后才能标记恢复。
+
+## v683 · 2026-11-21 · 日报可从存档选原图
+
+- 财务可在未锁账、无绑定原件的未入账日报中选取同店同日、已完成且未作废的存档原图。原图加载并人工预览确认后，直接绑定并回读保存结果，不需下载或重传。
+- 后台再次校验权限、原图有效性和草稿版本，只新增原件链接和审核记录，不启动识别、不改已填金额、不自动入账。按现有财务流程单独核对和入账。
+
+## v682 · 2026-11-21 · 日报作废原图不再放行入账
+
+- 日报只认本张草稿实际绑定、审核通过且未作废的原件；独立存档和未绑定附件不算有效原件。
+- 未绑定有效原件且没有已核实电子来源时，页面直接提示「上传 / 重传正确日报」并禁用入账，仍可保存草稿。已核实电子来源和已入账日报保持原流程。
+- 仅修改页面判断和提示，不改数据库、附件、金额和已入账账目。
+
+## v681 · 2026-11-21 · 电子日报草稿按证据纠正（未上线）
+
+- 把电子日报「补空白」和「核对并纠正」分开。财务可查看同店同日已核验的收银项目与草稿已填明细的差异，逐项勾选后只保存所选草稿字段。
+- 草稿、来源或权限一旦变化，需要重新核对。不能安全对应的字段、合计、已提交或已入账记录不改；保留修改记录和来源版本，不自动入账。
+
+## v680 · 2026-11-21 · 月报凭证按归档月份隔离
+
+- 月报「从凭证上传库选择」和组合推荐只使用上传时明确归到该月的原件，票面跨月不会排除；新建关联也校验归档月份。
+- 不猜测未归档原件的月份，不移动凭证或改账；已经保存的原件、历史关联和金额记录继续保留。
+
+## v679 · 2026-11-20 · 月报凭证关联完成显示
+
+- 月报佐证确认并回读成功后，凭证卡片采用与原已对应卡片一致的绿色，并标记「已关联月报」。同一栏目禁止重复关联，重新打开后恢复服务器保存的状态。
+- 完成提示不再等待无关备用金报表刷新；保存前的旧请求不能覆盖较新的确认结果。失败、未知回执不显示完成，整图关联仍明确保留「逐笔对应待核对」，不等于已入账。
+- 仅调整前端完成状态与交互，不改金额、审批、入账、凭证原图或已有关系；用户已同意检查通过后上线。
+
+## v678 · 2026-11-20 · 凭证月报选项及旧页面兼容
+
+- 恢复当前月报开支栏目与明细，并保留原逐笔关联。补充旧主页面加载新延迟组件时的能力检查，避免凭证区报错；新挂证功能需要用户方便时自行更新，原逐笔操作继续保留。
+- 用户已同意备份及检查通过后上线。发布不修改账目金额、原凭证、审批或入账状态；实际线上状态以受保护发布及部署回读为准。
+
+## v677 · 2026-11-20 · 凭证月报选项修复候选（未上线）
+
+- 凭证「对应开支明细」补充当前门店、月份的电子月报开支栏目和明细；未指定独立核对原件时也可展示，不再只剩备用金逐笔明细。原件栏目与逐笔明细分组保留，已映射栏目去重。
+- 月报栏目由财务核对整张原图后补充佐证，保存后回读确认。不改变金额、审批或入账状态，不把图内多笔付款自动标成逐笔已对应；原有历史关联保留。
+- 空白金额显示但禁止挂证，避免未知被当成零；切换门店、月份或报告版本时阻止旧目标继续确认。月报读取不完整时明确提示，不悄悄隐藏。
+- 独立分支准备；无数据库迁移、正式数据修复或生产部署。上线须另行确认并完成受保护发布与回读。
+
+## v676 · 2026-11-20
+
+- 本月全部开支凭证按批列出原文件，一次核对本批全部原件所属门店后上传，避免每张重复弹窗造成误以为上传无响应。单笔补传仍逐笔确认。
+- 门店不一致、取消、切换月份/门店/账号会阻止尚未发出的文件；一次确认只适用于原文件清单及原批次，保留已保存结果且不自动重传。
+- 未刷新的旧页面仍可按原方式逐张确认上传，避免更新中断当前操作。
+
+## v675 · 2026-11-20
+
+- 打开电子日报时直接加载当天已存档原图，宽屏并排对照，窄屏在表格前显示。首次创建日报时也自动带出同店同日的已存档照片。
+
+## v673 · 2026-11-20
+
+- 日报详情的待核对存档原图增加「误传作废」，可逐张确认作废并刷新当天原图状态。保留存档记录。
+
+## v671 · 2026-11-20
+
+- 日报单张原件、按月批量原图与电子日报上传前核对原件所属门店。已知表头、文件名或声明与目标门店矛盾时拦截写入。
+- 普通、备用金与历史凭证明细上传统一核对来源门店；切换门店、月份或账号会停止未发出的上传，已归属其他店的同一凭证不能在当前店复用。
+
+## 2026-11-20 · 同步读取排队优化准备（沿用主线 v673）
+
+- 预约只在真正访问美管加时占用源请求锁，云端确认等待不再阻止客户档案读取；已到达的预约请求优先于下一笔客户读取。
+- 客户等待统一受原105秒总预算限制，保留10秒单次读取与20秒落库余量；不改变预约、客户和日消费的定时频率。
+- 旧预约脚本或异常协调状态时安全延期；保留续传、人工核查、退避队列、历史资料和自动出库关闭状态。仅三个运行代码文件纳入专用安全部署，不改App前端、数据库或凭据。实际恢复以受保护发布、运行指纹和客户云端内容回读分别验收。
+
+## 2026-11-20 · 客户档案积压修复准备（沿用主线 v671）
+
+- 将已实际运行的客户只读传输与协调版本合入最新隔离开发基线，保留现行预约、日消费和自动出库关闭状态。
+- 增加有限、私有、身份绑定的年窗续传，跨日补窗后再次读取近期账单；云端档案和服务投影均成功才清理进度，失败保留原档案。保留预算、频率和预约优先级。
+-57项新增合成测试与112项原同步回归通过，两路独立复核无阻断；v670 基线的完整共享校验通过（财务165/165），增加只替换客户主脚本及续传模块的四锁原子部署器。不重置人工核查队列，不改前端或数据库结构。此为准备阶段记录，发布、运行部署和云端回读分别验收。
+
+## v670 · 2026-11-20
+
+- 界面更新提示在准备完成后自动收起。同一版本的同一标签页不会重复提示。
+- 「按月存档日报原图」顶部增加「批量删除误传原图」，可勾选存档清单或全选本次已存档的图片，确认后批量作废并保留原图与操作记录。
+- 在可编辑的日报草稿顶部增加「自动填写报表」，从本门店当天已同步且通过核对的收银明细补填空格。来源缺失或冲突时提示财务核对。
+
+<!-- academy-reviewed-inputs:8724d84e3df655532d155eaffb9da8b0f0070950541785bbf833f50f346d9c67 -->
+## 2026-11-20 · Reviewed academy publication candidate (App version: v669 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 8c1d38ccf225c22109169d4a952474800f6f9851.
+- Dates: 2026-11-20. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
+## v669 · 2026-11-19
+
+## 2026-11-19 Appointment sync recovery
+
+- Restore a single launchd appointment schedule with exact runtime backups.
+- Reject malformed/partial sources, atomically replace each store/day, make retries idempotent and preserve change audit.
+- Keep the existing App shell, source appointments and separate consumption task unchanged.
+
+- 修复界面资源检查结束后仍显示“准备中”的问题；检查完成、下载中、等待切换、失败及等待过久分别提示。
+- 三入口共用可收起提示，当前版本在同一浏览会话内记住“稍后”；主应用不再叠加第二条更新按钮，失败仍可重试。
+- 保留保存后关闭全部本站页面再自然切换的流程；Chromium/WebKit 的390/1366尺寸、跨页面收起、旧输入保留与多窗口版本隔离回归通过。
+
+## v668 · 2026-11-19
+
+- 修复部分单月 XLSX 使用 XML 命名空间前缀后无法找到工作表的问题；当前页、月报显示与核对原件共用兼容读取。
+- 兼容工作表关联别名及包关系/类型标签，原件留存和核对继续读取原始字节，不改变金额、公式或入账状态。
+- 新增合成命名空间回归和完整上传接口回归；向里7月原表本地271个单元格、97个公式独立核对一致，原文件哈希不变。
+
+
 ## v672 · 2026-11-19 · Existing employee identity verification candidate
 
 - Add read-only, service-role-only verification of current App employee sessions, stable staff account identity and fresh server checks. Departed/expired/logout/recreated-account cases deny without renewing sessions or changing booking/customer access.
@@ -63,6 +189,24 @@ Add direct native HEIC/HEIF processing, mTLS image broker, encrypted local priva
 - 增加两个仅服务端可调用的事务包装函数，复用既有财务权限与关联接口，校验门店、原图、目标、并发关联和月报来源快照。无表、金额、原图或审核结构变更。
 - 新增纯金额/推荐、实际 API、隔离 PostgreSQL17 和390/1280实际页面验收，覆盖170.30的两张/三张组合、单张保留、人工更正、未知金额、跨月/重复/其他关联、部分重试、第二张失败回滚与切月隔离。
 
+## 2026-11-17 Customer fairness candidate (not deployed)
+
+- Preserve same-batch history progress across bounded readiness waits while releasing shared session/source locks.
+- Build requests from a single locked session snapshot; stop uncertain responses without replay.
+- Add fairness/transition safety tests and quiescent cutover/trigger restoration plan; no production cadence or frontend change.
+
+## 2026-11-17 Customer coordination candidate (not deployed)
+
+- Bound and pace customer source reads, yield to daily/booking activity without lock waiting, preserve existing shared-lock contracts.
+- Track deferred work separately from failures, deduplicate compensation, emit age/persistent-source alerts, and finish all modes with released locks.
+- Add offline integration coverage to mandatory existing gate; no frontend, production scheduler or financial changes.
+
+## 2026-11-17 Customer source transport and bounded history recovery
+
+- Restrict customer reads to verified-TLS source targets with compatible request headers; reject redirects and redact subprocess credentials from error strings.
+- Split history reads into <=365-day windows with continuity, identity and failure checks; preserve incomplete data and retry state.
+- Eliminate temporary multipart-body cleanup failures; yield a JSON/HTTP 429 rate-limited batch, including search, instead of immediate retries; reject missing/non-success HTTP status.
+- No frontend version change, source business edits, financial posting or scheduler change.
 ## v664 · 2026-11-17
 
 - 补齐月报产品进货、零售产品成本、备用金分类及杂项明细的凭证库入口；可选择同店已上传原图，金额一致及接近优先推荐，上传月份不限制原账期。

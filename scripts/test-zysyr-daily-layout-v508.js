@@ -87,8 +87,9 @@ async function run() {
         set('payment', 'payment', 'total', 2126);
         source.cells.filter(cell => cell.row_key === 'stylist_1').forEach(cell => { cell.row_label_source_method = 'codex_local_candidate'; });
         source.draft = { id: 'fixture-draft', report_date: '2026-01-01', status: 'draft', edit_revision: 4, source_voucher_id: 'fixture-voucher', validation_result: { valid: false } };
-        source.permissions = { write: true };
-        source.attachments = [];
+        source.permissions = { write: true, fill_blanks: true };
+        source.attachments = [{ id: 'fixture-link', voucher_id: 'fixture-voucher', audit_status: 'approved',
+          document_type: 'daily_report', attachment_kind: 'original_report', voided: false }];
         source.history = [];
         window.fixtureSource = source;
         state.imports.sheet = structuredClone(source);
@@ -109,6 +110,17 @@ async function run() {
             if (window.fixtureSaveReadFailure && window.savedDailyPayloads.length) throw new Error('save readback unavailable');
             if (window.fixtureReadFailure && (!window.fixtureLostReply || window.confirmDailyPayloads.length)) throw new Error('read unavailable');
             return structuredClone(source);
+          }
+          if (operation === 'daily_sheet_fill_blanks') {
+            if (payload.report_date !== source.draft.report_date || payload.expected_revision !== source.draft.edit_revision) throw new Error('Autofill scope mismatch');
+            const result = { store, report_date: payload.report_date, draft_id: payload.draft_id };
+            if (window.fixtureAutofillUnavailable) return { ...result, status: 'source_unavailable_or_changed' };
+            const cell = source.cells.find(c => c.section_code === 'payment' && c.column_code === 'cash');
+            if (cell.ocr_numeric != null || cell.manual_override) throw new Error('Autofill would overwrite a cell');
+            cell.ocr_numeric = 67.89;
+            cell.source_method = 'frontdesk_autofill';
+            source.draft.edit_revision++;
+            return { ...result, status: 'draft_filled', revision: source.draft.edit_revision, filled_value_count: 1 };
           }
           if (operation === 'daily_sheet_confirm') {
             window.confirmDailyPayloads.push(payload);
@@ -478,6 +490,90 @@ async function run() {
         await page.evaluate(() => confirmDailyReportDetail());
         assert.deepEqual(await page.evaluate(() => dailyOperations), [], 'non-finance account must not post');
       }
+      await page.evaluate(() => {
+        state.user.role = 'finance';
+        fixtureSource.draft.status = 'draft';
+        fixtureSource.permissions.write = true;
+        fixtureSource.permissions.fill_blanks = true;
+        fixtureSource.locked = false;
+        const cash = fixtureSource.cells.find(c => c.section_code === 'payment' && c.column_code === 'cash');
+        Object.assign(cash, { ocr_numeric: null, manual_override: false, corrected_numeric: null });
+        state.imports.sheet = structuredClone(fixtureSource);
+        state.imports.dirty = {}; state.imports.dirtyLabels = {};
+        window.fixtureAutofillUnavailable = true;
+        window.fixturePostFailure = window.fixtureSaveFailure = window.fixtureReadFailure = window.fixtureSaveReadFailure = false;
+        window.dailyOperations = [];
+        renderDailySheetDetail();
+      });
+      const autofill = page.getByRole('button', { name: '补空白', exact: true });
+      const cash = page.locator('#daily-detail-grid [data-section="payment"][data-column-code="cash"]');
+      const manual = page.locator('#daily-detail-grid [data-section="summary"][data-column-code="treatment_card"]');
+      const manualValue = await manual.inputValue();
+      await page.evaluate(() => {
+        delete state.imports.sheet.permissions.fill_blanks;
+        renderDailyDetailControls();
+        document.getElementById('daily-detail-autofill').dispatchEvent(new MouseEvent('click'));
+      });
+      assert.equal(await autofill.isVisible(), false, 'old backend without the explicit capability must not show autofill');
+      assert.equal(await page.evaluate(() => dailyOperations.some(x => x === 'daily_sheet_fill_blanks')), false);
+      await page.evaluate(() => {
+        state.imports.sheet.permissions.fill_blanks = true;
+        renderDailyDetailControls();
+      });
+      await actual.fill('345');
+      assert.equal(await autofill.isDisabled(), true);
+      assert.equal(await actual.inputValue(), '345');
+      await page.evaluate(() => { state.imports.dirty = {}; renderDailySheetDetail(); });
+      await autofill.click();
+      await page.waitForFunction(() => document.getElementById('daily-detail-note').textContent.includes('明细尚未同步齐全'));
+      assert.equal(await cash.inputValue(), '');
+      await page.evaluate(() => { window.fixtureAutofillUnavailable = false; });
+      await autofill.click();
+      await page.waitForFunction(() => document.getElementById('daily-detail-note').textContent.includes('已补填 1 格并保存草稿'));
+      assert.equal(await cash.inputValue(), '67.89');
+      assert.equal(await manual.inputValue(), manualValue);
+      assert.equal(await page.evaluate(() => dailyOperations.filter(x => x === 'daily_sheet_fill_blanks').length), 2);
+      assert.equal(await page.evaluate(() => dailyOperations.some(x => x === 'daily_sheet_confirm')), false);
+      const postBottom = page.locator('#daily-detail-confirm'), postTop = page.locator('#daily-detail-confirm-top');
+      const sourceHelp = page.locator('#daily-detail-confirm-help');
+      const amountBefore = await actual.inputValue();
+      for (const mode of ['voided', 'voided-primary', 'archive-only', 'missing-primary', 'unbound-approved', 'pending', 'supporting', 'wrong-document']) {
+        await page.evaluate(mode => {
+          const sheet = state.imports.sheet;
+          sheet.draft.source_voucher_id = ['voided-primary', 'missing-primary', 'pending', 'supporting', 'wrong-document'].includes(mode) ? 'fixture-voucher' : null;
+          const item = { ...fixtureSource.attachments[0] };
+          if (mode.startsWith('voided')) item.voided = true;
+          if (mode === 'pending') item.audit_status = 'pending';
+          if (mode === 'supporting') item.attachment_kind = 'supporting_document';
+          if (mode === 'wrong-document') item.document_type = 'other';
+          sheet.attachments = ['archive-only', 'missing-primary'].includes(mode) ? [] : [item];
+          sheet.archived_originals = [{ report_date: sheet.draft.report_date, state: 'archived' }];
+          sheet.cash_review = {};
+          window.dailyOperations = [];
+          renderDailyDetailControls();
+        }, mode);
+        assert.equal(await postBottom.isDisabled(), true, mode);
+        assert.equal(await postTop.isDisabled(), true, mode);
+        assert.match(await sourceHelp.innerText(), /上传 \/ 重传正确日报.*原件审核/);
+        if (mode.startsWith('voided')) assert.match(await sourceHelp.innerText(), /原图已作废/);
+        // Even the direct handler must stop before any save or confirm request.
+        await page.evaluate(() => confirmDailyReportDetail());
+        assert.deepEqual(await page.evaluate(() => dailyOperations), []);
+        assert.equal(await actual.inputValue(), amountBefore);
+      }
+      await actual.fill('345');
+      assert.equal(await postBottom.isDisabled(), true, 'missing original must still allow editing');
+      assert.equal(await page.locator('#daily-detail-save').isEnabled(), true, 'the draft save stays available');
+      await page.evaluate(() => {
+        const sheet = state.imports.sheet;
+        sheet.draft.source_voucher_id = 'fixture-voucher';
+        sheet.attachments = [{ ...fixtureSource.attachments[0] }];
+        renderDailyDetailControls();
+      });
+      assert.equal(await postBottom.isEnabled(), true, 'binding an approved active original removes the evidence block');
+      assert.doesNotMatch(await sourceHelp.innerText(), /上传 \/ 重传正确日报/);
+      await page.evaluate(() => { state.imports.sheet.draft.status = 'confirmed'; renderDailyDetailControls(); });
+      assert.equal(await autofill.isVisible(), false);
       assert.deepEqual(errors, []);
       await page.close();
     }

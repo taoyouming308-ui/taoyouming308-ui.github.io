@@ -11,10 +11,19 @@ import ssl
 import sys
 import tempfile
 import time
+import uuid
 import urllib.parse
 import urllib.error
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
+try:
+    from mgj_booking_source import complete_reservations
+except ModuleNotFoundError:
+    from scripts.mgj_booking_source import complete_reservations
+try:
+    import mgj_source_turns as source_turns
+except ModuleNotFoundError:
+    from scripts import mgj_source_turns as source_turns
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -97,7 +106,7 @@ def write_status(status, **details):
 
 
 def acquire_lock(path, blocking=False):
-    lock_file = open(path, "w", encoding="utf-8")
+    lock_file = open(path, "a+", encoding="utf-8")
     flags = fcntl.LOCK_EX
     if not blocking:
         flags |= fcntl.LOCK_NB
@@ -106,8 +115,6 @@ def acquire_lock(path, blocking=False):
     except BlockingIOError:
         lock_file.close()
         return None
-    lock_file.write(str(os.getpid()))
-    lock_file.flush()
     return lock_file
 
 
@@ -190,12 +197,15 @@ def request_json(url, cookie="", data=None, timeout=20):
         headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8"
     request = urllib.request.Request(url, data=data, headers=headers)
     def perform():
-        remaining = remaining_run_seconds()
-        if remaining is not None and remaining < 1:
-            raise TimeoutError("预约同步运行时间已到105秒上限")
-        effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
-        with source_urlopen(request, timeout=effective_timeout) as response:
-            return json.loads(response.read().decode("utf-8", errors="replace"))
+        # The batch lock still protects cadence/v2 ordering. Only real source
+        # HTTP/body reads hold this narrow turn; retries sleep outside it.
+        with source_turns.booking_request(deadline=RUN_DEADLINE):
+            remaining = remaining_run_seconds()
+            if remaining is not None and remaining < 1:
+                raise TimeoutError("预约同步运行时间已到本轮上限")
+            effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
+            with source_urlopen(request, timeout=effective_timeout) as response:
+                return json.loads(response.read().decode("utf-8", errors="replace"))
     return with_network_retries(perform)
 
 
@@ -238,8 +248,14 @@ def login(server, username, password):
             "User-Agent": USER_AGENT,
         },
     )
-    with opener.open(request, timeout=20) as response:
-        result = json.loads(response.read().decode("utf-8", errors="replace"))
+    with source_turns.booking_request(deadline=RUN_DEADLINE):
+        # A preceding customer read may consume part of the existing deadline.
+        remaining = remaining_run_seconds()
+        if remaining is not None and remaining < 1:
+            raise TimeoutError("预约同步运行时间已到本轮上限")
+        effective_timeout = 20 if remaining is None else max(1, min(20, int(remaining)))
+        with opener.open(request, timeout=effective_timeout) as response:
+            result = json.loads(response.read().decode("utf-8", errors="replace"))
     if result.get("code") != 7:
         raise RuntimeError(f"Meiguanjia login code={result.get('code')}")
     parts = [f"{cookie.name}={cookie.value}" for cookie in cookie_jar]
@@ -306,9 +322,10 @@ def load_signing_key():
     return key
 
 
-def signed_pair_request(shop_id, date_text, bookings, signing_key, timeout=15):
+def signed_protocol_request(payload, signing_key, timeout=15):
+    shop_id, date_text = payload["shop_id"], payload["date"]
     body = json.dumps(
-        {"shop_id": shop_id, "date": date_text, "bookings": bookings},
+        payload,
         ensure_ascii=False,
         separators=(",", ":"),
     ).encode("utf-8")
@@ -330,7 +347,7 @@ def signed_pair_request(shop_id, date_text, bookings, signing_key, timeout=15):
     def perform():
         remaining = remaining_run_seconds()
         if remaining is not None and remaining < 1:
-            raise TimeoutError("预约同步运行时间已到105秒上限")
+            raise TimeoutError("预约同步运行时间已到本轮上限")
         effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
         try:
             with urllib.request.urlopen(
@@ -341,15 +358,37 @@ def signed_pair_request(shop_id, date_text, bookings, signing_key, timeout=15):
             raise
         if not isinstance(result, dict) or result.get("shop_id") != shop_id or result.get("date") != date_text:
             raise RuntimeError("预约写入接口返回异常")
-        if result.get("upserted") != len(bookings):
+        if type(result.get("protocol")) is not int or result["protocol"] != 2:
+            raise RuntimeError("预约协议版本不符")
+        if result.get("operation") != payload["operation"]:
+            raise RuntimeError("预约回执操作不符")
+        if payload["operation"] in ("commit", "abort") and result.get("lease_id") != payload["lease_id"]:
+            raise RuntimeError("预约回执租约不符")
+        if payload["operation"] == "commit" and (type(result.get("upserted")) is not int or result["upserted"] != len(payload["bookings"])):
             raise RuntimeError("预约写入接口回报数量不符")
+        if payload["operation"] == "begin":
+            try:
+                uuid.UUID(result["lease_id"])
+                expiry_text = result["expires_at"].replace("Z", "+00:00")
+                # macOS Python 3.9 fromisoformat rejects valid 1/2/4/5 digit fractions.
+                expiry_format = "%Y-%m-%dT%H:%M:%S.%f%z" if "." in expiry_text else "%Y-%m-%dT%H:%M:%S%z"
+                expiry = datetime.strptime(expiry_text, expiry_format)
+                if expiry.tzinfo is None or expiry.timestamp() <= time.time():
+                    raise ValueError("expired")
+                if type(result.get("generation")) is not int or result["generation"] <= 0:
+                    raise ValueError("generation")
+            except (KeyError, ValueError, TypeError, AttributeError):
+                raise RuntimeError("预约租约无效")
+        if payload["operation"] == "commit":
+            if type(result.get("deleted")) is not int or not 0 <= result["deleted"] <= 1000:
+                raise RuntimeError("预约清理回执无效")
         return result
 
     return with_network_retries(perform)
 
 
 def reservation_date_keys(days=8):
-    today = date.today()
+    today = datetime.now(CHINA_TZ).date()
     return [(today + timedelta(days=offset)).isoformat() for offset in range(days)]
 
 
@@ -402,7 +441,7 @@ def normalize_reservation(raw, shop, date_text, today_text):
     }
 
 
-def fetch_reservation_pair(server, cookie, shop, date_text, today_text):
+def fetch_reservation_snapshot(server, cookie, shop, date_text, today_text):
     payload = {
         "parentShopId": shop["parentShopId"],
         "shopId": shop["shopId"],
@@ -418,90 +457,99 @@ def fetch_reservation_pair(server, cookie, shop, date_text, today_text):
         cookie=cookie,
         data=body,
     )
-    if result.get("code") != 0:
-        raise RuntimeError(f"Meiguanjia reservation code={result.get('code')}")
-    reservations = (result.get("content") or {}).get("reservations") or []
-    if not isinstance(reservations, list):
-        raise RuntimeError("Meiguanjia reservations is not a list")
+    reservations = complete_reservations(result, shop["shopId"], date_text)
     normalized = []
     for raw in reservations:
         booking = normalize_reservation(raw, shop, date_text, today_text)
         if booking is not None:
             normalized.append(booking)
-    return normalized
+    return {
+        "raw_result": result,
+        "raw_rows": reservations,
+        "source_ids": [int(row["id"]) for row in reservations],
+        "source_statuses": {str(int(row["id"])): int(row["status"]) for row in reservations},
+        "bookings": normalized,
+    }
+
+
+def fetch_reservation_pair(server, cookie, shop, date_text, today_text):
+    # Compatibility only. New signed protocol must call snapshot and carry
+    # source_ids/source_statuses; filtered bookings are not a source inventory.
+    return fetch_reservation_snapshot(server, cookie, shop, date_text, today_text)["bookings"]
 
 
 def scheduled_dates(cadence, now=None):
-    """Today every tick; at most one overdue future day, oldest first."""
+    """Today + the near future dates every tick; keep one farther date on a low-frequency sweep."""
     now = time.time() if now is None else now
     dates = reservation_date_keys()
     history = cadence.get("dates", {})
     due = [d for d in dates[1:] if now - history.get(d, {}).get("success_at", 0) >= FUTURE_INTERVAL_SECONDS
            and now >= history.get(d, {}).get("retry_after", 0)]
-    due.sort(key=lambda d: (history.get(d, {}).get("success_at", 0), d))
-    return dates[:1] + due[:1]
+    due_set = set(due)
+    near_due = [d for d in dates[1:4] if d in due_set]
+    far_due = [d for d in dates[4:] if d in due_set]
+    return dates[:1] + near_due + far_due[:1]
 
 
 def sync_bookings(dates=None, cadence=None):
     server, cookie = ensure_session()
     dates = reservation_date_keys() if dates is None else dates
-    today_text = date.today().isoformat()
-    fetched_by_pair = {}
-    successful_pairs = set()
-    fetch_errors = []
-
-    budget_exhausted = False
-    for date_text in dates:
-        for shop in SHOPS:
-            if not run_budget_available():
-                fetch_errors.append("预约同步运行时间已到105秒上限，剩余日期留待下次")
-                budget_exhausted = True
-                break
-            pair = (shop["shopId"], date_text)
-            try:
-                fetched_by_pair[pair] = fetch_reservation_pair(
-                    server,
-                    cookie,
-                    shop,
-                    date_text,
-                    today_text,
-                )
-                successful_pairs.add(pair)
-            except Exception as exc:
-                fetch_errors.append(f"{shop['name']} {date_text}: {exc}")
-                if cadence is not None and isinstance(exc, urllib.error.HTTPError) and exc.code == 429:
-                    cadence["cooldown_until"] = time.time() + 300
-                    budget_exhausted = True
-                    break
-        if budget_exhausted:
-            break
-
-    bookings = [booking for pair in successful_pairs for booking in fetched_by_pair.get(pair, [])]
-    write_errors = []
-    upserted = 0
-    deleted = 0
-    written_pairs = 0
-    written_keys = set()
+    today_text = datetime.now(CHINA_TZ).date().isoformat()
+    successful_pairs, written_keys = set(), set()
+    fetch_errors, write_errors = [], []
+    upserted = deleted = written_pairs = fetched_count = 0
     signing_key = load_signing_key()
+    stop = False
     for date_text in dates:
         for shop in SHOPS:
+            if not run_budget_available(8):
+                stop = True
+                write_errors.append("run_budget_exhausted")
+                break
             pair = (shop["shopId"], date_text)
-            if pair not in successful_pairs:
-                continue
-            if not run_budget_available(3):
-                write_errors.append("预约同步运行时间已到105秒上限，剩余日期留待下次")
+            base = {"protocol": 2, "shop_id": shop["shopId"], "date": date_text}
+            try:
+                lease = signed_protocol_request(dict(base, operation="begin", request_id=str(uuid.uuid4())), signing_key)
+            except Exception as exc:
+                # An unknown begin result can hold a lease. Never collect or
+                # move to another pair until it expires.
+                write_errors.append("begin_" + type(exc).__name__)
+                stop = True
                 break
             try:
-                result = signed_pair_request(
-                    shop["shopId"], date_text, fetched_by_pair[pair], signing_key
-                )
+                snapshot = fetch_reservation_snapshot(server, cookie, shop, date_text, today_text)
+                successful_pairs.add(pair)
+                fetched_count += len(snapshot["bookings"])
+            except Exception as exc:
+                fetch_errors.append("source_" + type(exc).__name__)
+                if cadence is not None and isinstance(exc, urllib.error.HTTPError) and exc.code in (401, 403, 429):
+                    cadence["cooldown_until"] = time.time() + 300
+                try:
+                    signed_protocol_request(dict(base, operation="abort", lease_id=lease["lease_id"]), signing_key)
+                except Exception:
+                    pass
+                stop = True
+                break
+            try:
+                source_rows = [{"id": int(r["id"]), "status": int(r["status"]),
+                                "reservation_time": int(r["reservationTime"])}
+                               for r in snapshot["raw_rows"]]
+                result = signed_protocol_request(dict(base, operation="commit",
+                    lease_id=lease["lease_id"], source_complete=True,
+                    source_rows=source_rows, bookings=snapshot["bookings"]), signing_key)
+                if type(result.get("generation")) is not int or result["generation"] != lease["generation"]:
+                    raise RuntimeError("预约回执版本不符")
                 upserted += result["upserted"]
                 deleted += result["deleted"]
                 written_pairs += 1
                 written_keys.add(pair)
             except Exception as exc:
-                write_errors.append(f"{shop['name']} {date_text}: {exc}")
-        if not run_budget_available(3):
+                # A commit timeout can mean committed. Same-body retry above
+                # is idempotent; never release/re-begin to replay a stale read.
+                write_errors.append("commit_" + type(exc).__name__)
+                stop = True
+                break
+        if stop:
             break
 
     if not fetch_errors and not write_errors:
@@ -525,7 +573,7 @@ def sync_bookings(dates=None, cadence=None):
         "pairs_ok": len(successful_pairs),
         "pairs_written": written_pairs,
         "pairs_failed": expected_pairs - len(successful_pairs),
-        "fetched": len(bookings),
+        "fetched": fetched_count,
         "upserted": upserted,
         "deleted": deleted,
         "write_errors": len(write_errors),
@@ -551,45 +599,49 @@ def sync_bookings(dates=None, cadence=None):
 
 def main():
     global RUN_DEADLINE
+    # Refuse root/other-user launches before lock, status, cadence or source I/O.
+    if os.getuid() != 501 or os.geteuid() != 501:
+        print("预约同步拒绝非预期运行身份", file=sys.stderr)
+        return 1
     scheduled = "--scheduled" in sys.argv[1:]
     cadence = None
-    RUN_DEADLINE = time.monotonic() + (55 if scheduled else RUN_BUDGET_SECONDS)
+    RUN_DEADLINE = time.monotonic() + (90 if scheduled else RUN_BUDGET_SECONDS)
     run_lock = acquire_lock(RUN_LOCK_PATH)
     if run_lock is None:
-        write_status("skipped_busy", reason="booking_sync_running")
         print("预约同步已有任务运行，本次跳过")
         return 0
     try:
-        if scheduled:
-            try:
-                cadence = load_json(CADENCE_PATH)
-            except FileNotFoundError:
-                cadence = {"dates": {}}
-            if time.time() < cadence.get("cooldown_until", 0):
-                print("预约接口限流冷却中，保留已有数据")
-                return 0
-            return sync_bookings(scheduled_dates(cadence), cadence)
-        return sync_bookings()
+        try:
+            cadence = load_json(CADENCE_PATH)
+        except FileNotFoundError:
+            cadence = {"dates": {}}
+        now = time.time()
+        # All entry modes share one durable pre-attempt gate, under the lock.
+        if now < cadence.get("cooldown_until", 0) or now - cadence.get("attempt_at", 0) < 60:
+            return 0
+        dates = scheduled_dates(cadence, now)
+        history = cadence.get("dates", {})
+        dates = [d for d in dates if now >= history.get(d, {}).get("retry_after", 0)]
+        if not dates:
+            return 0
+        cadence["attempt_at"] = now
+        atomic_write_json(CADENCE_PATH, cadence)
+        return sync_bookings(dates, cadence)
     except Exception as exc:
-        if scheduled and cadence is not None and isinstance(exc, urllib.error.HTTPError) and exc.code == 429:
-            cadence["cooldown_until"] = time.time() + 300
+        if cadence is not None:
+            cadence["cooldown_until"] = max(cadence.get("cooldown_until", 0), time.time() + 300)
             atomic_write_json(CADENCE_PATH, cadence)
-        write_status("degraded", error=f"{type(exc).__name__}:{exc}")
-        print(f"预约同步失败: {type(exc).__name__}: {exc}", file=sys.stderr)
+        write_status("degraded", error=type(exc).__name__)
+        print(f"预约同步失败: {type(exc).__name__}", file=sys.stderr)
         return 1
     finally:
         release_lock(run_lock)
 
 
 if __name__ == "__main__":
+    if os.getuid() != 501 or os.geteuid() != 501:
+        print("预约同步拒绝非预期运行身份", file=sys.stderr)
+        sys.exit(1)
     result = main()
-    # Reuse the one existing minute scheduler; independent five-minute cadence
-    # and lock. A bill-read failure must not erase bookings or their status.
-    if "--scheduled" in sys.argv[1:]:
-        try:
-            import sync_mgj_daily_consumption
-            result = sync_mgj_daily_consumption.run(scheduled=True) or result
-        except Exception as exc:
-            print(f"消费快照任务失败（预约结果保留）: {type(exc).__name__}", file=sys.stderr)
-            result = result or 1
+    # Consumption has its own installed launchd job; do not duplicate it here.
     sys.exit(result)

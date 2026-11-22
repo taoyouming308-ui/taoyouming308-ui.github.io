@@ -30,8 +30,12 @@ API调用：
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
+from contextlib import contextmanager, ExitStack
+import copy
+import hashlib
 import fcntl
 import json
+import math
 import os
 import re
 import socket
@@ -44,11 +48,22 @@ import urllib.parse
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation
 
 try:
     import mgj_private_customer as private_customer
 except ModuleNotFoundError:
     from scripts import mgj_private_customer as private_customer
+
+try:
+    import mgj_customer_history_resume as history_resume
+except ModuleNotFoundError:
+    from scripts import mgj_customer_history_resume as history_resume
+
+try:
+    import mgj_source_turns as source_turns
+except ModuleNotFoundError:
+    from scripts import mgj_source_turns as source_turns
 
 # ── 配置 ──
 CONFIG_PATH = "/Users/a1/.hermes/meiguanjia-config.json"
@@ -86,9 +101,310 @@ SHOP_NAMES = {
 DEFAULT_SESSION_SHOP_ID = "1009951"
 RUN_DEADLINE = None
 
-SSL_CTX = ssl.create_default_context()
-SSL_CTX.check_hostname = False
-SSL_CTX.verify_mode = ssl.CERT_NONE
+SOURCE_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 Chrome/148.0.0.0 Safari/537.36"
+)
+
+
+class SourceDeferred(RuntimeError):
+    pass
+
+
+class SourceRateLimitError(SourceDeferred):
+    pass
+
+
+def stop_rate_limited_batch():
+    global RUN_DEADLINE
+    RUN_DEADLINE = time.monotonic()
+    raise SourceRateLimitError("customer source 429; batch yielded for next scheduled run")
+
+
+SOURCE_LOCK = "/tmp/mgj_daily_consumption.lock"
+BOOKING_LOCK = "/tmp/sync_mgj_bookings.lock"
+SOURCE_LAST_END = None
+SOURCE_REQUEST_MAX_SECONDS = 10
+SOURCE_MIN_GAP_SECONDS = 1
+
+DEFERRED_PATH = os.path.expanduser("~/.hermes/mgj_customer_deferred.json")
+
+def load_deferred():
+    try:
+        with open(DEFERRED_PATH) as f: value = json.load(f)
+    except FileNotFoundError: return {"version": 1, "items": []}
+    if not isinstance(value, dict) or value.get("version") != 1 or not isinstance(value.get("items"), list):
+        raise RuntimeError("deferred_state_invalid")
+    for item in value["items"]:
+        if not isinstance(item, dict) or not item.get("phone") or parse_iso_datetime(item.get("deferred_since")) is None:
+            raise RuntimeError("deferred_state_invalid")
+        if "last_attempted_at" in item and parse_iso_datetime(item["last_attempted_at"]) is None:
+            raise RuntimeError("deferred_attempt_state_invalid")
+    return value
+
+def save_deferred(value):
+    directory = os.path.dirname(DEFERRED_PATH)
+    os.makedirs(directory, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(dir=directory, prefix=".customer-deferred-")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(value, f, ensure_ascii=False); f.flush(); os.fsync(f.fileno())
+        os.replace(temporary, DEFERRED_PATH)
+    finally:
+        if os.path.exists(temporary): os.unlink(temporary)
+
+def record_deferred(phones, reason, attempted_at=None):
+    value = load_deferred()
+    items = {item["phone"]: dict(item) for item in value["items"]}
+    now = datetime.now().astimezone().isoformat(timespec="seconds")
+    allowed = {"daily_due_or_cooling", "booking_active", "priority_state_unavailable", "source_turn_unsafe", "source_budget", "source_busy", "source_transport_incomplete", "source_http_incomplete", "session_scope_changed", "session_scope_unverified", "source_response_incomplete"}
+    code = reason if reason in allowed else "source_rate_limited" if "429" in reason else "source_deferred"
+    for phone in phones:
+        item = items.setdefault(phone, {"phone": phone, "deferred_since": now, "deferrals": 0})
+        item.update(last_deferred_at=now, reason=code, deferrals=item["deferrals"]+1)
+        if attempted_at is not None:
+            item["last_attempted_at"] = attempted_at
+    save_deferred({"version": 1, "items": list(items.values())})
+
+def mark_deferred_attempt(phone, attempted_at):
+    # Called only under the customer coordinator; tail deferrals never touch this clock.
+    value = load_deferred()
+    for item in value["items"]:
+        if item["phone"] == phone:
+            item["last_attempted_at"] = attempted_at
+            save_deferred(value)
+            return
+
+def clear_completed_deferred(phone):
+    value = load_deferred()
+    retained = [item for item in value["items"] if item["phone"] != phone]
+    if len(retained) != len(value["items"]): save_deferred({"version": 1, "items": retained})
+
+def deferred_metrics(now=None):
+    now = now or datetime.now().astimezone()
+    items = load_deferred()["items"]
+    ages = [max(0, (now-parse_iso_datetime(item["deferred_since"])).total_seconds()) for item in items]
+    oldest = int(max(ages, default=0))
+    return {"deferred_pending": len(items), "deferred_oldest_seconds": oldest,
+            "deferred_age_alert": oldest >= 3600,
+            "persistent_source_alert": any(item.get("reason", "").startswith(("source_", "session_")) and
+              (item.get("deferrals", 0) >= 3 or age >= 1800) for item, age in zip(items, ages))}
+
+def compensation_phones(queue, limit=INCREMENTAL_RETRY_LIMIT):
+    # Finish already-validated work in at most one existing compensation slot.
+    # A deferred entry must never revive needs_review or bypass retry backoff.
+    queued = {str(item["phone"]) for item in queue.get("items", []) if item.get("phone")}
+    due = eligible_retry_phones(queue, limit=len(queue.get("items", [])))
+    allowed = set(due)
+    deferred = sorted(
+        [item for item in load_deferred()["items"]
+         if item["phone"] not in queued or item["phone"] in allowed],
+        key=lambda item: (parse_iso_datetime(item.get("last_attempted_at", item["deferred_since"])).timestamp(),
+                          parse_iso_datetime(item["deferred_since"]).timestamp()),
+    )
+    store = history_resume_store(read_only=True)
+    active = []
+    for item in deferred:
+        progress = store.peek(history_owner_key(item["phone"]))
+        if progress and progress["completed_windows"]:
+            active.append((progress["created_at"], item["phone"]))
+    first = min(active)[1] if active else (deferred[0]["phone"] if deferred else None)
+    values = ([first] if first else []) + due + [item["phone"] for item in deferred]
+    return list(dict.fromkeys(values))[:limit]
+
+def finish_deferred(mode, reason):
+    progress = getattr(reason, "service_progress", {}) if mode == "services" else {}
+    progress = {k: v for k, v in progress.items() if k in ("success", "failed", "skipped", "service_records_seen") and type(v) is int and v >= 0} if isinstance(progress, dict) else {}
+    write_status("deferred", mode=mode, reason="source_rate_limited" if "429" in str(reason) else str(reason),
+                 **deferred_metrics(), **progress, consecutive_failures=0)
+
+def source_priority_reason():
+    try:
+        import sync_mgj_daily_electronic_sources as daily_priority
+        state = daily_priority.read_daily_sync_state()
+        if (not daily_wait_is_safe(state=state, daily=daily_priority)
+                or daily_priority.daily_sync_due(state)):
+            return "daily_due_or_cooling"
+        if not source_turns.booking_protocol_verified():
+            return "source_turn_unsafe"
+        if source_turns.booking_pending():
+            return "booking_active"
+    except source_turns.TurnUnsafe:
+        return "source_turn_unsafe"
+    except (OSError, ValueError, TypeError, AttributeError, OverflowError, ImportError):
+        return "priority_state_unavailable"
+    return ""
+
+COORDINATOR_LOCK = "/tmp/mgj_customer_coordinator.lock"
+SESSION_LOCK = LOCK_PATH
+CACHE_RESERVE_SECONDS = 20
+WAIT_STEP_SECONDS = 1
+# Diagnostic counters only; the sole wait ceiling is the batch deadline below.
+WAIT_USED = 0
+WAIT_EPISODES = 0
+SESSION_SCOPES = {}
+HISTORY_RESUME_ROOT = os.path.expanduser("~/.hermes/mgj_customer_history_resume")
+
+
+def history_owner_key(phone):
+    return hashlib.sha256(str(phone).encode("utf-8")).hexdigest()
+
+
+def history_resume_store(read_only=False):
+    return history_resume.HistoryResumeStore(HISTORY_RESUME_ROOT, read_only=read_only)
+
+
+def locked_session(config_path=None):
+    path = config_path or CONFIG_PATH
+    cfg = load_config(path)
+    cookies = cfg.get("cookies", "")
+    if not isinstance(cookies, str): cookies = "".join(cookies)
+    user = cookie_value(cookies, "userId") or str(cfg.get("user_id") or "")
+    shop = str(cfg.get("shop_id") or (cfg.get("shop") or {}).get("id") or "")
+    server = cfg.get("server") or SERVER
+    if not user or not shop or server != SERVER:
+        raise SourceDeferred("session_scope_unverified")
+    employee = str(cfg.get("emp_id") or cfg.get("employee_id") or user)
+    identity = (server, shop, user, employee)
+    previous = SESSION_SCOPES.setdefault(path, identity)
+    if previous != identity:
+        raise SourceDeferred("session_scope_changed")
+    return {"cookies": cookies, "shop": shop, "employee": employee}
+
+
+def request_budget_ready(extra_wait=0):
+    remaining = remaining_run_seconds()
+    return remaining is not None and remaining >= extra_wait + SOURCE_REQUEST_MAX_SECONDS + CACHE_RESERVE_SECONDS
+
+
+@contextmanager
+def customer_turn_guard():
+    try:
+        with source_turns.customer_request():
+            yield
+    except source_turns.TurnUnsafe:
+        # Unsafe entry OR cleanup is a closed deferral, never a business failure
+        # or a reason to replay an already-sent source read.
+        raise SourceDeferred("source_turn_unsafe") from None
+
+
+@contextmanager
+def source_slot():
+    global SOURCE_LAST_END, WAIT_USED, WAIT_EPISODES
+    waiting = False
+    while True:
+        if not request_budget_ready(): raise SourceDeferred("source_budget")
+        reason = source_priority_reason()
+        if reason == "daily_due_or_cooling" and not daily_wait_is_safe():
+            # A failed, unknown or cooling daily task must never be waited past.
+            raise SourceDeferred(reason)
+        if reason and reason not in ("booking_active", "daily_due_or_cooling"):
+            raise SourceDeferred(reason)
+        handles = []
+        try:
+            if not reason:
+                for path in (SESSION_LOCK, SOURCE_LOCK):
+                    handle = open(path, "a"); handles.append(handle)
+                    try: fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError:
+                        reason = "source_busy"; break
+                if not reason: reason = source_priority_reason()
+            if not reason:
+                gap = max(0, SOURCE_LAST_END + SOURCE_MIN_GAP_SECONDS-time.monotonic()) if SOURCE_LAST_END is not None else 0
+                if not gap:
+                    if not request_budget_ready(): raise SourceDeferred("source_budget")
+                    with ExitStack() as turn:
+                        try:
+                            turn.enter_context(customer_turn_guard())
+                        except source_turns.TurnBusy:
+                            reason = "source_busy"
+                        if not reason:
+                            # Recheck daily state and new booking intent after
+                            # acquiring the actual cross-worker request gate.
+                            reason = source_priority_reason()
+                        if not reason:
+                            if not request_budget_ready(): raise SourceDeferred("source_budget")
+                            try: yield
+                            finally: SOURCE_LAST_END = time.monotonic()
+                            return
+            else: gap = 0
+        finally:
+            for handle in reversed(handles): handle.close()
+        # Never retain legacy session/source locks during any sleep.
+        if gap:
+            if not request_budget_ready(gap): raise SourceDeferred("source_budget")
+            time.sleep(gap)
+            continue
+        if reason == "daily_due_or_cooling" and not daily_wait_is_safe(): raise SourceDeferred(reason)
+        if reason not in ("booking_active", "source_busy", "daily_due_or_cooling"): raise SourceDeferred(reason)
+        if not waiting:
+            WAIT_EPISODES += 1; waiting = True
+        if not request_budget_ready(WAIT_STEP_SECONDS): raise SourceDeferred("source_budget")
+        WAIT_USED += WAIT_STEP_SECONDS
+        time.sleep(WAIT_STEP_SECONDS)
+
+
+def daily_wait_is_safe(state=None, daily=None):
+    # Read local state only. A failed/cooling daily task is not transient readiness.
+    try:
+        if daily is None:
+            import sync_mgj_daily_electronic_sources as daily
+            state = daily.read_daily_sync_state()
+        if not isinstance(state, dict) or state.get("status") != "healthy": return False
+        now = time.time()
+        cooldown = float(state.get("cooldown_until") or 0)
+        if not math.isfinite(cooldown) or cooldown < 0 or cooldown > now: return False
+        today = datetime.now(daily.TZ).date().isoformat()
+        for shop in daily.SHOPS:
+            pair = state.get("pairs", {}).get(shop + ":" + today)
+            if not isinstance(pair, dict): return False
+            retry_after = float(pair.get("retry_after") or 0)
+            success_at = float(pair.get("success_at") or 0)
+            if (not math.isfinite(retry_after) or retry_after < 0 or retry_after > now
+                    or not math.isfinite(success_at) or success_at <= 0 or success_at > now + 5): return False
+        return True
+    except (OSError, ValueError, TypeError, ImportError, AttributeError, OverflowError):
+        return False
+
+def bounded_source_curl(factory):
+    with source_slot():
+        # Factory rereads approved session and constructs frozen-target request
+        # only after current session/source locks and priority have been checked.
+        command, body = factory()
+        if not request_budget_ready(): raise SourceDeferred("source_budget")
+        return subprocess.check_output(command, input=body, timeout=SOURCE_REQUEST_MAX_SECONDS, stderr=subprocess.STDOUT)
+
+
+def queue_age_alert(queue, now=None):
+    now = now or datetime.now().astimezone()
+    ages = [max(0, (now - first).total_seconds()) for item in queue.get("items", [])
+            if (first := parse_iso_datetime(item.get("first_failed_at"))) is not None]
+    oldest = int(max(ages, default=0))
+    return {"retry_oldest_age_seconds": oldest, "retry_age_alert": oldest >= 86400}
+
+
+class NoSourceRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError("customer_source_redirect_rejected")
+
+
+def source_urlopen(request, timeout):
+    """Exact read-only customer source route, verified TLS, no redirects."""
+    parsed = urllib.parse.urlsplit(request.full_url)
+    if (parsed.scheme != "https" or parsed.hostname != SERVER
+            or parsed.port not in (None, 443) or parsed.username or parsed.password
+            or parsed.path != "/shair/consumerHelp!find.action"
+            or parsed.query or parsed.fragment):
+        raise ValueError("invalid_customer_source_destination")
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), NoSourceRedirect(),
+        urllib.request.HTTPSHandler(context=ssl.create_default_context()))
+    try:
+        return opener.open(request, timeout=timeout)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 429:
+            stop_rate_limited_batch()
+        raise
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -132,6 +448,8 @@ def with_network_retries(operation, timeout, delays=NETWORK_RETRY_DELAYS):
         effective_timeout = timeout if remaining is None else max(1, min(timeout, int(remaining)))
         try:
             return operation(effective_timeout)
+        except SourceDeferred:
+            raise
         except Exception as exc:
             if attempt >= len(delays) or not is_transient_network_error(exc):
                 raise
@@ -177,7 +495,7 @@ def session_shop_id(config_path=None):
 
 def acquire_run_lock():
     """Prevent overlapping cron runs from writing the same profiles."""
-    lock_file = open(LOCK_PATH, "w", encoding="utf-8")
+    lock_file = open(COORDINATOR_LOCK, "w", encoding="utf-8")
     try:
         fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
@@ -334,6 +652,63 @@ def int_number(value, default=0):
         return default
 
 
+def observed_nonnegative_number(value, *, whole=False, maximum_whole=2**53 - 1):
+    """Return a validated source value, including an explicit zero, or None."""
+    if type(value) not in (int, float, str):
+        return None
+    if isinstance(value, str) and (not value.strip() or not re.fullmatch(
+            r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?", value.strip())):
+        return None
+    try:
+        parsed = Decimal(str(value))
+        if not parsed.is_finite() or parsed < 0:
+            return None
+        if whole:
+            if parsed > maximum_whole or parsed != parsed.to_integral_value():
+                return None
+            return int(parsed)
+        result = float(parsed)
+        if not math.isfinite(result) or (result == 0 and parsed != 0):
+            return None
+        return 0.0 if result == 0 else result
+    except (InvalidOperation, OverflowError, ValueError):
+        return None
+
+
+MAX_PROFILE_VISITS = 10_000_000  # signed Edge validateProfile bound
+
+
+def observed_derived_total(visits, avg_fee):
+    if visits is None or avg_fee is None:
+        return None
+    total = visits * avg_fee
+    if not math.isfinite(total):
+        return None
+    rounded = round(total, 2)
+    if rounded == 0 and visits > 0 and avg_fee > 0:
+        # A nonzero observation that cannot be represented at cent precision
+        # cannot prove a zero balance.
+        return None
+    return rounded
+
+
+def member_detail_statistics(member_info):
+    """Return only statistics supported by explicit, valid source fields."""
+    visits = observed_nonnegative_number(
+        member_info.get("consumetimes"), whole=True, maximum_whole=MAX_PROFILE_VISITS,
+    )
+    avg_fee = observed_nonnegative_number(member_info.get("avgfee"))
+    observed = {}
+    if visits is not None:
+        observed["total_visits"] = visits
+    if avg_fee is not None:
+        observed["avg_fee"] = avg_fee
+    total = observed_derived_total(visits, avg_fee)
+    if total is not None:
+        observed["total_consumption"] = total
+    return observed
+
+
 def timestamp_text(timestamp_ms):
     timestamp_ms = int_number(timestamp_ms)
     if timestamp_ms <= 0:
@@ -401,21 +776,21 @@ def supabase_patch(path, body, timeout=10):
 def get_booking_phones(days_back=0, days_forward=7):
     """
     从bookings表获取需要同步的手机号。
-    
+
     参数：
       days_back:   向前看多少天（全量模式用30）
       days_forward: 向后看多少天
-    
+
     注意：Supabase bookings表的未来预约条目可能没有存储手机号，
     所以同时会往回查 days_back 天来获取已知客户。
     """
     today = datetime.now().strftime("%Y-%m-%d")
     start_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
-    
+
     phones = set()
     successful_queries = 0
     query_errors = []
-    
+
     # 1) 从未来预约（today ~ today+days_forward）获取手机号
     end_date = (datetime.now() + timedelta(days=days_forward)).strftime("%Y-%m-%d")
     try:
@@ -427,10 +802,12 @@ def get_booking_phones(days_back=0, days_forward=7):
                 phones.add(p.strip())
         successful_queries += 1
         log(f"  未来预约({today}~{end_date}): {len(data)}条, {sum(1 for b in data if b.get('customer_phone'))}个有手机号")
+    except SourceDeferred:
+        raise
     except Exception as e:
         log(f"  ⚠️ 查询未来预约失败: {e}")
         query_errors.append(str(e))
-    
+
     # 2) 同时从近期历史预约获取手机号（未来预约可能没存手机号）
     if days_back > 0:
         try:
@@ -441,13 +818,15 @@ def get_booking_phones(days_back=0, days_forward=7):
                 if p and p.strip():
                     phones.add(p.strip())
             successful_queries += 1
+        except SourceDeferred:
+            raise
         except Exception as e:
             log(f"  ⚠️ 查询历史预约失败: {e}")
             query_errors.append(str(e))
 
     if successful_queries == 0 and query_errors:
         raise RuntimeError(f"预约手机号查询全部失败: {query_errors[0]}")
-    
+
     return sorted(phones)
 
 
@@ -467,18 +846,20 @@ def select_sync_window(phones, limit=20, slot=None):
 # ═══════════════════════════════════════════════════════════════════
 
 def form_post(path, data):
-    """普通的form POST请求"""
-    url = f"https://{SERVER}/shair/{path}"
-    body = urllib.parse.urlencode(data).encode()
-    req = urllib.request.Request(url, data=body, headers={
-        "Cookie": load_cookies(),
-        "Request-From": "MGJ_SHAIR",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-    })
-    def request(effective_timeout):
-        with urllib.request.urlopen(req, timeout=effective_timeout, context=SSL_CTX) as response:
-            return response.read().decode("utf-8", errors="replace")
-    return with_network_retries(request, 15)
+    if SERVER != "vip12.meiguanjia.net" or path != "consumerHelp!find.action":
+        raise ValueError("invalid_customer_source_destination")
+    frozen = copy.deepcopy(data)
+    def factory():
+        cookies = locked_session()["cookies"]
+        body = urllib.parse.urlencode(frozen).encode()
+        cmd = ["curl", "--disable", "-s", "--noproxy", SERVER, "--proto", "=https", "--connect-timeout", "3", "--max-time", "8", "-X", "POST", f"https://{SERVER}/shair/{path}", "--write-out", "\n__MGJ_HTTP_STATUS__:%{http_code}", "--data-binary", "@-", "-H", f"Cookie: {cookies}", "-H", "Request-From: MGJ_SHAIR", "-H", "Content-Type: application/x-www-form-urlencoded; charset=UTF-8", "-H", f"User-Agent: {SOURCE_USER_AGENT}"]
+        return cmd, body
+    try: out = bounded_source_curl(factory).decode("utf-8", errors="replace")
+    except subprocess.SubprocessError: raise SourceDeferred("source_transport_incomplete") from None
+    payload, marker, status = out.rpartition("\n__MGJ_HTTP_STATUS__:")
+    if status == "429": stop_rate_limited_batch()
+    if not marker or not re.fullmatch(r"2[0-9]{2}", status): raise SourceDeferred("source_http_incomplete")
+    return payload
 
 
 def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
@@ -487,75 +868,99 @@ def multipart_post(path, json_data, shop_id, retries=2, config_path=None):
     通过curl发送，带完整浏览器头+http2以绕过WAF。
     参考plan_server的mp_call实现。
     """
+    if SERVER != "vip12.meiguanjia.net" or path not in {
+        "memberDetail!detail.action", "bill!detail.action",
+        "member!queryMemberBillListnew.action",
+    }:
+        raise ValueError("invalid_customer_multipart_destination")
     url = f"https://{SERVER}/shair/{path}"
     boundary = "----MGJSyncBoundary"
-    
-    body = (
-        f"--{boundary}\r\n"
-        f"Content-Disposition: form-data; name=\"jsonObj\"\r\n\r\n"
-        f"{json.dumps(json_data)}\r\n"
-        f"--{boundary}\r\n"
-        f"Content-Disposition: form-data; name=\"shopid\"\r\n\r\n"
-        f"{shop_id}\r\n"
-        f"--{boundary}--\r\n"
-    )
-    
-    tmp = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt")
-    tmp.write(body)
-    tmp.close()
-    
-    cookies = load_cookies(config_path)
-    
-    cmd = [
-        "curl", "-s", "-k", "--connect-timeout", "10", "--max-time", "20",
-        "--http2", "-X", "POST", url,
-        "-H", f"Cookie: {cookies}",
-        "-H", "Request-From: MGJ_SHAIR",
-        "-H", f"Content-Type: multipart/form-data; boundary={boundary}",
-        "-H", "Accept: application/json, text/plain, */*",
-        "-H", "Accept-Language: zh-CN,zh;q=0.9",
-        "-H", f"Origin: https://{SERVER}",
-        "-H", f"Referer: https://{SERVER}/shair/components/customerRelation/index.html",
-        "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
-        "-H", "X-Requested-With: XMLHttpRequest",
-        "--data-binary", f"@{tmp.name}"
-    ]
-    
-    try:
-        last_error = None
-        for attempt in range(retries + 1):
-            remaining = remaining_run_seconds()
-            if remaining is not None and remaining < 1:
-                raise TimeoutError("同步运行时间已到105秒上限")
+
+    frozen_data = copy.deepcopy(json_data)
+    def factory():
+        session = locked_session(config_path)
+        scoped_data = copy.deepcopy(frozen_data)
+        scoped_shop = str(shop_id) if shop_id is not None else session["shop"]
+        if path == "memberDetail!detail.action":
+            employee = int_number(session["employee"])
+            if employee <= 0: raise SourceDeferred("session_scope_unverified")
+            scoped_data["empId"] = employee
+        elif path in ("bill!detail.action", "member!queryMemberBillListnew.action"):
+            if shop_id is not None and str(shop_id) != session["shop"]:
+                raise SourceDeferred("session_scope_changed")
+            scoped_shop = session["shop"]
+        body = (
+            f"--{boundary}\r\n"
+            f"Content-Disposition: form-data; name=\"jsonObj\"\r\n\r\n"
+            f"{json.dumps(scoped_data)}\r\n"
+            f"--{boundary}\r\n"
+            f"Content-Disposition: form-data; name=\"shopid\"\r\n\r\n"
+            f"{scoped_shop}\r\n"
+            f"--{boundary}--\r\n"
+        )
+
+        cookies = session["cookies"]
+
+        cmd = [
+            "curl", "--disable", "-s", "--noproxy", SERVER, "--proto", "=https",
+            "--connect-timeout", "3", "--max-time", "8",
+            "--http2", "-X", "POST", url,
+            "-H", f"Cookie: {cookies}",
+            "-H", "Request-From: MGJ_SHAIR",
+            "-H", f"Content-Type: multipart/form-data; boundary={boundary}",
+            "-H", "Accept: application/json, text/plain, */*",
+            "-H", "Accept-Language: zh-CN,zh;q=0.9",
+            "-H", f"Origin: https://{SERVER}",
+            "-H", f"Referer: https://{SERVER}/shair/components/customerRelation/index.html",
+            "-H", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+            "-H", "X-Requested-With: XMLHttpRequest",
+            "--write-out", "\n__MGJ_HTTP_STATUS__:%{http_code}",
+            "--data-binary", "@-"
+        ]
+        return cmd, body.encode("utf-8")
+
+    last_error = None
+    for attempt in range(retries + 1):
+        remaining = remaining_run_seconds()
+        if remaining is not None and remaining < 1:
+            raise TimeoutError("同步运行时间已到105秒上限")
+        try:
+            command_timeout = 25 if remaining is None else max(1, min(25, int(remaining)))
+            out = bounded_source_curl(factory)
+            decoded = out.decode("utf-8", errors="replace")
+            payload, marker, http_status = decoded.rpartition("\n__MGJ_HTTP_STATUS__:")
+            if not marker or not re.fullmatch(r"[0-9]{3}", http_status):
+                raise SourceDeferred("source_http_incomplete")
+            if http_status == "429":
+                stop_rate_limited_batch()
+            if not http_status.startswith("2"):
+                raise SourceDeferred("source_http_incomplete")
+            decoded = payload
             try:
-                command_timeout = 25 if remaining is None else max(1, min(25, int(remaining)))
-                out = subprocess.check_output(cmd, timeout=command_timeout, stderr=subprocess.STDOUT)
-                decoded = out.decode("utf-8", errors="replace")
-                try:
-                    result = json.loads(decoded)
-                except json.JSONDecodeError as exc:
-                    if decoded.lstrip().startswith("<"):
-                        raise RuntimeError(f"{path}返回HTML拦截页") from exc
-                    raise
-                if result.get("code") == 0:
-                    return result
-                if int_number(result.get("code"), -1) == 403:
-                    raise RuntimeError(f"{path} code=403 请求被拒绝")
-                last_error = RuntimeError(
-                    f"{path} code={result.get('code')} "
-                    f"{result.get('message') or result.get('msg') or ''}".strip()
-                )
-            except (subprocess.SubprocessError, json.JSONDecodeError) as exc:
-                last_error = exc
-            if attempt < retries:
-                delay = 0.8 * (attempt + 1)
-                remaining = remaining_run_seconds()
-                if remaining is not None and remaining <= delay + 1:
-                    break
-                time.sleep(delay)
-        raise RuntimeError(f"{path}请求失败: {last_error}")
-    finally:
-        os.unlink(tmp.name)
+                result = json.loads(decoded)
+            except json.JSONDecodeError as exc:
+                if decoded.lstrip().startswith("<"):
+                    raise SourceDeferred("source_http_incomplete") from None
+                raise
+            if not isinstance(result, dict) or type(result.get("code")) is not int:
+                raise SourceDeferred("source_response_incomplete")
+            if result.get("code") == 0:
+                return result
+            if int_number(result.get("code"), -1) == 429:
+                stop_rate_limited_batch()
+            if int_number(result.get("code"), -1) == 403:
+                raise SourceDeferred("source_http_incomplete")
+            raise SourceDeferred("source_response_incomplete")
+        except (subprocess.SubprocessError, json.JSONDecodeError) as exc:
+            # Never serialize curl command arguments containing the source cookie.
+            raise SourceDeferred("source_transport_incomplete") from None
+        if attempt < retries:
+            delay = 0.8 * (attempt + 1)
+            remaining = remaining_run_seconds()
+            if remaining is not None and remaining <= delay + 1:
+                break
+            time.sleep(delay)
+    raise RuntimeError(f"{path}请求失败: {last_error}")
 
 
 def search_customer(phone):
@@ -563,7 +968,7 @@ def search_customer(phone):
     在两家店中搜索客户，返回(cust_id, mem_id, shop_id)或None。
     搜索时带isYY=1参数。
     """
-    cookies = load_cookies()
+    errors = []
     for sid in SHOP_IDS:
         try:
             html = form_post("consumerHelp!find.action", {
@@ -573,8 +978,15 @@ def search_customer(phone):
             m = re.search(r"checkAllow\('(\d+)',\s*'?(\d+)'?,\s*'?(\d+)'?,", html)
             if m:
                 return m.group(3), m.group(1), sid  # cust_id, mem_id, shop_id
+        except SourceRateLimitError:
+            raise
+        except SourceDeferred:
+            raise
         except Exception as e:
-            log(f"  ⚠️ 搜索shop={sid}失败: {e}")
+            errors.append(e)
+            log(f"  ⚠️ 搜索shop={sid}失败: {type(e).__name__}")
+    if errors:
+        raise RuntimeError("客户源搜索不完整：连接或读取失败，不能判定客户不存在") from errors[0]
     return None
 
 
@@ -587,14 +999,15 @@ def fetch_customer_detail(cust_id, shop_id):
         result = multipart_post("memberDetail!detail.action", {
             "memberid": cust_id,
             "freezeType": 0,
-            "empId": int_number(session_employee_id()),
             "parentShopId": PARENT_SHOP_ID,
             "shopId": PARENT_SHOP_ID
         }, PARENT_SHOP_ID)
+    except SourceDeferred:
+        raise
     except Exception as e:
         log(f"  ⚠️ memberDetail请求异常: {e}")
         return None
-    
+
     content = result.get("content") or {}
     member_info = content.get("memberInfo") or {}
     if not member_info:
@@ -694,7 +1107,7 @@ def enrich_bill_history(history_item, shop_id, config_path=HISTORY_CONFIG_PATH):
         "parentShopId": int(PARENT_SHOP_ID),
         "id": int(bill_id),
         "fromHis": 0,
-    }, session_shop_id(config_path), retries=1, config_path=config_path)
+    }, None, retries=1, config_path=config_path)
     content = detail.get("content") or {}
     item_rows = []
     for item in content.get("details") or []:
@@ -734,28 +1147,34 @@ def fetch_service_history(
     billing_shop_id,
     detail_calls=HISTORY_DETAIL_CALLS,
     config_path=HISTORY_CONFIG_PATH,
+    resume_owner=None,
+    resume_receipt=None,
 ):
     """Fetch bills through the read-only history session and enrich recent rows."""
     if not member_card_id:
         raise RuntimeError("缺少会员卡ID，无法查询消费记录")
-    bills = multipart_post("member!queryMemberBillListnew.action", {
-        "pageNum": 1,
-        "pageSize": 99999,
-        "memberid": cust_id,
-        "shopid": billing_shop_id,
-        "billstatus": -1,
-        "billtype": -1,
-        "timeUnLimit": 1,
-        "memberCardId": int(member_card_id),
-        "startDate": HISTORY_START_DATE,
-        "endDate": datetime.now().strftime("%Y-%m-%d"),
-        "isFromOpenCard": 0,
-    }, session_shop_id(config_path), config_path=config_path)
-    rows = bills.get("content")
-    if not isinstance(rows, list):
-        raise RuntimeError("消费记录接口返回格式异常")
-    history = [map_bill_summary(row) for row in rows]
-    history = [row for row in history if row.get("id") and row.get("date")]
+    if resume_owner is not None:
+        if resume_receipt is None:
+            raise ValueError("history_resume_receipt_required")
+        return fetch_resumable_history(cust_id, member_card_id, billing_shop_id,
+                                       detail_calls, config_path, resume_owner, resume_receipt)
+    # The source now rejects ranges longer than one year. Read finite,
+    # non-overlapping <=365-day windows; any failed window keeps old history.
+    first_day = datetime.strptime(HISTORY_START_DATE, "%Y-%m-%d").date()
+    last_day = datetime.now().date()
+    history_by_id = {}
+    while last_day >= first_day:
+        if not run_budget_available():
+            raise TimeoutError("消费历史分段未完成，保留原历史")
+        window_start = max(first_day, last_day - timedelta(days=364))
+        for mapped in read_history_window(cust_id, member_card_id, billing_shop_id,
+                                          window_start.isoformat(), last_day.isoformat(), config_path):
+            key = str(mapped["id"])
+            if key in history_by_id and history_by_id[key] != mapped:
+                raise RuntimeError("消费记录重复编号内容冲突")
+            history_by_id[key] = mapped
+        last_day = window_start - timedelta(days=1)
+    history = list(history_by_id.values())
     history.sort(
         key=lambda row: (row.get("date", ""), row.get("time", ""), row.get("id", "")),
         reverse=True,
@@ -768,8 +1187,104 @@ def fetch_service_history(
                 billing_shop_id,
                 config_path=config_path,
             )
+        except SourceDeferred:
+            raise
         except Exception as exc:
             log(f"  ⚠️ 账单{history[index].get('id')}明细读取失败，保留账单摘要: {exc}")
+    return history[:HISTORY_RECORD_LIMIT]
+
+
+def history_resume_scope(cust_id, member_card_id, billing_shop_id, config_path):
+    # Local identity read under the same lock used for credential renewal.
+    # Never persist cookies/tokens or derive a principal outside this lock.
+    with open(SESSION_LOCK, "a") as session_lock:
+        try:
+            fcntl.flock(session_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise SourceDeferred("source_busy")
+        locked_session(config_path)
+        server, shop, user, employee = SESSION_SCOPES[config_path]
+    return {"host": server, "customer_id": str(cust_id), "card_id": str(member_card_id),
+            "store_id": str(billing_shop_id), "session_shop": shop,
+            "session_user": user, "session_employee": employee}
+
+
+def read_history_window(cust_id, member_card_id, billing_shop_id, start, end, config_path):
+    if not run_budget_available():
+        raise SourceDeferred("source_budget")
+    bills = multipart_post("member!queryMemberBillListnew.action", {
+        "pageNum": 1, "pageSize": 99999,
+        "memberid": cust_id, "shopid": billing_shop_id,
+        "billstatus": -1, "billtype": -1, "timeUnLimit": 0,
+        "memberCardId": int(member_card_id), "startDate": start, "endDate": end,
+        "isFromOpenCard": 0,
+    }, None, config_path=config_path)
+    rows = bills.get("content")
+    if (not isinstance(rows, list) or len(rows) >= 99999
+            or type(bills.get("count")) is not int or bills["count"] != len(rows)
+            or bills.get("pageIndex") != 1):
+        raise RuntimeError("消费记录分段格式异常或分页数量不完整")
+    mapped_rows = {}
+    for row in rows:
+        mapped = map_bill_summary(row)
+        if not mapped.get("id") or not mapped.get("date"):
+            raise RuntimeError("消费记录缺少编号或日期，不能判定历史完整")
+        if not start <= mapped["date"] <= end:
+            raise RuntimeError("消费记录超出请求分段，不能判定历史完整")
+        key = str(mapped["id"])
+        if key in mapped_rows and mapped_rows[key] != mapped:
+            raise RuntimeError("消费记录重复编号内容冲突")
+        mapped_rows[key] = mapped
+    return list(mapped_rows.values())
+
+
+def fetch_resumable_history(cust_id, member_card_id, billing_shop_id, detail_calls,
+                            config_path, owner, receipt):
+    store = history_resume_store()
+    scope = history_resume_scope(cust_id, member_card_id, billing_shop_id, config_path)
+    today = datetime.now().date().isoformat()
+    revision = 0
+    try:
+        state = store.load(owner, scope)
+    except history_resume.ResumeExpired as exc:
+        # Expiry starts a new finite cycle, never extends the old evidence lifetime.
+        state, revision = None, exc.revision
+    if state is not None and (state["start_date"] != HISTORY_START_DATE or state["detail_limit"] != detail_calls):
+        raise history_resume.ResumeConflict(state["revision"])
+    if state is None:
+        state = store.start(owner, scope, HISTORY_START_DATE, today,
+                            detail_limit=detail_calls, expected_revision=revision)
+    while True:
+        pending = store.pending_windows(state, today)
+        if not pending:
+            break
+        for window in pending:
+            rows = read_history_window(cust_id, member_card_id, billing_shop_id,
+                                       window["start"], window["end"], config_path)
+            state = store.record_window(state, window["start"], window["end"], rows)
+    recent = store.recent_window(state, today)
+    rows = read_history_window(cust_id, member_card_id, billing_shop_id,
+                               recent["start"], recent["end"], config_path)
+    state = store.refresh_recent_window(state, rows)
+    history = store.list_rows(state, today)
+    if state["enrichment_ids"] is None:
+        indexes = select_history_detail_indexes(history, detail_calls,
+                                               slot=int(state["created_at"] // 1800))
+        state = store.select_enrichment(state, [history[index]["id"] for index in indexes])
+    by_id = {row["id"]: row for row in history}
+    for bill_id in store.enrichment_candidates(state, today):
+        row = by_id[bill_id]
+        try:
+            row = enrich_bill_history(row, billing_shop_id, config_path=config_path)
+        except SourceDeferred:
+            raise
+        except Exception:
+            # Existing best-effort detail semantics: keep a truthful summary.
+            row = {**row, "detail_fetch_error": "detail_unavailable"}
+            log("  ⚠️ 账单明细暂不可用，保留已验证摘要")
+        state = store.record_enrichment(state, bill_id, row)
+    history = store.finalize(state, today)
+    receipt.update(owner=owner, state=state)  # Internal only; never sent to cloud.
     return history[:HISTORY_RECORD_LIMIT]
 
 
@@ -777,7 +1292,7 @@ def fetch_cashier_html(phone, shop_id):
     """
     现金页HTML回退：当memberDetail被WAF拦截时，
     用不带isYY参数的搜索获取现金页HTML。
-    
+
     从HTML中提取：
       - hidden input: name, consumefee, lastconsumetime
       - table tbody#lciList: 疗程套餐数据
@@ -792,29 +1307,31 @@ def fetch_cashier_html(phone, shop_id):
 def parse_cashier_html(html):
     """从现金页HTML提取客户数据"""
     result = {}
-    
+
     # hidden inputs
     def hv(name):
         m = re.search(r'<input[^>]*id="' + re.escape(name) + r'"[^>]*value="([^"]*)"', html)
         return m.group(1).strip() if m else ""
-    
+
     result["name"] = hv("name")
-    
+
     fee_str = hv("consumefee")
     result["consumefee"] = float(fee_str) if fee_str and fee_str.replace(".", "", 1).isdigit() else 0
-    
+
     last_str = hv("lastconsumetime")
     if last_str:
         try:
             # Format: "Thu May 21 19:25:42 CST 2026"
             clean = re.sub(r'\s+[A-Z]{3,4}\s+', ' ', last_str)
-            result["lastconsumetime"] = time.strftime("%Y-%m-%d", 
+            result["lastconsumetime"] = time.strftime("%Y-%m-%d",
                 time.strptime(clean.strip(), "%a %b %d %H:%M:%S %Y"))
+        except SourceDeferred:
+            raise
         except Exception:
             result["lastconsumetime"] = last_str
     else:
         result["lastconsumetime"] = ""
-    
+
     # 疗程套餐：从lciList表格提取
     treats = []
     lci = re.search(r'<tbody id="lciList">(.*?)</tbody>', html, re.DOTALL)
@@ -843,15 +1360,29 @@ def parse_cashier_html(html):
 #  获取客户完整数据（核心逻辑）
 # ═══════════════════════════════════════════════════════════════════
 
-def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
+def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS, read_only=False):
+    if read_only:
+        # Validation must not advance/clear progress or touch compensation queues.
+        return _get_customer_full(phone, history_detail_calls, use_resume=False)
+    load_deferred()  # Corrupt state must not be overwritten or ignored.
+    attempted_at = datetime.now().astimezone().isoformat(timespec="microseconds")
+    mark_deferred_attempt(phone, attempted_at)
+    try:
+        return _get_customer_full(phone, history_detail_calls)
+    except SourceDeferred as exc:
+        record_deferred([phone], str(exc), attempted_at=attempted_at)
+        raise
+
+
+def _get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS, use_resume=True):
     """
     获取客户的完整数据。
-    
+
     路径：
       1. 搜索客户 → 获取custId
       2. memberDetail!detail.action → 完整JSON（有consumetimes/avgfee/treatMentItems）
       3. 失败（WAF）→ 现金页HTML回退（有consumefee但无consumetimes）
-    
+
     返回dict:
       {
         "found": bool,
@@ -867,13 +1398,13 @@ def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
     result = search_customer(phone)
     if not result:
         return {"found": False, "message": "未搜索到该客户"}
-    
+
     cust_id, mem_id, shop_id = result
     log(f"  找到客户 custId={cust_id}, shopId={shop_id}")
-    
+
     # 主路径：memberDetail
     detail_data = fetch_customer_detail(cust_id, shop_id)
-    
+
     if detail_data:
         # memberDetail成功 — 有完整数据
         member_info = detail_data["member_info"]
@@ -883,7 +1414,7 @@ def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
             or member_info.get("name", "")
             or ""
         )
-        
+
         # 如果memberDetail没返回名字，尝试从现金页HTML获取
         if not name:
             try:
@@ -891,90 +1422,111 @@ def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
                 if cashier.get("name"):
                     name = cashier["name"]
                     log(f"  从现金页获取到姓名: {name}")
+            except SourceDeferred:
+                raise
             except Exception:
                 pass
-        
-        consumetimes = int(member_info.get("consumetimes", 0) or 0)
-        avgfee = float(member_info.get("avgfee", 0) or 0)
-        
-        # total_consumption = consumetimes × avgfee（这是唯一历史总消费来源）
-        total_consumption = round(consumetimes * avgfee, 2)
-        
+
+        observed_stats = member_detail_statistics(member_info)
+
         # 最后到店时间（毫秒时间戳）
         last_ts = member_info.get("lastconsumetime", 0)
         last_visit = ""
         if last_ts and last_ts > 1000000000000:
             last_visit = time.strftime("%Y-%m-%d %H:%M", time.localtime(last_ts / 1000))
-        
-        # 疗程套餐。memberDetail成功时，空数组也是权威结果。
-        treats = member_info.get("treatMentItems", []) or []
+
+        # Only an explicit, parseable list may replace an existing package list.
+        treats = member_info.get("treatMentItems")
+        packages_complete = isinstance(treats, list)
         card_packages = []
-        for t in treats:
-            item_name = t.get("itemname", "").strip()
-            leavetimes = int(t.get("leavetimes", 0) or 0)
-            sumtimes = int(t.get("sumtimes", 0) or 0)
-            if item_name and sumtimes > 0:
-                package_name = str(t.get("treatPackageName") or "").strip()
-                source_id = (
-                    t.get("id")
-                    or t.get("treatPackageId")
-                    or t.get("packageId")
-                    or t.get("itemid")
-                )
-                card_packages.append({
-                    "id": str(source_id or f"{cust_id}:{item_name}:{sumtimes}"),
-                    "name": item_name,
-                    "package_name": package_name,
-                    "total": sumtimes,
-                    "left": leavetimes,
-                    "used": max(0, sumtimes - leavetimes),
-                    "shop": str(t.get("treatShopName") or SHOP_NAMES.get(shop_id, "")),
-                    "expire_date": timestamp_date(t.get("validdate")),
-                    "bought_at": timestamp_date(t.get("buyDate")),
-                    "status": "active" if leavetimes > 0 else "used",
-                })
+        for t in treats if packages_complete else ():
+            if not isinstance(t, dict) or not isinstance(t.get("itemname"), str):
+                packages_complete = False
+                break
+            item_name = t["itemname"].strip()
+            leavetimes = observed_nonnegative_number(t.get("leavetimes"), whole=True)
+            sumtimes = observed_nonnegative_number(t.get("sumtimes"), whole=True)
+            if not item_name or sumtimes is None or sumtimes <= 0 or leavetimes is None:
+                packages_complete = False
+                break
+            package_name = str(t.get("treatPackageName") or "").strip()
+            source_id = (
+                t.get("id")
+                or t.get("treatPackageId")
+                or t.get("packageId")
+                or t.get("itemid")
+            )
+            card_packages.append({
+                "id": str(source_id or f"{cust_id}:{item_name}:{sumtimes}"),
+                "name": item_name,
+                "package_name": package_name,
+                "total": sumtimes,
+                "left": leavetimes,
+                "used": max(0, sumtimes - leavetimes),
+                "shop": str(t.get("treatShopName") or SHOP_NAMES.get(shop_id, "")),
+                "expire_date": timestamp_date(t.get("validdate")),
+                "bought_at": timestamp_date(t.get("buyDate")),
+                "status": "active" if leavetimes > 0 else "used",
+            })
 
         cards = detail_data.get("cards") or []
         card_id = choose_member_card(cards, mem_id)
         billing_shop_id = str(member_info.get("shopid") or shop_id)
         service_history = []
         history_complete = False
+        history_receipt = {}
+        history_error = ""
         try:
+            resume = use_resume and history_detail_calls == HISTORY_DETAIL_CALLS
             service_history = fetch_service_history(
                 cust_id,
                 card_id,
                 billing_shop_id,
                 detail_calls=history_detail_calls,
+                resume_owner=history_owner_key(phone) if resume else None,
+                resume_receipt=history_receipt if resume else None,
             )
             history_complete = True
             log(f"  消费记录: {len(service_history)}笔")
+        except SourceDeferred:
+            raise
+        except history_resume.ResumeError as exc:
+            history_error = exc.code
+            log(f"  ⚠️ 消费历史续传需核对，保留原数据: {history_error}")
         except Exception as exc:
             log(f"  ⚠️ 消费记录读取失败，将保留档案原数据: {exc}")
-        
+
         return {
             "found": True,
             "name": name,
             "shop_name": SHOP_NAMES.get(shop_id, ""),
             "barber_name": str(member_info.get("mgjlastserver") or ""),
-            "total_visits": consumetimes,
-            "total_consumption": total_consumption,
-            "avg_fee": avgfee,
+            # Keep numeric defaults for legacy display/log callers; only the
+            # separate observed values may drive memberDetail write decisions.
+            "total_visits": observed_stats.get("total_visits", 0),
+            "total_consumption": observed_stats.get("total_consumption", 0),
+            "avg_fee": observed_stats.get("avg_fee", 0),
+            "_member_detail_stats": observed_stats,
             "last_visit_date": last_visit if last_visit else None,
             "card_packages": card_packages,
             "service_history": service_history,
             "source": "memberDetail",
             "source_customer_id": str(cust_id),
-            "_packages_complete": True,
+            "_packages_complete": packages_complete,
             "_history_complete": history_complete,
+            "_history_resume_receipt": history_receipt,
+            "_history_error": history_error,
         }
-    
+
     # 回退路径：现金页HTML
     log(f"  memberDetail被拦截，回退到现金页HTML...")
     try:
         cashier = parse_cashier_html(fetch_cashier_html(phone, shop_id))
+    except SourceDeferred:
+        raise
     except Exception as e:
         return {"found": False, "message": f"现金页回退失败: {e}"}
-    
+
     if cashier.get("name") or cashier.get("consumefee", 0) > 0:
         # 现金页有consumefee（历史总消费）但没有consumetimes
         return {
@@ -991,9 +1543,9 @@ def get_customer_full(phone, history_detail_calls=HISTORY_DETAIL_CALLS):
             "source_customer_id": str(cust_id),
             "_packages_complete": bool(cashier.get("treats")),
             "_history_complete": False,
-            "_note": "现金页回退：缺少total_visits和avg_fee"
+            "_note": "现金页回退：缺少total_visits和avg_fee",
         }
-    
+
     return {"found": False, "message": "查询客户详情失败"}
 
 
@@ -1056,6 +1608,10 @@ def merge_history(existing_history, incoming_history):
 
 
 def merge_notes(existing_notes, avg_fee, source_customer_id):
+    # The existing notes format stores integers; do not render a positive
+    # average as a falsely authoritative zero.
+    if avg_fee is not None and avg_fee > 0 and f"{avg_fee:.0f}" == "0":
+        avg_fee = None
     if isinstance(existing_notes, (dict, list)):
         existing_text = json.dumps(existing_notes, ensure_ascii=False)
     else:
@@ -1063,9 +1619,9 @@ def merge_notes(existing_notes, avg_fee, source_customer_id):
     parts = [
         part.strip()
         for part in re.split(r"\s*\|\s*", existing_text)
-        if part.strip() and not part.strip().startswith("均消¥")
+        if part.strip() and (avg_fee is None or not part.strip().startswith("均消¥"))
     ]
-    if avg_fee > 0:
+    if avg_fee is not None:
         parts.insert(0, f"均消¥{avg_fee:.0f}")
     if source_customer_id and not any(part.startswith("美管加客户ID:") for part in parts):
         parts.append(f"美管加客户ID:{source_customer_id}")
@@ -1144,8 +1700,10 @@ def merge_profile(existing, incoming, fill_missing_only=False):
         "name": existing.get("name") or incoming.get("name") or "",
         "shop_name": existing.get("shop_name") or incoming.get("shop_name") or "",
         "barber_name": existing.get("barber_name") or incoming.get("barber_name") or "",
-        "total_visits": existing.get("total_visits") or 0,
-        "total_consumption": existing.get("total_consumption") or 0,
+        "total_visits": observed_nonnegative_number(
+            existing.get("total_visits"), whole=True, maximum_whole=MAX_PROFILE_VISITS,
+        ),
+        "total_consumption": observed_nonnegative_number(existing.get("total_consumption")),
         "last_visit_date": existing.get("last_visit_date") or incoming.get("last_visit_date"),
         "card_packages": existing_packages,
         "service_history": existing_history,
@@ -1159,14 +1717,34 @@ def merge_profile(existing, incoming, fill_missing_only=False):
         profile["barber_name"] = incoming["barber_name"]
     if not fill_missing_only and incoming.get("last_visit_date"):
         profile["last_visit_date"] = incoming["last_visit_date"]
-    if int_number(incoming.get("total_visits")) > 0 and (
-        not fill_missing_only or int_number(existing.get("total_visits")) <= 0
-    ):
-        profile["total_visits"] = int_number(incoming.get("total_visits"))
-    if number(incoming.get("total_consumption")) > 0 and (
-        not fill_missing_only or number(existing.get("total_consumption")) <= 0
-    ):
-        profile["total_consumption"] = number(incoming.get("total_consumption"))
+    stats = {}
+    if incoming.get("source") == "memberDetail":
+        observed = incoming.get("_member_detail_stats")
+        if isinstance(observed, dict):
+            for field in ("total_visits", "avg_fee"):
+                value = observed_nonnegative_number(
+                    observed.get(field), whole=field == "total_visits", maximum_whole=MAX_PROFILE_VISITS,
+                )
+                if value is not None:
+                    stats[field] = value
+        # A derived total is authoritative only when both validated operands
+        # are also known. Don't trust a standalone total in this source.
+        total = observed_derived_total(stats.get("total_visits"), stats.get("avg_fee"))
+        if total is not None:
+            stats["total_consumption"] = total
+    else:
+        # Existing fallback contract: a positive value may fill/update; a
+        # fallback placeholder zero cannot erase archived statistics.
+        for field in ("total_visits", "total_consumption", "avg_fee"):
+            value = observed_nonnegative_number(
+                incoming.get(field), whole=field == "total_visits", maximum_whole=MAX_PROFILE_VISITS,
+            )
+            if value is not None and value > 0:
+                stats[field] = value
+
+    for field in ("total_visits", "total_consumption"):
+        if field in stats and (not fill_missing_only or profile[field] is None or profile[field] <= 0):
+            profile[field] = stats[field]
     if incoming.get("_packages_complete") and (not fill_missing_only or not existing_packages):
         profile["card_packages"] = parse_array(incoming.get("card_packages"))
     if incoming.get("_history_complete") and (not fill_missing_only or not existing_history):
@@ -1177,10 +1755,10 @@ def merge_profile(existing, incoming, fill_missing_only=False):
     if fill_missing_only and existing.get("notes"):
         profile["notes"] = existing["notes"]
     else:
+        # avg_fee has no column in this projection; update the existing
+        # average marker for explicit zero too, and preserve it when unknown.
         profile["notes"] = merge_notes(
-            existing.get("notes"),
-            number(incoming.get("avg_fee")),
-            incoming.get("source_customer_id"),
+            existing.get("notes"), stats.get("avg_fee"), incoming.get("source_customer_id"),
         )
     return profile
 
@@ -1192,19 +1770,26 @@ def upsert_customer(data, fill_missing_only=False):
     """
     phone = data["phone"]
     filter_path = f"{TABLE}?phone=eq.{urllib.parse.quote(phone)}"
-    
+
     # 查是否已存在
     try:
         rows = supabase_get(
             f"{filter_path}&select=id,phone,name,shop_name,barber_name,total_visits,"
             "total_consumption,last_visit_date,card_packages,service_history,notes,last_updated&limit=1"
         )
+    except SourceDeferred:
+        raise
     except Exception as e:
         return False, f"查询失败: {e}"
 
     existing = rows[0] if rows else None
     profile = merge_profile(existing, data, fill_missing_only=fill_missing_only)
-    
+    if profile["total_visits"] is None or profile["total_consumption"] is None:
+        # The signed Edge requires a complete numeric profile. Leave a new
+        # or legacy-null row untouched if there is not enough evidence to
+        # construct one, and use the ordinary per-customer retry path.
+        return False, "客户统计字段缺少可靠数值，未写入档案，保留重试"
+
     try:
         if existing:
             supabase_patch(filter_path, profile)
@@ -1216,10 +1801,25 @@ def upsert_customer(data, fill_missing_only=False):
             service_count = upsert_service_records(profile)
             if service_count:
                 action += f" + {service_count} service records"
+        except SourceDeferred:
+            raise
         except Exception as service_exc:
             # Customer archives must keep syncing during a staged schema rollout.
             log(f"  ⚠️ 烫染护对账明细写入失败，客户档案已保留: {service_exc}")
+            return False, "客户档案已保存，但服务历史投影未完成，保留重试"
+        if data.get("_history_complete") is False or data.get("_packages_complete") is False:
+            reason = data.get("_history_error")
+            suffix = f"（{reason}，需核对续传状态）" if reason else ""
+            return False, "客户档案已保存，但套餐或消费历史读取不完整，保留重试" + suffix
+        receipt = data.get("_history_resume_receipt")
+        if receipt:
+            if receipt.get("owner") != history_owner_key(phone) or not receipt.get("state"):
+                return False, "客户档案已保存，但续传回执不匹配，保留重试"
+            history_resume_store().ack(receipt["state"])
+        clear_completed_deferred(data.get("phone"))
         return True, action
+    except SourceDeferred:
+        raise
     except Exception as e:
         return False, str(e)
 
@@ -1230,16 +1830,16 @@ def upsert_customer(data, fill_missing_only=False):
 
 def validate_customer(phone):
     """验证一个客户的消费数据是否合理"""
-    data = get_customer_full(phone)
+    data = get_customer_full(phone, read_only=True)
     if not data.get("found"):
         return {"valid": False, "error": data.get("message", "未找到")}
-    
+
     issues = []
     v = data.get("total_visits", 0)
     c = data.get("total_consumption", 0)
     a = data.get("avg_fee", 0)
     lv = data.get("last_visit_date", "")
-    
+
     if v > 0 and c == 0:
         issues.append(f"⚠️ {v}次到店但总消费为0")
     if v > 0 and c > 0:
@@ -1254,13 +1854,13 @@ def validate_customer(phone):
         issues.append("⚠️ 当前仅取得现金页回退数据，消费明细未完成")
     elif v > 0 and not data.get("_history_complete"):
         issues.append("⚠️ 消费记录接口未完成")
-    
+
     # 次数×均消≈总消费
     if v > 0 and a > 0:
         computed = round(v * a, 2)
         if abs(computed - c) > 0.01:
             issues.append(f"ℹ️ {v}次×¥{a}=¥{computed} vs total_consumption=¥{c}")
-    
+
     result = {
         "valid": len(issues) == 0,
         "phone": phone,
@@ -1287,18 +1887,19 @@ def sync_phones(phones, label="同步"):
     fail = 0
     skipped = 0
     outcomes = []
-    
+
     log(f"📞 共{total}个客户需要{label}")
-    
+
     for i, phone in enumerate(phones):
         if not run_budget_available():
+            record_deferred(phones[i:], "source_budget")
             remaining_count = total - i
             log(f"  ⏭ 已到105秒运行上限，保留{remaining_count}个客户给下次同步")
             skipped += remaining_count
             outcomes.extend({"phone": value, "skipped": True} for value in phones[i:])
             break
         log(f"[{i+1}/{total}] {phone}...")
-        
+
         try:
             data = get_customer_full(phone)
             if not data.get("found"):
@@ -1307,31 +1908,43 @@ def sync_phones(phones, label="同步"):
                 fail += 1
                 outcomes.append({"phone": phone, "success": False, "error": error})
                 continue
-            
+
             profile_data = dict(data)
             profile_data["phone"] = phone
-            
+
             success, action = upsert_customer(profile_data)
             if success:
                 v = data["total_visits"]
                 c = data["total_consumption"]
                 s = data.get("source", "?")
-                log(f"  ✅ ({action}) {v}次 ¥{c:.0f} [{s}]")
-                ok += 1
-                outcomes.append({"phone": phone, "success": True})
+                if not data.get("_history_complete") or not data.get("_packages_complete"):
+                    log("  ⚠️ 资料已保存，历史或套餐尚未完整")
+                    fail += 1
+                    outcomes.append({"phone": phone, "success": False, "profile_updated": True,
+                                     "error": "客户档案已保存，但套餐或消费历史读取不完整，保留重试"})
+                else:
+                    log(f"  ✅ ({action}) {v}次 ¥{c:.0f} [{s}]")
+                    ok += 1
+                    outcomes.append({"phone": phone, "success": True})
             else:
                 log(f"  ❌ 写入失败: {action}")
                 fail += 1
                 outcomes.append({"phone": phone, "success": False, "error": action})
+        except SourceDeferred as exc:
+            record_deferred(phones[i+1:], str(exc))
+            skipped += total - i
+            outcomes.extend({"phone": value, "skipped": True, "deferred": str(exc)} for value in phones[i:])
+            log(f"  ⏭ 顾客批次让出: {exc}")
+            break
         except Exception as e:
             log(f"  ❌ 同步异常: {e}")
             fail += 1
             outcomes.append({"phone": phone, "success": False, "error": str(e)})
-        
+
         # API调用间隔，避免被墙
         if i < total - 1 and run_budget_available(2):
             time.sleep(1)
-    
+
     return ok, fail, skipped, outcomes
 
 
@@ -1417,6 +2030,8 @@ def run_backfill(limit=20):
                 else:
                     log(f"  ❌ 写入失败: {action}")
                     fail += 1
+        except SourceDeferred:
+            raise
         except Exception as exc:
             log(f"  ❌ 回填异常: {exc}")
             fail += 1
@@ -1507,6 +2122,11 @@ def run_service_refresh(limit=SERVICE_REFRESH_LIMIT):
             else:
                 fail += 1
                 log(f"  ❌ {action}")
+        except SourceDeferred as exc:
+            exc.service_progress = {"success": ok, "failed": fail,
+                                    "skipped": len(selected) - index,
+                                    "service_records_seen": service_rows}
+            raise
         except Exception as exc:
             fail += 1
             log(f"  ❌ 近期明细刷新失败: {exc}")
@@ -1520,9 +2140,9 @@ def run_validate(phones, label="验证"):
     total = len(phones)
     all_issues = []
     ok_count = 0
-    
+
     log(f"🔍 {label} {total}个客户...")
-    
+
     for i, phone in enumerate(phones):
         result = validate_customer(phone)
         if result.get("valid"):
@@ -1533,10 +2153,10 @@ def run_validate(phones, label="验证"):
             for issue in result.get("issues", []):
                 log(f"    {issue}")
                 all_issues.append(f"[{phone}] {issue}")
-        
+
         if i < total - 1:
             time.sleep(0.5)
-    
+
     return ok_count, all_issues
 
 
@@ -1545,195 +2165,215 @@ def run_validate(phones, label="验证"):
 # ═══════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    mode = sys.argv[1] if len(sys.argv) > 1 else "sync"
-    previous_status = load_status()
-    previous_consecutive_failures = int_number(previous_status.get("consecutive_failures"), 0)
-    if mode == "sync":
+    try:
+
+        mode = sys.argv[1] if len(sys.argv) > 1 else "sync"
+        previous_status = load_status()
+        previous_consecutive_failures = int_number(previous_status.get("consecutive_failures"), 0)
         RUN_DEADLINE = time.monotonic() + RUN_BUDGET_SECONDS
-    run_lock = acquire_run_lock()
-    if run_lock is None:
-        log("⏭ 已有同步任务运行，本次跳过")
-        sys.exit(0)
-    write_status("running", mode=mode, pid=os.getpid())
-    final_status = "healthy"
-    status_details = {}
-    
-    if mode == "backfill":
-        batch_limit = int_number(sys.argv[2], 20) if len(sys.argv) > 2 else 20
-        batch_limit = max(1, min(batch_limit, 100))
-        log(f"🧩 缺失消费/套餐断点回填，批次上限{batch_limit}")
-        ok, fail, processed = run_backfill(batch_limit)
-        status_details = {"success": ok, "failed": fail, "processed": processed}
-        if fail and not ok:
-            final_status = "degraded"
+        WAIT_USED = 0
+        WAIT_EPISODES = 0
+        SESSION_SCOPES = {}
+        run_lock = acquire_run_lock()
+        if run_lock is None:
+            log("⏭ 已有同步任务运行，本次跳过")
+            sys.exit(0)
+        write_status("running", mode=mode, pid=os.getpid())
+        final_status = "healthy"
+        status_details = {}
 
-    elif mode == "services":
-        batch_limit = int_number(sys.argv[2], SERVICE_REFRESH_LIMIT) if len(sys.argv) > 2 else SERVICE_REFRESH_LIMIT
-        batch_limit = max(1, min(batch_limit, 10))
-        ok, fail, service_rows = run_service_refresh(batch_limit)
-        status_details = {
-            "success": ok,
-            "failed": fail,
-            "service_records_seen": service_rows,
-        }
-        if fail and not ok:
-            final_status = "degraded"
+        if mode == "backfill":
+            batch_limit = int_number(sys.argv[2], 20) if len(sys.argv) > 2 else 20
+            batch_limit = max(1, min(batch_limit, 100))
+            log(f"🧩 缺失消费/套餐断点回填，批次上限{batch_limit}")
+            ok, fail, processed = run_backfill(batch_limit)
+            status_details = {"success": ok, "failed": fail, "processed": processed}
+            if fail and not ok:
+                final_status = "degraded"
 
-    elif mode == "full":
-        # 全量同步：近90天所有有手机号的客户
-        log("🔄 全量同步模式")
-        phones = get_booking_phones(days_back=90, days_forward=7)
-        log(f"📞 共 {len(phones)} 个客户手机号")
-        if phones:
-            ok, fail, skipped, _ = sync_phones(phones, "全量同步")
-            status_details = {"success": ok, "failed": fail, "skipped": skipped}
-            if fail:
-                final_status = "degraded"
-    
-    elif mode == "one":
-        # 同步单个客户
-        phone = sys.argv[2] if len(sys.argv) > 2 else ""
-        if not phone:
-            log("用法: python3 sync_mgj_all.py one <手机号>")
-            sys.exit(1)
-        log(f"🔄 同步单个客户: {phone}")
-        data = get_customer_full(phone)
-        if data.get("found"):
-            log(f"  ✅ {data['name']}: {data['total_visits']}次 ¥{data['total_consumption']:.0f} [来源:{data.get('source','?')}]")
-            if data.get("card_packages"):
-                log(f"  疗程: {len(data['card_packages'])}个")
-                for t in data["card_packages"]:
-                    log(f"    · {t['name']} (剩{t['left']}/{t['total']}次)")
-            profile_data = dict(data)
-            profile_data["phone"] = phone
-            success, action = upsert_customer(profile_data)
-            log(f"  写入: {action}" if success else f"  ❌ 写入失败: {action}")
-            status_details = {"success": 1 if success else 0, "failed": 0 if success else 1}
-            if not success:
-                final_status = "degraded"
-        else:
-            log(f"  ❌ {data.get('message', '查询失败')}")
-            status_details = {"success": 0, "failed": 1}
-            final_status = "degraded"
-    
-    elif mode == "validate":
-        # 验证单个客户
-        phone = sys.argv[2] if len(sys.argv) > 2 else ""
-        if phone:
-            result = validate_customer(phone)
-            print(json.dumps(result, ensure_ascii=False, indent=2))
-            final_status = "healthy" if result.get("valid") else "degraded"
-        else:
-            # 验证所有已写入的客户数据
-            log("🔍 验证所有已同步客户...")
-            try:
-                records = supabase_get(
-                    f"{TABLE}?select=phone,total_visits,total_consumption,last_visit_date,notes&limit=500")
-                log(f"📊 共 {len(records)} 条记录")
-                issues = []
-                for r in records:
-                    v = r.get("total_visits", 0) or 0
-                    c = r.get("total_consumption", 0) or 0
-                    p = r.get("phone", "?")
-                    # Try to extract avg_fee from notes
-                    notes = r.get("notes", "") or ""
-                    avg_from_notes = 0
-                    m_avg = re.search(r"均消¥(\d+)", notes)
-                    if m_avg:
-                        avg_from_notes = float(m_avg.group(1))
-                    if v > 0 and c == 0:
-                        issues.append(f"[{p}] {v}次到店但消费为0")
-                    if v > 0 and c > 0:
-                        implied_avg = c / v
-                        if implied_avg < 10:
-                            issues.append(f"[{p}] 隐含均消¥{implied_avg:.0f}过低({v}次¥{c:.0f})")
-                        if avg_from_notes > 0 and abs(implied_avg - avg_from_notes) / max(avg_from_notes, implied_avg) > 0.2:
-                            issues.append(f"[{p}] {v}次 ¥{c:.0f}: 隐含均消¥{implied_avg:.0f}≠系统均消¥{avg_from_notes:.0f}")
-                if issues:
-                    log(f"⚠️ 发现 {len(issues)} 个问题:")
-                    for issue in issues:
-                        log(f"  {issue}")
-                else:
-                    log("✅ 所有数据合理，无问题")
-            except Exception as e:
-                log(f"❌ 验证失败: {e}")
-                final_status = "degraded"
-    
-    else:
-        # 增量同步（默认cron模式）：单批必须低于Hermes 120秒上限
-        log("⏱ 增量同步模式（cron）")
-        try:
-            queue = load_retry_queue()
-        except RuntimeError as exc:
-            log(f"  ❌ {exc}，本次停止，避免覆盖待补偿记录")
-            write_status(
-                "degraded",
-                mode=mode,
-                error=str(exc),
-                consecutive_failures=previous_consecutive_failures + 1,
-            )
-            sys.exit(1)
-        retry_phones = eligible_retry_phones(queue)
-        queued_phones = {
-            str(item.get("phone"))
-            for item in queue.get("items", [])
-            if item.get("phone")
-        }
-        booking_query_error = ""
-        try:
-            booking_phones = get_booking_phones(days_back=1, days_forward=2)
-        except Exception as exc:
-            booking_phones = []
-            booking_query_error = str(exc)
-            final_status = "degraded"
-            log(f"  ❌ {booking_query_error}")
-        booking_phones = [phone for phone in booking_phones if phone not in queued_phones]
-        normal_limit = max(0, INCREMENTAL_SYNC_LIMIT - len(retry_phones))
-        total_phones = len(booking_phones)
-        normal_phones = select_sync_window(booking_phones, limit=normal_limit) if normal_limit else []
-        phones = retry_phones + normal_phones
-        if retry_phones:
-            log(f"  优先补偿{len(retry_phones)}个失败客户，本批总量仍不超过{INCREMENTAL_SYNC_LIMIT}个")
-        if total_phones > normal_limit:
-            log(f"  轮换同步{normal_limit}个普通客户（共{total_phones}个）")
-        log(f"📞 获取到 {len(phones)} 个客户手机号")
-        if phones:
-            ok, fail, skipped, outcomes = sync_phones(phones, "增量同步")
-            queue = update_retry_queue(queue, outcomes)
-            queue_save_error = ""
-            try:
-                save_retry_queue(queue)
-            except OSError as exc:
-                queue_save_error = f"失败补偿队列写入失败: {type(exc).__name__}"
-                log(f"  ❌ {queue_save_error}")
-            queue_details = retry_queue_counts(queue)
-            log(f"\n📊 完成: ✅ {ok} 成功  ❌ {fail} 失败  ⏭ {skipped} 跳过")
+        elif mode == "services":
+            batch_limit = int_number(sys.argv[2], SERVICE_REFRESH_LIMIT) if len(sys.argv) > 2 else SERVICE_REFRESH_LIMIT
+            batch_limit = max(1, min(batch_limit, 10))
+            ok, fail, service_rows = run_service_refresh(batch_limit)
             status_details = {
                 "success": ok,
                 "failed": fail,
-                "skipped": skipped,
-                **queue_details,
+                "service_records_seen": service_rows,
             }
-            if booking_query_error:
-                status_details["booking_query_error"] = booking_query_error[:500]
-            if queue_save_error:
-                status_details["queue_save_error"] = queue_save_error
-            if booking_query_error or queue_save_error:
+            if fail and not ok:
                 final_status = "degraded"
-            elif fail and ok:
-                final_status = "partial"
-            elif fail or skipped:
-                final_status = "degraded"
-        else:
-            log("没有需要同步的客户")
-            status_details.update(retry_queue_counts(queue))
-            if booking_query_error:
-                status_details["booking_query_error"] = booking_query_error[:500]
 
-    consecutive_failures = (
-        0 if final_status == "healthy" else previous_consecutive_failures + 1
-    )
-    status_details["consecutive_failures"] = consecutive_failures
-    write_status(final_status, mode=mode, **status_details)
-    if final_status != "healthy":
-        sys.exit(1)
+        elif mode == "full":
+            # 全量同步：近90天所有有手机号的客户
+            log("🔄 全量同步模式")
+            phones = get_booking_phones(days_back=90, days_forward=7)
+            log(f"📞 共 {len(phones)} 个客户手机号")
+            if phones:
+                ok, fail, skipped, _ = sync_phones(phones, "全量同步")
+                status_details = {"success": ok, "failed": fail, "skipped": skipped}
+                if fail:
+                    final_status = "degraded"
+                elif skipped:
+                    final_status = "deferred"
+
+        elif mode == "one":
+            # 同步单个客户
+            phone = sys.argv[2] if len(sys.argv) > 2 else ""
+            if not phone:
+                log("用法: python3 sync_mgj_all.py one <手机号>")
+                sys.exit(1)
+            log(f"🔄 同步单个客户: {phone}")
+            data = get_customer_full(phone)
+            if data.get("found"):
+                log(f"  ✅ {data['name']}: {data['total_visits']}次 ¥{data['total_consumption']:.0f} [来源:{data.get('source','?')}]")
+                if data.get("card_packages"):
+                    log(f"  疗程: {len(data['card_packages'])}个")
+                    for t in data["card_packages"]:
+                        log(f"    · {t['name']} (剩{t['left']}/{t['total']}次)")
+                profile_data = dict(data)
+                profile_data["phone"] = phone
+                success, action = upsert_customer(profile_data)
+                log(f"  写入: {action}" if success else f"  ❌ 写入失败: {action}")
+                status_details = {"success": 1 if success else 0, "failed": 0 if success else 1}
+                if not success:
+                    final_status = "degraded"
+            else:
+                log(f"  ❌ {data.get('message', '查询失败')}")
+                status_details = {"success": 0, "failed": 1}
+                final_status = "degraded"
+
+        elif mode == "validate":
+            # 验证单个客户
+            phone = sys.argv[2] if len(sys.argv) > 2 else ""
+            if phone:
+                result = validate_customer(phone)
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+                final_status = "healthy" if result.get("valid") else "degraded"
+            else:
+                # 验证所有已写入的客户数据
+                log("🔍 验证所有已同步客户...")
+                try:
+                    records = supabase_get(
+                        f"{TABLE}?select=phone,total_visits,total_consumption,last_visit_date,notes&limit=500")
+                    log(f"📊 共 {len(records)} 条记录")
+                    issues = []
+                    for r in records:
+                        v = r.get("total_visits", 0) or 0
+                        c = r.get("total_consumption", 0) or 0
+                        p = r.get("phone", "?")
+                        # Try to extract avg_fee from notes
+                        notes = r.get("notes", "") or ""
+                        avg_from_notes = 0
+                        m_avg = re.search(r"均消¥(\d+)", notes)
+                        if m_avg:
+                            avg_from_notes = float(m_avg.group(1))
+                        if v > 0 and c == 0:
+                            issues.append(f"[{p}] {v}次到店但消费为0")
+                        if v > 0 and c > 0:
+                            implied_avg = c / v
+                            if implied_avg < 10:
+                                issues.append(f"[{p}] 隐含均消¥{implied_avg:.0f}过低({v}次¥{c:.0f})")
+                            if avg_from_notes > 0 and abs(implied_avg - avg_from_notes) / max(avg_from_notes, implied_avg) > 0.2:
+                                issues.append(f"[{p}] {v}次 ¥{c:.0f}: 隐含均消¥{implied_avg:.0f}≠系统均消¥{avg_from_notes:.0f}")
+                    if issues:
+                        log(f"⚠️ 发现 {len(issues)} 个问题:")
+                        for issue in issues:
+                            log(f"  {issue}")
+                    else:
+                        log("✅ 所有数据合理，无问题")
+                except SourceDeferred:
+                    raise
+                except Exception as e:
+                    log(f"❌ 验证失败: {e}")
+                    final_status = "degraded"
+
+        else:
+            # 增量同步（默认cron模式）：单批必须低于Hermes 120秒上限
+            log("⏱ 增量同步模式（cron）")
+            try:
+                queue = load_retry_queue()
+            except RuntimeError as exc:
+                log(f"  ❌ {exc}，本次停止，避免覆盖待补偿记录")
+                write_status(
+                    "degraded",
+                    mode=mode,
+                    error=str(exc),
+                    consecutive_failures=previous_consecutive_failures + 1,
+                )
+                sys.exit(1)
+            retry_phones = compensation_phones(queue)
+            queued_phones = {
+                str(item.get("phone"))
+                for item in queue.get("items", [])
+                if item.get("phone")
+            }
+            booking_query_error = ""
+            try:
+                booking_phones = get_booking_phones(days_back=1, days_forward=2)
+            except SourceDeferred:
+                raise
+            except Exception as exc:
+                booking_phones = []
+                booking_query_error = str(exc)
+                final_status = "degraded"
+                log(f"  ❌ {booking_query_error}")
+            booking_phones = [phone for phone in booking_phones if phone not in queued_phones and phone not in set(retry_phones)]
+            normal_limit = max(0, INCREMENTAL_SYNC_LIMIT - len(retry_phones))
+            total_phones = len(booking_phones)
+            normal_phones = select_sync_window(booking_phones, limit=normal_limit) if normal_limit else []
+            phones = list(dict.fromkeys(retry_phones + normal_phones))
+            if retry_phones:
+                log(f"  优先补偿{len(retry_phones)}个失败客户，本批总量仍不超过{INCREMENTAL_SYNC_LIMIT}个")
+            if total_phones > normal_limit:
+                log(f"  轮换同步{normal_limit}个普通客户（共{total_phones}个）")
+            log(f"📞 获取到 {len(phones)} 个客户手机号")
+            if phones:
+                ok, fail, skipped, outcomes = sync_phones(phones, "增量同步")
+                queue = update_retry_queue(queue, outcomes)
+                queue_save_error = ""
+                try:
+                    save_retry_queue(queue)
+                except OSError as exc:
+                    queue_save_error = f"失败补偿队列写入失败: {type(exc).__name__}"
+                    log(f"  ❌ {queue_save_error}")
+                queue_details = {**retry_queue_counts(queue), **queue_age_alert(queue), **deferred_metrics()}
+                log(f"\n📊 完成: ✅ {ok} 成功  ❌ {fail} 失败  ⏭ {skipped} 跳过")
+                status_details = {
+                    "success": ok,
+                    "failed": fail,
+                    "skipped": skipped,
+                    **queue_details,
+                }
+                if booking_query_error:
+                    status_details["booking_query_error"] = booking_query_error[:500]
+                if queue_save_error:
+                    status_details["queue_save_error"] = queue_save_error
+                if booking_query_error or queue_save_error:
+                    final_status = "degraded"
+                elif fail and ok:
+                    final_status = "partial"
+                elif fail:
+                    final_status = "degraded"
+                elif skipped:
+                    final_status = "deferred"
+            else:
+                log("没有需要同步的客户")
+                status_details.update({**retry_queue_counts(queue), **queue_age_alert(queue), **deferred_metrics()})
+                if booking_query_error:
+                    status_details["booking_query_error"] = booking_query_error[:500]
+
+        consecutive_failures = (
+            0 if final_status in ("healthy", "deferred") else previous_consecutive_failures + 1
+        )
+        status_details["consecutive_failures"] = consecutive_failures
+        write_status(final_status, mode=mode, **status_details)
+        if final_status not in ("healthy", "deferred"):
+            sys.exit(1)
+    except SourceDeferred as exc:
+        finish_deferred(globals().get("mode", "unknown"), exc)
+    except Exception as exc:
+        write_status("degraded", mode=globals().get("mode", "unknown"), error=type(exc).__name__)
+        raise
+    finally:
+        if globals().get("run_lock") is not None:
+            run_lock.close()

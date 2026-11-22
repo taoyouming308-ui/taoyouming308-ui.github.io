@@ -1,4 +1,47 @@
+## 2026-11-22 · Customer missing-values correction (local review candidate)
+
+The deployed 02:08 booking source already differs in due-date selection only, and the old pinned digest correctly defers customer acquisition. Keep that booking file byte-for-byte in the runtime. Review the exact customer field-authority fix, the matching guard pin, and the narrow known-preimage installer together. Restore neither by changing the pin alone nor by disabling the guard. Synthetic tests, protected CI, coordinated cutover, and later natural readbacks are separate milestones. See the first section of `docs/operations/mgj-source-turns.md`. No scheduler, appointment data, daily finance sync, or outbound changes are authorized here.
+
+## 2026-11-20 approved request-scoped source coordination candidate
+
+PR163 is normally merged as `0aa2d212`. Its customer main SHA `7abffe237c5e8dc4b54109ed05af913c65fa8f9f96abc8a967474219f7a8169f` and resume module SHA `04c5c88d01d7d4e4ae583992343ae05d28c26001120e8a27dacb274f2e6228b7` were installed at14:29; later bounded and natural customer attempts still deferred behind the whole booking batch. Those live checks supersede the earlier preparation snapshots below, but are not evidence of complete backlog recovery.
+
+User now approved queue optimization. Candidate changes only booking actual source HTTP exchanges, customer readiness, and the new private common module. Booking RUN_LOCK remains the whole-batch duplicate guard; customers no longer interpret Supabase begin/commit waiting as source activity. Actual book/customer source reads are mutually exclusive; booking intent prevents the next customer read from overtaking it. An already-started customer read remains bounded by10s. Schedules,90s booking/105s customer budgets, original data,110 existing manual-review entries, source safety, resume cache and disabled automatic outbound must remain intact.
+
+Deploy only after protected final-head checks and normal merge, using `scripts/install_mgj_source_turns.py` with all three frozen hashes. The source module binds the exact approved booking SHA; deploying a different booking script later requires reviewed coordinated compatibility, otherwise customer reads fail closed. Do not run the broad core deployer, pause/alter schedulers, reset queues or replace the resume module. See `docs/operations/mgj-source-turns.md` for lock order, cutover and real acceptance. This is a candidate preparation record; verify private installation receipt and live cloud readback before describing it as deployed or recovered.
+
+## 2026-11-20 verified customer runtime and approved backlog repair
+
+Concurrent protected main `4fa790a6`/v670 was incorporated after the initial v669 gate; customer runtime targets keep the reviewed hashes. Repeat the final-head gate. This task does not deploy the unrelated finance migration or Edge function.
+
+The runtime `~/.hermes/scripts/sync_mgj_all.py` matches tracked candidate `d6fe05fb`, SHA256 `89a51806212cf335f1ba2c38c3dbe0880cf77996cda72a8c350bf6627da6a338`; this live byte check supersedes the old NOT DEPLOYED labels below. Customer cadence is currently minute03/33 and recent-services minute14. Preserve exact installed schedules, credentials, deferred/retry queues and disabled inventory output. Booking runtime is the separately verified protocol2 recovery, not the older main script: do not use the six-file core deployer for this repair.
+
+User approved customer backlog recovery. Work is isolated on `fix/customer-sync-backlog-20261120`, based on `dd5c8bae`/v669, with daily backup and starting gates passed. Private `mgj_customer_history_resume.py` now preserves validated windows under scope/CAS/72h bounds, adds cross-day tails and a fresh recent source read, retains frozen detail selection and only acks after archive+projection success. Existing locks, source checks, priority, budget, cadence, old data and manual-review state are retained.57 new and112 existing tests pass; independent reviews and complete shared gate (finance165/165) pass. Read-only customer-only installer preflight passes. This is the November20 preparation snapshot, not a current deployment assertion: recheck the protected head, runtime hashes, private installer receipt and cloud readback before stating live status.
+
+Only canonical customer main plus this module may be installed using `scripts/install_mgj_customer_backlog.py` with both frozen SHA256 arguments. Same-protocol replacement requires coordinator/legacy/booking/daily locks, no active customer process, known preimage, private backup and recoverable module-first atomic replacement. Do not use a broad deployer or delete queues/cache on failure. See `docs/operations/customer-history-resume.md`; a successful install alone does not prove backlog recovery.
+
+## 2026-11-17 fairness candidate: historical NOT DEPLOYED note
+
+Do not hot-swap the coordinator change based on free legacy lock alone. All old customer modes/launchers must be quiescent; booking session renewal and keepalive retain legacy lock semantics. Follow docs/operations/customer-fairness-cutover.md for selective temporary pause, four nonblocking locks, hash-backed atomic install, exact trigger restoration and equally quiescent rollback. No added frequency or source probe. Runtime currently remains the previous coordination version; this candidate has not been production-accepted.
+
+## 2026-11-17 customer coordination candidate: NOT DEPLOYED
+
+Only the canonical customer script is a future deployment target; do not install without completed gates and deployment instruction. Preserve appointment and daily-consumption scripts, locks, cron and source credentials. Shared customer lock also protects booking session renewal. Candidate source lock is nonblocking per request with max10s subprocess timeout; late higher-priority arrivals can wait for that request, so no zero-impact or absolute fairness claim. Deferred file is private0600 and separate from original retry queue. Accept only complete source/cache readbacks; observe natural batches, do not probe repeatedly. Roll back only runtime bytes under the existing customer lock to verified backup a6c58df344693083c89ec7dc94bb7dcdb49d73a1d671c973e9b6c7228b0b9f99; do not delete or restore old cache/queue data. Full formal gate and independent diff review passed locally; publication authorization and deployment decision remain pending.
+
+## 2026-11-17 customer recovery candidate
+
+Canonical customer source now uses exact read-only source endpoints and verified TLS. History is retrieved in bounded <=365-day windows because the source rejects multi-year requests. Keep the existing 8-profile, 105-second budget and shared lock. Do not reset old needs-review queue. Partial history/packages and failed service projection must remain incomplete/retry, not healthy. Deployment is only the canonical customer script to `sync_mgj_all.py`; preserve the separate appointment repair and all shared helpers. Runtime and final release status must be verified from receipts before claiming recovery.
+
 # Hermes Handoff
+
+## 2026-11-19 · Appointment sync recovery (App version: v669 unchanged)
+
+- Owner: Codex, isolated fix/booking-sync-recovery-20261119 based on main 8c1d38cc and integrated with main dd5c8bae. Daily source backup created before edits; unrelated worktrees and v669 shell fixes preserved.
+- The scheduled booking-only budget is 90s (supersedes 55s); the two-phase protocol includes lease acquisition before each source read. macOS Python 3.9 parses PostgreSQL fractional timestamp precision explicitly.
+- Canonical v2 client requires an explicit complete source list, safe IDs/status/date/store, obtains a server lease before source read, and commits exact store/day atomically. Signed endpoint rejects legacy v1; service-role direct booking writes revoked while SELECT remains. RPC concurrency fences and idempotent receipts prevent stale replay; private trigger preserves changed/deleted old rows with reasons. Protocol receipts retain only hashes and expire after one day; business audit rows are retained.
+- Targeted installer preflights known runtime hashes and duplicate schedulers, backs up four booking-only files, converts legacy entrypoint to same guarded runner, and installs com.hermes.booking-sync every 60s under gui/501. Existing independent daily-consumption launchd, credentials, cadence, customer jobs and business originals remain untouched. No full core installer run.
+- Candidate checks: 61 Python sync/installer/keepalive/customer tests, 20 mocked signature/edge assertions, 34 isolated PG16 protocol/permissions/atomic-rollback assertions, actual edge-runtime offline compilation, booking UI and employee data-scope tests. Production migration, signed Edge function and canonical runtime were deployed and read back. Complete source-to-mirror field digests matched, and natural scheduled runs continued healthy on the following day. Final protected merge remains pending; real device UI acceptance was not observed.
+
 
 ## 2026-10-08 daily text save readback (App version: v608)
 

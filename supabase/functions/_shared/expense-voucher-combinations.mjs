@@ -5,6 +5,7 @@ export function expenseCombinationPlan(workspace, requests) {
   if (!Array.isArray(requests) || requests.length < 2 || requests.length > 20) throw Error('请选择 2 至 20 张独立凭证');
   const first = requests[0], target = workspace.targets.find(t => t.target_kind === first.target_kind && t.id === first.target_id);
   if (!target || /(^|\/)备用金$/.test(String(target.summary || '').replace(/\s/g, ''))) throw Error('请先选择具体开支明细');
+  if (target.target_kind === 'monthly_cell' || target.manual_only) throw Error('月报栏目佐证不能作为逐笔组合，请人工补充原图');
   const all = requests.map(request => {
     if (request.target_kind !== target.target_kind || request.target_id !== target.id) throw Error('组合只能对应同一笔开支');
     const item = workspace.items.find(i => voucherPartKey(i) === request.voucher_id + ':' + request.component_index);

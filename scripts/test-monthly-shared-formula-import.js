@@ -4,6 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { stripTypeScriptTypes } = require('node:module');
 const ExcelJS = require('exceljs');
+const JSZip = require('jszip');
 
 const source = fs.readFileSync(path.join(__dirname, '../supabase/functions/operations-api/index.ts'), 'utf8');
 const names = [
@@ -17,11 +18,12 @@ const snippets = names.map((name) => {
   assert.ok(start >= 0 && end > start, `${name} must be available`);
   return source.slice(start, end);
 }).join('\n');
-const sandbox = { ExcelJS, exactArrayBuffer: (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) };
+const sandbox = { ExcelJS, JSZip, exactArrayBuffer: (bytes) => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) };
 vm.createContext(sandbox);
 vm.runInContext(stripTypeScriptTypes(snippets), sandbox);
 
 (async () => {
+  Object.assign(sandbox, await import('../supabase/functions/_shared/petty-detail-xlsx.mjs'));
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('7月');
   for (let column = 1; column <= 11; column += 1) sheet.getCell(1, column).value = `列${column}`;

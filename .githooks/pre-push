@@ -47,7 +47,9 @@ node scripts/test-aesthetic-study-sql.cjs || exit 1
 node scripts/test-aesthetic-study-browser.cjs || exit 1
 node scripts/test-aesthetic-study-admin-browser.cjs || exit 1
 "$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_aesthetic_coach_endpoint.py || exit 1
-"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_sync_mgj_bookings.py scripts/test_mgj_keepalive.py scripts/test_sync_mgj_customer_profiles.py scripts/test_mgj_customer_coordination.py scripts/test_mgj_customer_fairness.py scripts/test_mgj_customer_cutover.py scripts/test_check_mgj_sync_health.py scripts/test_mgj_private_customer.py || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_mgj_customer_history_resume.py scripts/test_mgj_customer_backlog.py scripts/test_install_mgj_customer_backlog.py || exit 1
+"$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_mgj_source_turns.py scripts/test_mgj_booking_turns.py scripts/test_mgj_customer_turns.py scripts/test_install_mgj_source_turns.py || exit 1
 node scripts/check-agent-sync-status.js || exit 1
 
 # Explicit photo API transport remains default-closed in both local and CI gates.
@@ -57,3 +59,8 @@ node --test scripts/test-design-prepared-client.mjs || exit 1
 "${ZYSYR_DENO:-deno}" check --no-remote supabase/functions/design-employee-authority/index.ts || exit 1
 node --test scripts/test-design-live-employee.mjs || exit 1
 node scripts/test-design-live-employee-postgres.mjs || exit 1
+
+# Hosted codec and fixed Edge transport; no cloud/model calls in these tests.
+node scripts/prepare-design-hosted-codecs.mjs || exit 1
+node --test scripts/test-design-hosted-heif.mjs scripts/test-design-edge-ingress.mjs || exit 1
+"${ZYSYR_DENO:-deno}" test --no-remote --allow-read=scripts/fixtures/hosted-heif-synthetic.json,packages/design-production-adapter/vendor scripts/test-design-hosted-heif.mjs scripts/test-design-edge-ingress.mjs || exit 1

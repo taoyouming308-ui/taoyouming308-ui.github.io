@@ -13,6 +13,14 @@ let result=recommendVoucherCombinations(receipts,target,'2026-08');
 assert(result.groups.some(g=>g.items.length===2&&g.items.some(i=>i.id===id(2))&&g.items.some(i=>i.id===id(3))));
 assert(result.groups.some(g=>g.items.length===3));assert(result.groups.every(g=>combinationTotal(g.items)===17030));
 assert(result.groups.every(g=>!g.items.some(i=>[id(8),id(9),id(10)].includes(i.id))));
+const archivePool=[
+ {...item(40,80,'2026-07-05'),archive_month:'2026-08'},
+ {...item(41,90.30,'2026-09-05'),archive_month:'2026-08'},
+ {...item(42,90.30,'2026-08-05'),archive_month:'2026-07'},
+ item(43,90.30,'2026-08-05'),
+];
+const archiveResult=recommendVoucherCombinations(archivePool,target,'2026-08','',true);
+assert.deepEqual(archiveResult.groups.map(g=>g.items.map(i=>i.id)),[[id(40),id(41)]]);
 assert.equal(combinationTotal([item(2,.1),item(3,.2)]),30,'exact cents, not float equality');
 assert.equal(combinationTotal([item(2,80),item(2,90.30)]),null,'one original cannot be counted twice');
 for(const value of [null,'',true,0,-1,Infinity,'NaN',.001])assert.equal(voucherCents(value),null);
@@ -41,7 +49,7 @@ await assert.rejects(methods({...payload,mode:'auto'},{}),/逐张核对/);await 
 function monthly(options={}){
  const writes=[],scope='company_id=eq.'+id(20)+'&store_id=eq.'+id(21);
  const deps={canUpload:()=>true,canRead:()=>true,store:async()=>({company_id:id(20),id:id(21)}),category:()=> 'expense',
- rows:async q=>{assert(q.includes(scope));if(q.startsWith('zysyr_report_uploads?'))return [{id:id(30)}];if(q.startsWith('zysyr_report_cells?'))return [{id:id(31)}];return [];},
+ rows:async q=>{assert(q.includes(scope));if(q.startsWith('zysyr_report_uploads?'))return [{id:id(30)}];if(q.startsWith('zysyr_report_cells?'))return [{id:id(31)}];if(q.startsWith('zysyr_voucher_attachments?')){assert(q.includes('id=in.('+id(2)+','+id(3)+')'));return [{id:id(2),note:'petty_cash_batch|2026-08|'+id(40)+'|synthetic'},{id:id(3),note:options.outside?'petty_cash_batch|2026-07|'+id(41)+'|synthetic':'petty_cash_batch|2026-08|'+id(41)+'|synthetic'}];}return [];},
  all:async q=>{assert(q.includes(scope));return options.summary&&q.startsWith('zysyr_voucher_ocr_tasks?')?[{voucher_id:id(2),candidate_fields:{evidence_kind:'monthly_summary'}}]:[];},
  effective:async()=>({cells:[{id:id(31),numeric_value:options.changed?180:170.3}],versions:{},adjustments:[]}),save:async(route,body)=>{writes.push({route,body});return {inserted:2};}};
  const p={report_id:id(30),cell_id:id(31),month:'2026-08',action:'attach_combination',confirmed:true,items:[{voucher_id:id(2),amount:80},{voucher_id:id(3),amount:90.3}]};
@@ -50,4 +58,5 @@ function monthly(options={}){
 const monthlyGood=monthly();assert.equal((await monthlyGood.run({})).combination_saved,true);assert.equal(monthlyGood.writes[0].route,'rpc/zysyr_attach_monthly_voucher_combination');assert.equal(monthlyGood.writes[0].body.p_expected_amount,170.3);assert.deepEqual(monthlyGood.writes[0].body.p_expected_adjustments,[]);
 await assert.rejects(monthly({changed:true}).run({}),/合计必须/);assert.equal((await monthly({summary:true}).run({})).combination_saved,true,'monthly evidence-only group can include summaries without confirming payment');await assert.rejects(monthly().run({confirmed:false}),/逐张核对/);
 await assert.rejects(monthly().run({items:[{voucher_id:id(2),amount:80},{voucher_id:id(2),amount:90.3}]}),/重复计入/);
+const outside=monthly({outside:true});await assert.rejects(outside.run({}),/未归档到当前报表月份/);assert.equal(outside.writes.length,0);
 console.log('Voucher combinations: 170.30 pair/triple, exact cents, corrected/unknown/cross-month/duplicate/claimed guards, bounded search, explicit fresh-target API batch, existing links/retry and monthly evidence-only snapshot checks passed. Synthetic only.');
