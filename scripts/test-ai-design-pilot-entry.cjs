@@ -1,0 +1,22 @@
+/* Static integration guard; no browser, login, customer data or network. */
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const source = fs.readFileSync('perm-app.html', 'utf8');
+const entry = source.match(/<a\s+id="ai-design-pilot-entry"[^>]*>[\s\S]*?<\/a>/g);
+assert.equal(entry?.length, 1, 'one homepage pilot entry');
+assert.match(entry[0], /href="ai-design-pilot\.html"/);
+assert.match(entry[0], /target="_blank"/);
+assert.match(entry[0], /rel="noopener"/);
+assert.match(entry[0], /模拟顾客/);
+assert.match(entry[0], /不读取顾客资料/);
+assert.match(entry[0], /不调用收费模型/);
+assert(source.indexOf(entry[0]) > source.indexOf('<section id="home-page">'));
+const page = fs.readFileSync('ai-design-pilot.html', 'utf8');
+assert.match(page, /connect-src 'none'/);
+assert.match(page, /media-src 'none'/);
+assert.match(page, /form-action 'none'/);
+assert.match(page, /ai-design-pilot\.js/);
+assert.match(page, /ai-design-pilot\.css/);
+for (const file of ['ai-design-pilot.js', 'ai-design-pilot.css']) assert(fs.existsSync(file), file + ' exists');
+assert(!/SUPABASE|service_role|api\.deepseek\.com|sk-[a-zA-Z0-9]{12}/.test(page));
+console.log('AI design pilot homepage/static isolation guards passed');

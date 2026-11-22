@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="685">
+<html lang="zh-CN" data-version="687">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,8 +1067,8 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=685" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
-<link rel="stylesheet" href="customer-design-archive.css?v=685" media="print" onload="this.media='all'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=687" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link rel="stylesheet" href="customer-design-archive.css?v=687" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -1177,6 +1177,17 @@ body {
     <h1>自由手艺人</h1>
     <div class="sub">Hair Design</div>
     <div class="slogan">找到属于你的风格</div>
+  </div>
+  <div style="margin:0 20px 20px;text-align:left;">
+    <a id="ai-design-prepared-entry" href="ai-design-prepared.html" style="display:block;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;color:var(--text);text-decoration:none;">
+      <strong style="display:block;font-size:17px;">AI 设计 · 统一记录入口</strong>
+      <small style="display:block;margin-top:6px;color:var(--text-secondary);">接口准备版，生产服务默认关闭。旧 / 新档案分别保留，不覆盖历史。</small>
+    </a>
+    <a id="ai-design-pilot-entry" href="ai-design-pilot.html" target="_blank" rel="noopener" style="display:block;border:1px solid var(--border);border-radius:14px;padding:16px;color:var(--text);text-decoration:none;">
+      <strong style="display:block;font-size:17px;">离线模拟体验 · 本人试用</strong>
+      <span style="display:block;margin-top:6px;font-size:12px;color:var(--text-secondary);">模拟顾客 · 设计对话 · 六区图示 · 烫染记录与复盘</span>
+      <small style="display:block;margin-top:6px;color:var(--text-secondary);">在新窗口体验，不读取顾客资料，不调用收费模型。</small>
+    </a>
   </div>
   <div class="brand-text">
     技术，是一切发型设计的基础。<br>
@@ -3168,14 +3179,14 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=685"></script>
-<script src="customer-design-archive.js?v=685"></script>
-<script defer src="aesthetic-study.js?v=685"></script>
-<script defer src="aesthetic-daily.js?v=685"></script>
-<script defer src="hair-calculator-dialog.js?v=685"></script>
-<script src="aesthetic-knowledge.v1.js?v=685"></script>
-<script src="hair-vision-training.v1.js?v=685"></script>
-<script src="aesthetic-growth.v2.js?v=685"></script>
+<script src="employee-reports.js?v=687"></script>
+<script src="customer-design-archive.js?v=687"></script>
+<script defer src="aesthetic-study.js?v=687"></script>
+<script defer src="aesthetic-daily.js?v=687"></script>
+<script defer src="hair-calculator-dialog.js?v=687"></script>
+<script src="aesthetic-knowledge.v1.js?v=687"></script>
+<script src="hair-vision-training.v1.js?v=687"></script>
+<script src="aesthetic-growth.v2.js?v=687"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6548,6 +6559,14 @@ function initApp() {
     try { stored = JSON.parse(localStorage.getItem('booking-session') || 'null'); } catch (_) { return null; }
     return AUTHENTICATED_STAFF && stored && stored.session_token === AUTHENTICATED_STAFF.session_token ? AUTHENTICATED_STAFF : null;
   }
+  // Function-only host bridge. Disabled prepared UI never reads it; no new token storage.
+  window.PreparedDesignHost = Object.freeze({
+    readSession: function() {
+      var session = verifiedEmployeeSession();
+      return session ? { credential: session.session_token, username: session.username, store: session.store } : null;
+    },
+    readDate: function() { return BOOKING_DATE; }
+  });
   var bookingReadGeneration = 0, hairPickerReadGeneration = 0;
   var identityPending = null, identityPendingKey = '', identityReadGeneration = 0, identityChangedElsewhere = false, hairViewOwner = null;
   var identityLockedRoots = new Map();
@@ -7603,7 +7622,7 @@ function initApp() {
       container.innerHTML = '<section class="hair-archive-section"><h3>设计思路</h3><p>设计档案组件暂未加载，请稍后重新打开。</p></section>';
       return null;
     }
-    return window.CustomerDesignArchive.mount(container, Object.assign({}, context, {
+    var legacyArchive = window.CustomerDesignArchive.mount(container, Object.assign({}, context, {
       barberName: (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.username) || context.barberName,
       api: function(operation, payload) {
         var body = Object.assign({}, payload || {}, {
@@ -7614,6 +7633,9 @@ function initApp() {
           ? employeeBookingsRequest(operation, body) : employeeBookingsApi(operation, body);
       }
     }));
+    // Read-only new-format view is separate from the legacy writer.
+    return window.PreparedDesignApp && typeof window.PreparedDesignApp.attachArchive === 'function'
+      ? window.PreparedDesignApp.attachArchive(container, context, legacyArchive) : legacyArchive;
   }
 
   function getCustomerReadScope() {
@@ -13411,7 +13433,8 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<script defer src="data-read-client.js?v=685"></script>
-<script defer src="app-shell-client.js?v=685"></script>
+<script defer src="data-read-client.js?v=687"></script>
+<script defer src="app-shell-client.js?v=687"></script>
+<script defer src="ai-design-entry.js?v=687"></script>
 </body>
 </html>

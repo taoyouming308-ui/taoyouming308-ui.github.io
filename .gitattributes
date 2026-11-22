@@ -1,0 +1,7 @@
+# Preserve byte-exact pinned upstream JPEG sources/notices. The codec verifier
+# checks their SHA-256 and generated ESM shims; application whitespace rules stay.
+packages/design-production-adapter/vendor/jpeg-LICENSE.txt whitespace=-blank-at-eol,-space-before-tab
+packages/design-production-adapter/vendor/jpeg-decoder-0.4.4.cjs whitespace=-blank-at-eol,-space-before-tab
+packages/design-production-adapter/vendor/jpeg-decoder-0.4.4.mjs whitespace=-blank-at-eol,-space-before-tab
+packages/design-production-adapter/vendor/jpeg-encoder-0.4.4.cjs whitespace=-blank-at-eol,-space-before-tab
+packages/design-production-adapter/vendor/jpeg-encoder-0.4.4.mjs whitespace=-blank-at-eol,-space-before-tab

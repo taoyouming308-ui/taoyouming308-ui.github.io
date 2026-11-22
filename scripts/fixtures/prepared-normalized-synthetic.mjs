@@ -1,0 +1,17 @@
+/** Actual pure candidate + workflow + public DTO, synthetic repository only. */
+import {managedNormalizedResultFixture} from './managed-normalized-result.mjs';
+import {createDesignSession} from '../../packages/analysis-engine/design-pilot.mjs';
+import {createPreparedWorkflowRecord,applyPreparedWorkflowIntent} from '../../packages/design-production-adapter/prepared-workflow-service.mjs';
+import {projectManagedNormalizedReview} from '../../packages/design-production-adapter/managed-normalized-http-projection.mjs';
+import {createPreparedWorkflowController} from '../../packages/design-prepared-ui/controller.mjs';
+import {designCandidateDigest} from '../../packages/analysis-engine/design-candidate.mjs';
+const copy=structuredClone;
+export function preparedNormalizedSyntheticFixture(){
+ const base=managedNormalizedResultFixture(),scope=base.scope,otherScope={customerProfileId:'12',visitId:'booking:102',assignmentSource:'appointment'},records=new Map([[scope.visitId,createPreparedWorkflowRecord({scope,store:base.authority.actor.store,session:base.session})],[otherScope.visitId,createPreparedWorkflowRecord({scope:otherScope,store:base.authority.actor.store,session:createDesignSession({customerId:'12',visitId:'booking:102',sessionId:'normalized-other'})})]]),packets=new Map(),requests=new Map(),calls={describe:[],status:[],load:[],dispatch:[],other:[]},state={active:true};let serial=0;
+ const live=()=>{if(!state.active)throw Object.assign(Error('REVOKED'),{code:'SESSION_REVOKED'});};
+ const status=id=>({schemaVersion:'design-normalized-model-status-v1',requestId:id,state:requests.has(id)?'completed':'not_found',candidateId:requests.get(id)??null,retryable:false,synthetic:true,productionEligible:false});
+ const adapter={normalizedSyntheticEnabled:true,load:async s=>{live();return {record:copy(records.get(s.visitId))};},async dispatch(s,q){live();calls.dispatch.push(copy(q));const old=records.get(s.visitId),packet=q.intent.type==='accept_normalized_candidate'?packets.get(q.intent.candidateId):undefined,record=applyPreparedWorkflowIntent(old,q,null,packet);records.set(s.visitId,record);return {record:copy(record)};},async describeNormalizedSynthetic(s,q){live();calls.describe.push(copy(q));if(q.taskId!==base.task.taskId||s.visitId!==scope.visitId)throw Object.assign(Error('DENIED'),{code:'TASK_DENIED',outcome:'not_sent'});if(requests.has(q.requestId))return status(q.requestId);const record=records.get(s.visitId),f=managedNormalizedResultFixture({session:record.session,recordRevision:record.revision,recordDigest:designCandidateDigest(record),id:'normalized-ui-'+q.requestId,requestId:q.requestId}),packet={candidate:f.candidate,input:f.historyInput};packets.set(f.candidate.id,packet);requests.set(q.requestId,f.candidate.id);return status(q.requestId);},async normalizedSyntheticStatus(s,id){live();calls.status.push(id);return status(id);},async loadNormalizedSynthetic(s,id){live();calls.load.push(id);const packet=packets.get(id);if(!packet)throw Error('NOT_FOUND');return projectManagedNormalizedReview(packet);}};
+ const controller=createPreparedWorkflowController({enabled:true,adapter,requestId:()=> 'normalized-request-'+(++serial)});
+ return {base,scope,otherScope,records,packets,requests,calls,state,adapter,controller,status,select:()=>controller.select('A',scope)};
+}
+export const normalizedDeferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};

@@ -1,0 +1,79 @@
+# Reviewed operator inputs only; this file does not provision or activate a site.
+# Serve a separate, curated public directory. NEVER set its root to the checkout.
+{
+ admin off
+ auto_https off
+ persist_config off
+ log default {
+  format filter {
+   wrap json
+   fields {
+    request delete
+   }
+  }
+ }
+ servers {
+  protocols h1 h2
+  timeouts {
+   read_header 10s
+   read_body 30s
+   write 35s
+   idle 5s
+  }
+  max_header_size 16KB
+ }
+}
+
+{$DESIGN_HTTPS_ORIGIN} {
+ bind {$DESIGN_BIND_ADDRESS}
+ tls {$DESIGN_TLS_CERT} {$DESIGN_TLS_KEY} {
+  protocols tls1.3
+ }
+ header {
+  ?Cache-Control "no-store"
+  X-Content-Type-Options nosniff
+  Referrer-Policy no-referrer
+  X-Frame-Options DENY
+  Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  -Server
+ }
+ @api {
+  method POST
+  expression `{http.request.uri}.matches('^/api/design/[a-z-]+(/[a-z-]+){0,2}$')`
+  header Origin {$DESIGN_HTTPS_ORIGIN}
+ }
+ handle @api {
+  request_body {
+   max_size 12582912
+  }
+  reverse_proxy 127.0.0.1:{$DESIGN_BACKEND_PORT} {
+   # Exactly one attempt. Never replay uploads or workflow writes at ingress.
+   lb_retries 0
+   lb_try_duration 0s
+   header_up -Cookie
+   header_up -Authorization
+   header_up -Idempotency-Key
+   header_up -X-Idempotency-Key
+   header_down -Set-Cookie
+   header_down -Location
+   header_down -Access-Control-Allow-Origin
+   transport http {
+    dial_timeout 2s
+    response_header_timeout 30s
+    keepalive off
+   }
+  }
+ }
+ @static {
+  method GET HEAD
+  path /ai-design-prepared.html /ai-design-prepared.mjs /ai-design-prepared.css /ai-design-pilot.css /packages/analysis-engine/design-pilot.mjs /packages/analysis-engine/design-pilot-ui-draft.mjs /packages/design-prepared-ui/app-entry.mjs /packages/design-prepared-ui/app-session.mjs /packages/design-prepared-ui/application-images.mjs /packages/design-prepared-ui/application-model.mjs /packages/design-prepared-ui/application-views.mjs /packages/design-prepared-ui/archive-view.mjs /packages/design-prepared-ui/composition.mjs /packages/design-prepared-ui/controller.mjs /packages/design-prepared-ui/http-client.mjs /packages/design-prepared-ui/managed-media.mjs /packages/design-prepared-ui/normalized-synthetic.mjs /packages/design-prepared-ui/photo-preview.mjs /packages/design-prepared-ui/recorder.mjs /packages/design-prepared-ui/pcm-worklet.mjs /packages/design-prepared-ui/synthesis-operation.mjs /packages/design-prepared-ui/workflow-view-contracts.mjs /packages/shared/image-upload-limits.mjs /packages/shared/phone-image-types.mjs
+ }
+ handle @static {
+  header Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src blob:; worker-src 'self'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+  root * {$DESIGN_PUBLIC_DIRECTORY}
+  file_server
+ }
+ handle {
+  respond 404
+ }
+}

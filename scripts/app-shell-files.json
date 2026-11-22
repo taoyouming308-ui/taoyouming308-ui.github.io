@@ -49,5 +49,8 @@
   "operations.html",
   "perm-academy.css",
   "perm-app.html",
-  "staff-access-client.js"
+  "staff-access-client.js",
+  "ai-design-pilot.css",
+  "ai-design-prepared.css",
+  "ai-design-entry.js"
 ]

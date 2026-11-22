@@ -1,0 +1,18 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {EventEmitter} from 'node:events';
+import {createDurableSynthesisWorkerRuntime} from '../packages/design-production-adapter/durable-synthesis-worker-runtime.mjs';
+import {TRUSTED_PG_RUNTIME_ROLE_SQL as probe} from '../packages/design-production-adapter/trusted-pg-pool-adapter.mjs';
+import {syntheticDurableWorkerFixture} from './fixtures/design-durable-worker.mjs';
+globalThis.fetch=()=>{throw Error('NETWORK_FORBIDDEN');};
+const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {resolve,promise};};
+function fixture(){const f=syntheticDurableWorkerFixture(),calls=[],releases=[];let claimed=false;const binding=f.lease.intent.keyBinding,keyRecord={schemaVersion:'design-key-record-v2',...binding,enabled:true,sealed:{v:2,iv:Buffer.alloc(12).toString('base64'),data:Buffer.alloc(32).toString('base64')}};delete keyRecord.keyDigest;
+ const dto=state=>({schemaVersion:'design-synthesis-operation-v1',id:f.lease.operationId,requestId:f.lease.intent.requestId,side:'left',state,revision:3,createdAt:100,updatedAt:101,expiresAt:999999,sourceBinding:f.lease.intent.sourceBinding,candidateId:null,resultAvailable:false,cancelRequested:false});
+ class Client extends EventEmitter{async query(sql){calls.push(sql);if(sql===probe)return {command:'SELECT',rowCount:1,rows:[{session_role:'design_synthesis_worker',current_role:'design_synthesis_worker',rolsuper:false,rolbypassrls:false,rolcreaterole:false,rolcreatedb:false,rolreplication:false,rolinherit:false}]};let value;if(sql.includes('.claim(')){value=claimed?null:f.lease;claimed=true;}else if(sql.includes('.prepare('))value={lease:f.lease,record:f.record};else if(sql.includes('.read_key('))value={lease:f.lease,keyRecord};else if(sql.includes('.dispatch('))value=true;else if(sql.includes('.fail('))value={operation:dto('uncertain')};else if(sql.startsWith('SELECT'))throw Error('UNEXPECTED_SQL');else return {command:sql.startsWith('BEGIN')?'BEGIN':sql.startsWith('SET')?'SET':sql};return {command:'SELECT',rowCount:1,rows:[{value}]};}release(destroy){releases.push(destroy);}}
+ class Pool extends EventEmitter{async connect(){return new Client();}}
+ const options={enabled:true,pool:new Pool(),modelConfig:f.modelConfig,approvedTextModels:f.approvedTextModels,sealer:{open:async()=> 'SYNTHETIC_WORKER_KEY_123456',digest:async()=>binding.keyDigest},transport:async()=>{throw Error('UNEXPECTED_TRANSPORT');}};
+ return {f,calls,releases,options};
+}
+test('default runtime is inert and close remains idempotent',async()=>{const r=createDurableSynthesisWorkerRuntime();await assert.rejects(r.runOnce(),/DURABLE_DISABLED/);assert.equal(r.close(),r.close());await r.close();await assert.rejects(r.runOnce(),/DURABLE_DISABLED/);});
+for(const phase of ['open','transport'])test(`close aborts pending ${phase}, withholds publish and rejects later jobs`,async()=>{const f=fixture(),entered=deferred(),late=deferred();let signal;
+ if(phase==='open')f.options.sealer.open=()=>{entered.resolve();return late.promise;};else f.options.transport=request=>{signal=request.signal;entered.resolve();return late.promise;};
+ const r=createDurableSynthesisWorkerRuntime(f.options),pending=r.runOnce();await entered.promise;const closing=r.close();const result=await pending;await closing;assert.equal(result.state,phase==='open'?'stopped':'uncertain');if(signal)assert.equal(signal.aborted,true);late.resolve('IGNORED_LATE_PRIVATE_VALUE');await new Promise(x=>setImmediate(x));assert(!f.calls.some(sql=>sql.includes('.finish(')));assert(f.releases.every(x=>x===true));await assert.rejects(r.runBatch(),/DURABLE_DISABLED/);
+});

@@ -1,3 +1,18 @@
+## v687 · Supabase gateway routing qualification (unpublished candidate)
+
+- Accept the measured internal Supabase TLS-termination URL only through explicit server configuration, exact project, host and fixed path. Public browser configuration still requires the pinned HTTPS origin.
+- Actual Chromium cross-origin preflight, resolve, JPEG return/decode and wrong-capability rejection pass against an isolated synthetic Edge handler. No real employee, customer, Storage or model authority is inferred.
+- The temporary transport probe was replaced with inert JWT-protected version7 and read back. Node16/Deno16 cover codec and ingress; full local and exact-head CI remain separate gates.
+
+## v686 · Hosted HEIF qualification and fixed Edge transport (unpublished candidate)
+
+- Add default-closed, pinned WASM HEIF decoding with verified metadata-free JPEG/PNG outputs and an 8 MiB / 12.58 MP boundary. Preserve the native worker and its separate limits.
+- Preserve complete compressed-stream verification on the measured Edge runtime using an independent bounded decoder; include dependency hashes, licenses and replacement/build references.
+- Add explicit fixed Edge base-path support and a default-closed adapter to the original authenticated HTTP routes. No new photo grant, production workflow/schema, model call or App activation.
+- Reconcile current production v685 and preserve all intervening business and booking changes. Employee auth-only deployment is independently verified; service-binding issuer policy remains pending.
+- Add independent eight-direction HEIF container fixtures and a descriptive-only EXIF case. The initial JPEG-style test expectation was corrected after checking the HEIF presentation rule; product decoding is unchanged.
+- Acceptance: Node codec11, Deno codec11, Edge/client30, Deno Edge4, cloud fixed-corpus9 outcomes plus missing-capability denial, business-sync115. Full publication gates and exact-head protected CI are separate checks.
+
 ## v685 · 2026-11-22 · 日报打开反馈（本地候选）
 
 - 日历日期和日报入口点击后立即显示打开状态；同一日期等待期间不重复请求，失败保留提示并可重试。既有日报读取、填写和入账逻辑不变。
@@ -115,6 +130,31 @@
 - 兼容工作表关联别名及包关系/类型标签，原件留存和核对继续读取原始字节，不改变金额、公式或入账状态。
 - 新增合成命名空间回归和完整上传接口回归；向里7月原表本地271个单元格、97个公式独立核对一致，原文件哈希不变。
 
+
+## v672 · 2026-11-19 · Existing employee identity verification candidate
+
+- Add read-only, service-role-only verification of current App employee sessions, stable staff account identity and fresh server checks. Departed/expired/logout/recreated-account cases deny without renewing sessions or changing booking/customer access.
+- Add isolated real PostgreSQL and client/Edge boundary checks to the existing publication gate. Photo processing remains default-closed; production membership/visit/receipt and host qualification are separate dependencies. Model keys stay owner-configured last.
+
+## 2026-11-19 — Existing App photo API transport candidate (v671)
+
+Resolve the current 自由手艺人 App's actual Pages entry and Supabase project through read-only configuration and live readback. Add explicit trusted cross-origin photo API transport while retaining default closure, current employee/scope/receipt checks, private previews and no retries. Add a separate API-only HTTPS/CORS ingress profile and actual two-origin native-browser HEIC/HEIF/archive/recovery acceptance. Reuse the reviewed browser graph to repair a stale legacy acceptance allowlist. Production, appointments and model keys remain unchanged; independent native host and real authority/bootstrap deployment gates remain.
+
+## 2026-11-18 — Independent HTTPS acceptance, v670 runtime unchanged
+
+Add a standard Caddy ingress candidate and exact public-asset manifest. Exercise actual TLS/native browser fetch through the original employee workflow, private HEIC/HEIF originals and complete empty-cluster recovery. Preserve private preview cache headers and reject proxy write replay; no current business/runtime, appointment sync, model activation or live deployment changes. The complete local publication gate (including163 finance scripts) passes. Publication is now authorized but actual isolated server/identity/schema/device and protected CI/merge/live gates remain.
+
+## 2026-11-18 — Unpublished streaming recovery candidate
+
+Add bounded-memory DPR2 offline backup/restore, two-pass whole-envelope authentication and graceful CLI cancellation, keeping DPR1 reads. Qualify >1GiB synthetic payloads and real PG17/HEIC-inclusive recovery separately. Existing business/backend/sync code stays intact; no production/model activation. Local v670 remains pending target-server/device and protected release acceptance.
+
+## 2026-11-18 — Unpublished offline recovery continuation
+
+Add a bounded authenticated offline DB/roles/encrypted-object/media-master backup envelope with a separate recovery key, strict new-target extraction and no SQL execution. Test fresh empty PG17 recovery after removing the source environment; preserve effective permissions, original hashes/archives and current employee authorization. No production/sync/model activation. Reserve local v669 pending real staging/host/device and protected release acceptance.
+
+## 2026-11-18 — Unpublished isolated phone-design candidate
+
+Add direct native HEIC/HEIF processing, mTLS image broker, encrypted local private originals and original employee workflow, retaining manual review/confirmation and immutable archives. Add non-model staging lifecycle and read-only host/image preflight. Preserve current main business fixes; production authorization, host/TLS/SQL/backup/device acceptance remain pending. No production/booking-sync/API activation.
 <!-- academy-reviewed-inputs:8b97b2649a442e65f53b3d4083506f007c4a1b0b6a512259d454fdee32fefe37 -->
 ## 2026-11-19 · Reviewed academy publication candidate (App version: v667 unchanged)
 

@@ -1,0 +1,6 @@
+/** Pure test oracle negative controls; no browser/network/database. */
+import test from 'node:test';import assert from 'node:assert/strict';
+import {assertBrowserPrivateDataAbsent} from './fixtures/browser-views-privacy.mjs';
+test('summary taskId and opaque record/source/version selectors do not imply full private proof',()=>{assertBrowserPrivateDataAbsent({record:{scope:{visitId:'booking:101'},sourceDigest:'a'.repeat(64),summary:{taskId:'synthetic-task',sourceVersion:'v1',normalizedVersion:'v3'}}});});
+test('nested proof and authority lanes fail even when other public fields are valid',()=>{for(const key of ['task','report','object','authority','receipt','sourceRecord','parentResponse','objectReceipt','verificationReport','verificationBinding','processingProvenance','claimedArtifact','managedImageHistory','normalizedBinding','imageBinding','keyBinding','sealed'])assert.throws(()=>assertBrowserPrivateDataAbsent({ok:true,result:{safe:[{[key]:{}}]}}));});
+test('actual locator in arbitrary safe-looking string fails without rewriting any response',()=>{const value={ok:true,result:{summary:'hidden/private/object-version-1'}},copy=structuredClone(value);assert.throws(()=>assertBrowserPrivateDataAbsent(value,{locators:['hidden/private/object-version-1']}));assert.deepEqual(value,copy);});

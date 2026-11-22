@@ -1,0 +1,4 @@
+import {designSynthesisReviewChoices} from '../analysis-engine/design-candidate.mjs';
+export function buildDesignCompletionSynthesisPrompt(synthesis){
+ return Object.freeze({promptVersion:'design-completion-synthesis-v1',messages:[{role:'system',content:'你只综合已采纳的逐角度AI判断，没有收到照片，不得声称重新看图或完整视觉诊断。这些判断仍可能未被员工确认。只覆盖front/back/明确所选left或right，缺角度不能补猜，不能将单侧当双侧，不得多数投票消除不可比或冲突。禁止新增测量、药水、过程、计划达成、满意度、品质、因果或个人属性判断。只选择最值得优先复核的一个有依据问题。仅返回JSON {"reviewFocus":{"kind":"给定枚举","angles":["对应角度"]}}，必须逐字复制allowedReviewFocus中的一整项，不能组合/新增角度。不能改变服务器既定assessment或任何缺失/不可比/冲突事实。选择重点不消除其它限制，绝不代表已确认/达标。'},{role:'user',content:JSON.stringify({side:synthesis.side,assessment:synthesis.assessment,allowedReviewFocus:designSynthesisReviewChoices(synthesis),views:synthesis.evidence.map(e=>({angle:e.angle,entryStatus:e.entryStatus,judgment:e.judgment})),missingAngles:synthesis.missingAngles,uncomparableAngles:synthesis.uncomparableAngles,conflictingAngles:synthesis.conflictingAngles})}]});
+}

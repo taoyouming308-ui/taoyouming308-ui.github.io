@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {createLegacyQueryDiagnostics} from './fixtures/design-legacy-diagnostics.mjs';
+let time=10;const d=createLegacyQueryDiagnostics({now:()=>time,limit:4});
+const a=d.begin(d.lease()),b=d.begin(d.lease());
+d.emit(a,'query_start');d.emit(b,'query_start');await Promise.resolve();d.emit(b,'query_failure','55P03');d.emit(a,'query_success','00000');
+assert.deepEqual(d.snapshot().map(x=>[x.leaseId,x.queryId]),[[1,1],[2,2],[2,2],[1,1]]);
+console.log('ok 1 - interleaved leases retain exact query identity');
+const secret='SECRET SQL TOKEN RAW ERROR';d.emit(a,'query_failure',secret);d.emit(a,secret,secret);d.emit({...a},'query_failure','42501');
+assert(!JSON.stringify(d.snapshot()).includes(secret));assert.equal(d.snapshot().length,4);assert.equal(d.snapshot().at(-1).sqlstate,'other');
+console.log('ok 2 - whitelist and unforgeable token drop raw fields');
+time=NaN;d.emit(a,'timeout');time=1;d.emit(a,'process_close');assert(d.snapshot().every(x=>x.monotonicMs===10));
+console.log('ok 3 - nonfinite and regressing clock cannot corrupt timeline');
+assert(Object.isFrozen(d.snapshot()));assert(d.snapshot().every(Object.isFrozen));assert.throws(()=>createLegacyQueryDiagnostics({limit:Infinity}));
+console.log('ok 4 - bounded immutable ring');
