@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-22",
+  "state": "preparation_verified_pending_protected_checks",
+  "published": false,
+  "dates": [
+    "2026-11-22"
+  ],
+  "baseSha": "c71a6799cf1b106be8657906f3f49c87e8de8000",
+  "inputHeadSha": "ba97b665b1e67fb421e14fb6f915978d6cfca2de",
+  "preparedHeadSha": "c6391c1a328a5e567a4d9ab2776953dc5824fef0",
+  "preparationRun": 44969633705,
+  "preparationArtifact": 14732439536,
+  "preparationArtifactSha256": "0e495a05dfd97fa0780582fd8c82b85ae9a3855d80a22c151518b4031904c998",
+  "backupArtifact": 14732822622,
+  "preparationBackupZipSha256": "600469710c9163580440eb04475296c6a6fcbd8b1af64867b553ccdd390b5ec8",
+  "preparationBackupArchiveSha256": "7b67718642d511a2a163fe23a51552d14d91a9630ce5c6e30d0507f174813123",
+  "baselinePreflightRun": 44969272363,
+  "baselineBackupArtifact": 14732667337,
+  "baselineBackupZipSha256": "7c040cf67b6cd6b1a6b507d4b08c7bb66ba1998e776d4e4bbff351cdcecbaf84",
+  "baselineBackupArchiveSha256": "16249dc61adc3d86e058616538cfde71455b7bc52da72e72e0f0ff8185f2cc13",
+  "contentBindingSha256": "772e41607d406b15a23c2252fb91cfae15211c60013adf31425ed587bb73b7da",
+  "reviewedAt": "2026-11-22T01:03:32.202Z",
+  "verifiedAt": "2026-11-22T01:16:48.941Z",
+  "verification": {
+    "cloudPrepJob": "success; run 44969633705 job 137046345741",
+    "fullPrePush": "success; existing complete .githooks pre-push in cloud run 44969633705",
+    "generatedHtmlMatchesPreparedArtifactSha256": true,
+    "localSvgMatchesReviewedContentHash": true,
+    "lessonRenderedFigures": 3,
+    "mainBaselineUnmoved": true,
+    "branchFastForwarded": true,
+    "sourceAndRightsReviewExists": true,
+    "canonicalReviewDraftSha256Matches": true,
+    "catalogItems": 35,
+    "allPreviouslyPublished34CatalogEntriesPreserved": true,
+    "staticFallbackIncludesAllEntries": true,
+    "preparedChangesOnlyDatedAcademyAndRequiredHandoff": true,
+    "notPublication": true,
+    "readbackMethod": "Downloaded verified preflight backup ZIP 14732667337 (SHA256 and inner tar), preparation backup ZIP 14732822622 and prepared artifact ZIP 14732439536; checked embedded JSON immutable base/input SHAs, original backup archive digests and prepare report binding. Re-read eight dated academy/generated files from immutable prepared head c6391c1a... via authenticated GitHub connector, independently computed UTF-8 SHA256, checked canonical draft digest against real AI editorial review, three original SVG digests and 35-item descending catalog with complete static fallback. Original .githooks full pre-push and isolated preparation tests succeeded on cloud run. This status commit is not an online or approval-by-automation claim."
+  },
+  "fileSha256": {
+    "academy/2026-11-22.html": "49d75cd1ae0e06ad1ca5c357c0e51f82e20e723e7b90c0790dae3cadd541fe1e",
+    "academy/catalog.json": "1142f1eb5faab25e2510a72de182b5e7969d980138cab404a57e3a4b3139c910",
+    "academy/index.html": "1ca113a12d20d9bf88593b6c814c5baa9e4ccabfdad06e3713978faac095cb78",
+    "academy/drafts/2026-11-22.json": "402f216fcfa7f9e514940d9c2dd25a2fdb310e585c057ef158c15d05c614ffb8",
+    "academy/reviews/2026-11-22.json": "5dcdda88fb85bd71107416f5c1b4386aa91ae72a85cdae5de5be0c9230645e81",
+    "academy/assets/2026-11-22/figure1.svg": "c258769bdd26c1cb74715d8e3cf12fa476da3c165331325bd6c098d8150a2a75",
+    "academy/assets/2026-11-22/figure2.svg": "02475f63a46b3a5d1c656f1ff01c04f678ce3bf87209be5714fecf9e761c668b",
+    "academy/assets/2026-11-22/figure3.svg": "58a58465f71602aa5357e604a93be7298025f50bf44f147aef84c400be49f23f"
+  },
+  "remaining": [
+    "Require exact NEW final PR head Validate shared app / validate and Academy publication preflight / backup-main both success with all additional mandatory conditions; prior head statuses do not count",
+    "Re-read current protected main and PR head, handle any concurrent changes with normal merge/rebase and rerun exact-head checks before ready/normal expected_head_sha merge",
+    "After ordinary merge, verify actual Pages catalog, fallback, all lessons and reviewed graphics against new main and academy-online-readback SHA256 report"
+  ]
+}
