@@ -18,7 +18,7 @@ ROOT = Path.home() / '.hermes' / 'mgj_source_turns'
 BOOKING_PATH = Path(__file__).with_name('sync_mgj_bookings.py')
 # Frozen after the canonical booking adapter is reviewed. An unknown/old booking
 # binary must not make customers assume that request-level cooperation exists.
-EXPECTED_BOOKING_SHA256 = '3baac7235e03876d1d00a48e60066b471c38bd317dfe1579bf1efa98dd415148'
+EXPECTED_BOOKING_SHA256 = '826ec45da840f78a6c1e5aa5dcc003bfe1cf98ba95ec9f0e71db112740e09a28'
 POLL_SECONDS = 0.05
 BOOKING_MAX_WAIT_SECONDS = 12.0
 

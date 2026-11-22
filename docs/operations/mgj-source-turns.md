@@ -1,5 +1,11 @@
 # Request-scoped Meiguanjia source turns
 
+## 2026-11-22 known-version customer recovery
+
+- This specific repair uses `install_mgj_source_turn_repin.py`, not the original first-install tool below. It accepts only the recorded 02:08 booking, prior customer and old guard preimages, or a complete exact installation of the newly reviewed hashes. Any mixed/unknown changes fail closed; do not force an install or recreate locks.
+- After normal shared pre-push, exact-head protected CI and merge, read all three canonical file hashes from protected main. Use those with the narrow installer's `--check` before `--install`. It keeps the booking runtime byte-for-byte in place and preserves existing cron, LaunchAgents, locks, queues and credentials. With all four verified locks and quiescent process inventory, it backs up first, writes customer then guard, and rechecks exact bytes. Rollback closes the new guard before reverting customer code, and only restores installer-owned bytes. Unverifiable or busy states are blockers, not permission to broaden the preimages or change the scheduler.
+- No test write against a real appointment or a forced customer backfill. A natural successful customer batch and result readback are needed to call it restored. Check separate booking and normal consumption freshness; missing list entries are not confirmed cancellations. Existing manual-review entries remain untouched.
+
 ## Scope and evidence
 
 Customer history resume was installed from protected PR163 on November20 at14:29. Two bounded attempts and the natural14:33 attempt completed no customer archives;14 of16 readiness samples observed the booking batch lock. That lock includes slow Supabase protocol replies and is not an actual source-request mutex. This candidate addresses that scheduling dependency; it does not claim every deferred or manual-review record is recoverable.

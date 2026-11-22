@@ -113,14 +113,15 @@ class NetworkRetryTests(unittest.TestCase):
 
 
 class CadenceTests(unittest.TestCase):
-    @mock.patch.object(SYNC, "reservation_date_keys", return_value=["d0", "d1", "d2", "d3"])
-    def test_today_first_and_only_one_due_future_day(self, dates):
-        self.assertEqual(SYNC.scheduled_dates({}, 2000), ["d0", "d1"])
-        state = {"dates": {"d1": {"success_at": 1999}, "d2": {"retry_after": 2001}}}
-        self.assertEqual(SYNC.scheduled_dates(state, 2000), ["d0", "d3"])
-        state = {"dates": {d: {"success_at": 1999} for d in ["d1", "d2", "d3"]}}
+    @mock.patch.object(SYNC, "reservation_date_keys", return_value=["d0", "d1", "d2", "d3", "d4", "d5"])
+    def test_today_all_due_near_days_and_one_due_far_day(self, dates):
+        self.assertEqual(SYNC.scheduled_dates({}, 2000), ["d0", "d1", "d2", "d3", "d4"])
+        state = {"dates": {"d1": {"success_at": 1999}, "d2": {"retry_after": 2001},
+                           "d4": {"retry_after": 2001}}}
+        self.assertEqual(SYNC.scheduled_dates(state, 2000), ["d0", "d3", "d5"])
+        state = {"dates": {d: {"success_at": 1999} for d in ["d1", "d2", "d3", "d4", "d5"]}}
         self.assertEqual(SYNC.scheduled_dates(state, 2000), ["d0"])
-        self.assertEqual(SYNC.scheduled_dates(state, 2900), ["d0", "d1"])
+        self.assertEqual(SYNC.scheduled_dates(state, 2900), ["d0", "d1", "d2", "d3", "d4"])
 
     @mock.patch.object(SYNC, "request_json", side_effect=TimeoutError("offline"))
     def test_session_network_failure_does_not_trigger_login(self, request):
