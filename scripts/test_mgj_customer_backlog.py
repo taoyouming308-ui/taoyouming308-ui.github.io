@@ -91,13 +91,20 @@ class BacklogTests(unittest.TestCase):
     def test_cloud_failure_and_projection_failure_do_not_ack(self):
         with mock.patch.object(s, "read_history_window", side_effect=self.read):
             rows, receipt = self.fetch()
-        data = {"phone": "fixture", "_history_complete": True, "_packages_complete": True,
+        # Verified profile statistics let this fixture reach the write/projection stages
+        # rather than testing the missing-statistics guard again.
+        data = {"phone": "fixture", "source": "memberDetail",
+                "_member_detail_stats": {"total_visits": 2, "avg_fee": 50},
+                "_history_complete": True, "_packages_complete": True,
                 "_history_resume_receipt": receipt, "service_history": rows}
-        with mock.patch.object(s, "supabase_get", return_value=[]), mock.patch.object(s, "supabase_post", side_effect=TimeoutError("fixture")):
+        with mock.patch.object(s, "supabase_get", return_value=[]), mock.patch.object(s, "supabase_post", side_effect=TimeoutError("fixture")) as write:
             self.assertFalse(s.upsert_customer(data)[0])
+            write.assert_called_once()
         self.assertIsNotNone(s.history_resume_store().load(self.owner, SCOPE))
-        with mock.patch.object(s, "supabase_get", return_value=[]), mock.patch.object(s, "supabase_post", return_value=204), mock.patch.object(s, "upsert_service_records", side_effect=TimeoutError("fixture")):
+        with mock.patch.object(s, "supabase_get", return_value=[]), mock.patch.object(s, "supabase_post", return_value=204) as write, mock.patch.object(s, "upsert_service_records", side_effect=TimeoutError("fixture")) as project:
             self.assertFalse(s.upsert_customer(data)[0])
+            write.assert_called_once()
+            project.assert_called_once()
         self.assertIsNotNone(s.history_resume_store().load(self.owner, SCOPE))
         with mock.patch.object(s, "supabase_get", return_value=[]), mock.patch.object(s, "supabase_post", return_value=204) as write, mock.patch.object(s, "upsert_service_records", return_value=1):
             self.assertTrue(s.upsert_customer(data)[0])
@@ -110,9 +117,12 @@ class BacklogTests(unittest.TestCase):
         data = {"phone": "fixture", "_history_complete": False, "_packages_complete": True,
                 "_history_resume_receipt": receipt, "service_history": rows}
         old = [{"id": "old", "date": self.today}]
-        with mock.patch.object(s, "supabase_get", return_value=[{"id": 1, "service_history": old}]), mock.patch.object(s, "supabase_patch", return_value=204) as write, mock.patch.object(s, "upsert_service_records", return_value=0):
+        with mock.patch.object(s, "supabase_get", return_value=[{"id": 1, "service_history": old, "total_visits": 2, "total_consumption": 100}]), mock.patch.object(s, "supabase_patch", return_value=204) as write, mock.patch.object(s, "upsert_service_records", return_value=0):
             self.assertFalse(s.upsert_customer(data)[0])
+        write.assert_called_once()
         self.assertEqual(write.call_args.args[1]["service_history"], old)
+        self.assertEqual(write.call_args.args[1]["total_visits"], 2)
+        self.assertEqual(write.call_args.args[1]["total_consumption"], 100)
         self.assertIsNotNone(s.history_resume_store().load(self.owner, SCOPE))
 
     def test_progress_cannot_bypass_needs_review_or_retry_date(self):
