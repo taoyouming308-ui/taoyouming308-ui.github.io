@@ -4,7 +4,8 @@
 - Preserve complete compressed-stream verification on the measured Edge runtime using an independent bounded decoder; include dependency hashes, licenses and replacement/build references.
 - Add explicit fixed Edge base-path support and a default-closed adapter to the original authenticated HTTP routes. No new photo grant, production workflow/schema, model call or App activation.
 - Reconcile current production v685 and preserve all intervening business and booking changes. Employee auth-only deployment is independently verified; service-binding issuer policy remains pending.
-- Acceptance: Node codec9, Deno codec9, Edge/client30, Deno Edge4, cloud fixed-corpus9 outcomes plus missing-capability denial, business-sync115. Full publication gates and exact-head protected CI are separate checks.
+- Add independent eight-direction HEIF container fixtures and a descriptive-only EXIF case. The initial JPEG-style test expectation was corrected after checking the HEIF presentation rule; product decoding is unchanged.
+- Acceptance: Node codec11, Deno codec11, Edge/client30, Deno Edge4, cloud fixed-corpus9 outcomes plus missing-capability denial, business-sync115. Full publication gates and exact-head protected CI are separate checks.
 
 ## v685 · 2026-11-22 · 日报打开反馈（本地候选）
 

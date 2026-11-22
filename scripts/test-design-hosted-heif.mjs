@@ -6,10 +6,33 @@ import {createHostedHeifCodec,inspectHostedJpeg,HOSTED_HEIF_LIMITS} from '../pac
 import {inspectPhonePhotoDerivative} from '../packages/design-production-adapter/phone-photo-processing.mjs';
 import {inspectHostedPhotoDerivative} from '../packages/design-production-adapter/hosted-photo-derivative.mjs';
 import {deflateSync,inflateSync} from 'node:zlib';
+import decodeJpeg from '../packages/design-production-adapter/vendor/jpeg-decoder-0.4.4.mjs';
 const fixture=JSON.parse(await readFile(new URL('./fixtures/hosted-heif-synthetic.json',import.meta.url),'utf8'));
 const bytes=name=>{const r=fixture.samples.find(r=>r.name===name),b=Buffer.from(r.base64,'base64');assert.equal(b.length,r.byteLength);assert.equal(createHash('sha256').update(b).digest('hex'),r.sha256);return b;};
 const run=(codec,b=bytes('phone.heif'),signal=new AbortController().signal)=>codec.normalize(b,{signal});
 const codec=opts=>createHostedHeifCodec({enabled:true,authorize:async()=>true,...opts});
+const orientationFixture=JSON.parse(await readFile(new URL('./fixtures/hosted-heif-orientations.json',import.meta.url),'utf8'));
+async function checkOrientation(sample,layout,dimensions){
+ const b=Buffer.from(sample.base64,'base64');assert.equal(b.length,sample.byteLength);assert.equal(createHash('sha256').update(b).digest('hex'),sample.sha256);
+ const r=await run(codec(),b);let image;
+ try{
+  assert.deepEqual([r.normalized.width,r.normalized.height],dimensions);
+  image=decodeJpeg(r.normalized.bytes,{useTArray:true,tolerantDecoding:false,maxResolutionInMP:0.1,maxMemoryUsageInMB:8});
+  const colors=[[230,20,20],[20,210,20],[20,20,230],[230,210,20]];
+  for(const [i,[x,y]]of [[.25,.25],[.75,.25],[.25,.75],[.75,.75]].entries()){
+   const at=(Math.floor(image.height*y)*image.width+Math.floor(image.width*x))*4,want=colors[layout[i]];
+   for(let c=0;c<3;c++)assert.ok(Math.abs(image.data[at+c]-want[c])<20,'independently encoded HEIF quadrant has the expected orientation');
+  }
+  assert.equal(r.independentVerification.metadataAbsent,true);
+ }finally{image?.data.fill(0);r.normalized.bytes.fill(0);r.derivative.bytes.fill(0);}
+}
+test('HEIF container rotation and mirroring preserve all eight independently encoded directions',async()=>{
+ const layouts={1:[0,1,2,3],2:[1,0,3,2],3:[3,2,1,0],4:[2,3,0,1],5:[0,2,1,3],6:[2,0,3,1],7:[3,1,2,0],8:[1,3,0,2]};
+ for(const sample of orientationFixture.samples.filter(s=>s.kind==='heif-container'))await checkOrientation(sample,layouts[sample.orientation],sample.orientation>=5?[96,64]:[64,96]);
+});
+test('descriptive EXIF without HEIF transform is not incorrectly treated as JPEG orientation',async()=>{
+ await checkOrientation(orientationFixture.samples.find(s=>s.kind==='descriptive-exif-only'),[0,1,2,3],[64,96]);
+});
 test('hosted codec is closed by default and requires a real processing authorizer/signal',async()=>{
  await assert.rejects(run(createHostedHeifCodec()),/DISABLED/);
  await assert.rejects(run(createHostedHeifCodec({enabled:true})),/DENIED/);

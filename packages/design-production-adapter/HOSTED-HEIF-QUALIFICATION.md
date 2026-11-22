@@ -27,9 +27,12 @@ and original-image processing permission remain separate requirements.
 
 ## Completed acceptance
 
-Nine Node cases and the same nine Deno cases cover actual synthetic HEIF decode,
+Eleven Node cases and the same eleven Deno cases cover actual synthetic HEIF decode,
 10-bit decode, privacy of caller buffers, final revocation/abort, global admission,
-multi-frame rejection and malformed JPEG/PNG/zlib boundaries. Four Edge-routing
+multi-frame rejection and malformed JPEG/PNG/zlib boundaries. Independent
+synthetic HEIFs cover all eight container rotations/mirrors. Descriptive EXIF
+without a HEIF transform is not treated as JPEG orientation; this follows the
+HEIF presentation rule and avoids a second unintended rotation. Four Edge-routing
 cases plus the existing 26 client cases pass; the routing cases also pass in Deno.
 
 Fixed public samples are pinned to pillow_heif commit
