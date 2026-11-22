@@ -32,6 +32,7 @@
   "operations-monthly-daily-performance.js",
   "operations-monthly-review.css",
   "operations-monthly-review.js",
+  "operations-monthly-save.js",
   "operations-monthly-source-archive.js",
   "operations-monthly-verification.js",
   "operations-monthly-workbench.js",

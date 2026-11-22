@@ -88,12 +88,13 @@ let browser;
   assert.equal(await page.locator('input[data-monthly-cell="' + target + '"]').inputValue(), '12.50');
   if (partiallySavedTarget !== target) assert.equal(await page.locator('input[data-monthly-cell="' + partiallySavedTarget + '"]').inputValue(), '8.75');
   const originalMonth = await page.locator('#month').inputValue();
-  await page.evaluate(async () => { window.confirm = () => false; await showView('daily-report');
+  await page.evaluate(async () => { window.nativeMonthlyConfirm = window.confirm; window.confirm = () => false; await showView('daily-report');
     var picker = document.getElementById('month'); picker.value = picker.value.slice(0, 5) + '02'; picker.dispatchEvent(new Event('change', { bubbles: true })); });
   assert.equal(await page.evaluate(() => state.view), 'monthly', 'cancelled navigation must keep the unsaved month open');
   assert.equal(await page.locator('#month').inputValue(), originalMonth, 'cancelled month switch must keep unsaved values in their original scope');
   await page.evaluate(address => {
     window.savedChanges = []; window.expectedTarget = address; window.failSecondOnce = true;
+    window.realMonthlySave = saveMonthlyAmountAdjustment;
     saveMonthlyAmountAdjustment = async (change, reason) => {
       savedChanges.push({ change, reason });
       if (change.address !== address && failSecondOnce) { failSecondOnce = false; throw Error('模拟第二格保存失败'); }
@@ -130,6 +131,95 @@ let browser;
   await page.waitForFunction(address => !state.monthlyDirty[address] && !state.monthlyEditMode, partiallySavedTarget);
   assert.equal(await page.evaluate(address => state.data.monthly_report.display_data.cells.find(c => c.cell_address === address).numeric_value, target), 12.5);
   assert.equal(await page.evaluate(address => state.data.monthly_report.display_data.cells.find(c => c.cell_address === address).numeric_value, partiallySavedTarget), 8.75);
+  const third = await page.evaluate(([first, second]) => {
+    saveMonthlyAmountAdjustment = window.realMonthlySave;
+    window.confirm = window.nativeMonthlyConfirm;
+    state.monthlyEditMode = true;
+    renderMonthlyAuditControls(true);
+    const thirdInput = Array.from(document.querySelectorAll('[data-monthly-cell]')).find(input => ![first, second].includes(input.dataset.monthlyCell));
+    const third = thirdInput.dataset.monthlyCell;
+    window.batchChecks = [];
+    window.writeCounts = {};
+    window.revisions = {};
+    window.loseThirdReply = true;
+    window.loseReadback = false;
+    window.setMonthlyServerAmount = (address, value) => {
+      const d = fixtureOverview.monthly_report.display_data, cell = d.cells.find(c => c.cell_address === address);
+      cell.numeric_value = value; cell.display_value = String(value); cell.editable_blank = false;
+      d.values[cell.row_number - 1][cell.column_number - 1] = value;
+    };
+    api = async (operation, payload, noReplay) => {
+      batchChecks.push({operation, address:payload.cell_address, report:payload.report_id});
+      if (operation === 'overview') {
+        if (failOverview) throw Error('模拟读取失败');
+        return structuredClone(fixtureOverview);
+      }
+      if (operation === 'monthly_editable_slots_prepare') return { prepared: 0 };
+      const address = payload.cell_address, report = fixtureOverview.monthly_report;
+      if (operation === 'cell_trace') {
+        return { report:{id:report.id}, can_edit:true,
+          target:structuredClone(report.display_data.cells.find(c => c.cell_address === address)),
+          monthly_adjustment:{revision:revisions[address] || 0} };
+      }
+      if (operation !== 'monthly_income_adjustment_save' || noReplay !== true || payload.report_id !== report.id) throw Error('Unexpected write or unsafe replay');
+      writeCounts[address] = (writeCounts[address] || 0) + 1;
+      revisions[address] = (revisions[address] || 0) + 1;
+      setMonthlyServerAmount(address, Number(payload.after_amount));
+      if (address === first) { setMonthlyServerAmount(second, 10.25); revisions[second] = 1; }
+      if (address === third && loseThirdReply) {
+        loseThirdReply = false;
+        if (loseReadback) failOverview = true;
+        throw Error('模拟已经写入但回执丢失');
+      }
+      return { saved:{source_report_id:report.id,cell_address:address,after_amount:payload.after_amount} };
+    };
+    return third;
+  }, [target, partiallySavedTarget]);
+  for (const [address, value] of [[target,'13.50'],[partiallySavedTarget,'18.75'],[third,'42.50']]) {
+    await page.locator('input[data-monthly-cell="' + address + '"]').fill(value);
+  }
+  const resultBox = page.locator('#monthly-save-result');
+  const resultRow = address => resultBox.locator('[data-monthly-save-cell="' + address + '"]');
+  page.once('dialog', dialog => dialog.accept('月报合成测试'));
+  await page.locator('#monthly-save-cells').click();
+  await page.waitForFunction(() => !state.monthlySaving && document.getElementById('monthly-save-result').innerText.includes('已确认 2 项'));
+  assert.match(await resultRow(target).innerText(), /已保存/);
+  assert.match(await resultRow(partiallySavedTarget).innerText(), /后台当前：10\.25.*你的输入：18\.75/);
+  assert.match(await resultRow(third).innerText(), /后台已有该值（未重复提交）/);
+  assert.deepEqual(await page.evaluate(() => writeCounts), {[target]:1,[third]:1});
+  assert.equal(await page.locator('input[data-monthly-cell="' + partiallySavedTarget + '"]').isEditable(), true);
+  page.once('dialog', dialog => dialog.accept());
+  await resultRow(partiallySavedTarget).getByRole('button', { name:'重新核对 ' + partiallySavedTarget }).click();
+  assert.deepEqual(await page.evaluate(() => writeCounts), {[target]:1,[third]:1}, 'recheck is not another write');
+  page.once('dialog', dialog => dialog.accept('只保存剩余格'));
+  await page.locator('#monthly-save-cells').click();
+  await page.waitForFunction(() => !state.monthlySaving && !monthlyHasUnsaved());
+  assert.deepEqual(await page.evaluate(() => writeCounts), {[target]:1,[third]:1,[partiallySavedTarget]:1}, 'retry never resends confirmed cells');
+  // Lose both the write response and immediate readback. A later read can
+  // confirm the original write without submitting it again.
+  await page.evaluate(() => { loseThirdReply=true; loseReadback=true; state.monthlyEditMode=true; renderMonthlyAuditControls(true); });
+  await page.locator('input[data-monthly-cell="' + third + '"]').fill('43.25');
+  page.once('dialog', dialog => dialog.accept('模拟中断后核对'));
+  await page.locator('#monthly-save-cells').click();
+  await page.waitForFunction(() => !state.monthlySaving && !state.monthlyOverviewReady);
+  assert.match(await resultRow(third).innerText(), /回执丢失.*43\.25/);
+  assert.equal(await page.evaluate(address=>state.monthlyDirty[address]?.value,third),'43.25');
+  await page.evaluate(() => { failOverview=false; return loadOverview(); });
+  assert.match(await resultRow(third).innerText(), /后台已有该值（未重复提交）/);
+  assert.deepEqual(await page.evaluate(() => writeCounts), {[target]:1,[third]:2,[partiallySavedTarget]:1});
+  // A refreshed workbook with a new id cannot absorb or submit old pending values.
+  await page.evaluate(() => { state.monthlyEditMode=true; renderMonthlyAuditControls(true); });
+  await page.locator('input[data-monthly-cell="' + third + '"]').fill('55.25');
+  await page.evaluate(async address => {
+    fixtureOverview.monthly_report.id = 'replacement-worksheet-synthetic';
+    setMonthlyServerAmount(address, 55.25);
+    await loadOverview();
+  }, third);
+  assert.equal(await page.evaluate(address => state.monthlyDirty[address]?.value, third), '55.25');
+  await page.locator('#monthly-save-cells').click();
+  assert.match(await resultRow(third).innerText(), /原月报版本已变化.*55\.25/);
+  assert.deepEqual(await page.evaluate(() => writeCounts), {[target]:1,[third]:2,[partiallySavedTarget]:1});
+  await page.evaluate(() => { clearMonthlyUnsaved(); renderMonthlyAuditControls(false); });
   // Failed refresh must retain local input, recover on retry, and keep existing scope isolation.
   await page.evaluate(() => { failOverview = true; });
   await page.locator('#monthly-edit-toggle').click();

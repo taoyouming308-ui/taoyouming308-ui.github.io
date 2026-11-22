@@ -1,9 +1,9 @@
-## 2026-11-22 · Aesthetic training: shoulder-neck collision and posterior weight (App version: v683 unchanged)
+## 2026-11-22 · Aesthetic training: shoulder-neck collision and posterior weight (App version: v685 unchanged)
 
-- Current owner: Codex content publisher. Continue the existing focused aesthetic-training PR from protected `github/main` `c71a6799`/v683; do not create a duplicate PR. The November 21 exact-head run passed the dedicated aesthetic governance and browser coverage but the duplicated full publication gate was blocked by four existing customer-history resume tests with `ResumeInvalid: resume_invalid`; no bypass or unrelated customer-sync code change is authorized.
+- Current owner: Codex content publisher. Continue the existing focused aesthetic-training PR on protected `github/main` `5baf4ec0`/v685; do not create a duplicate PR. The earlier exact-head run passed the dedicated aesthetic governance and browser coverage but was blocked by four customer-history resume tests. Their independently reviewed fix has since landed on `main`; this content candidate only integrates that protected baseline and does not alter customer-sync code.
 - Preserve all forty-five prepared cases through November 21 and append the unique stable ID `aesthetic-2026-11-22`. The new case trains a front-view length preference against side/back posterior weight, shoulder collision, neck exposure and tieability. It includes one original AI-generated fictional current-state four-view WebP, five explicit conditions, one core A/B question, six conditional reference answers and five unscored recaps.
 - Scope remains the aesthetic feed, matching fictional image, transparent review records and public change/handoff notes only. No App/runtime/version, retired academy feed, calculator, customer, finance, database/backend, login/permissions, business sync or automation changes.
-- Exact-head protected CI must be rerun after this content update. Normal merge, Pages success and exact live feed/image/App readback are still mandatory before claiming synchronization; if the unrelated resume tests fail again, preserve current production and report the blocker.
+- Exact-head protected CI must be rerun after integrating the current baseline. Normal merge, Pages success and exact live feed/image/App readback are still mandatory before claiming synchronization; if any protected check fails, preserve current production and report the blocker.
 
 ## 2026-11-21 · Aesthetic training catch-up: reversible parting, camera distance and dynamic face framing (App version: v683 unchanged)
 
@@ -11,6 +11,24 @@
 - Preserve all forty-two published cases through November 18 and append three unique stable IDs for November 19–21. Each case has one original AI-generated fictional current-state four-view WebP, five explicit conditions, one core A/B question, six conditional reference answers and five unscored recaps. November 20 separates close-camera appearance from real three-dimensional proportions; November 21 separates static reference framing from speaking/looking-down motion.
 - Images show only current fictional adults with complete crown, hairstyle baseline, neck and shoulders; they are not real customers, reference screenshots, proposed cuts, makeovers or proof of home reproducibility. Visible facts, technical hypotheses, fictional case settings and live confirmation needs remain distinct; no user completion or score is invented.
 - Scope is `docs/aesthetic-training/feed.v1.json`, three transparent review records, three matching images and public change/handoff records only. No App/runtime/version, retired academy feed, calculator, customer, finance, database/backend, login/permissions, business sync or automation changes. Exact-head protected CI, normal merge, Pages success and live feed/image/App readback remain mandatory before claiming synchronization.
+
+## 2026-11-22 · Daily report opening feedback (App version: v685; local candidate)
+
+- Owner: Codex. Based on protected main 43b1c9b0/v684; baseline checks and recovery archive complete. Only frontend interaction feedback; no live publication requested and no production data writes.
+- Date buttons display scoped in-flight/error feedback, ignore a repeated click on the pending date and discard stale responses as before. Daily view and entry form buttons show immediate pending labels. No API, recognition, save or posting changes.
+
+## 2026-11-22 · Monthly per-cell save recovery (App version: v684; release candidate)
+
+- Owner: Codex. Protected main 3398b61b/v683 checked, clean isolated worktree and recovery archive complete. User authorizes Pages publication after checks, not production edit tests.
+- One explicit save, per-cell read/compare, guarded existing finance writes, no automatic write replay. Continue safe independent amounts, retain pending edits in the open page, and show persistent per-cell outcomes. Require an explicit recheck before rebasing a changed cell; never carry pending edits to a replacement report or another account.
+- Existing month authorization, audit, append-only writes, and text batch transaction are unchanged. No schema, Edge, data or ledger deployment. Use synthetic browser regressions, exact-head protected CI and Pages readback.
+
+## 2026-11-22 · Repair customer source-field authority (App version: v683 unchanged; review candidate)
+
+- Isolated branch from current protected main c71a6799; baseline version and release checks and local recovery archive completed before edits. No Pages, schema, or production data changed during preparation.
+- Missing, blank, or invalid source statistics cannot replace known figures. Explicit valid zero is distinct; derived totals require both inputs. Missing or invalid package payloads preserve known packages. Fully known customer profiles retain the existing signed wire schema.
+- Canonicalize the deployed booking cadence without changing its runtime file, pin its exact reviewed hash while keeping the shared process guard, and use only the exact-preimage coordinated installer after protected validation. Do not force a crawl, change schedules, reset queues, or infer that omitted bookings were cancelled.
+- Require a naturally successful customer batch and write/readback evidence before calling customer synchronization restored. Booking and daily-consumption freshness and deletion audits are separate checks.
 
 ## 2026-11-21 · Bind an existing archived photo to a daily-report draft (App version: v683; release candidate)
 
