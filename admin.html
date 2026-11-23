@@ -3777,6 +3777,7 @@ function loadCustomers() {
         html += '<td style="white-space:nowrap;">';
         html += '<button onclick="showFollowUpModal(\'' + phone + '\',\'' + esc(name) + '\',' + Number(r.id) + ')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">回访</button> ';
         html += '<button onclick="viewCustAnalyses(\'' + phone + '\',\'' + esc(name) + '\')" style="padding:4px 8px;background:transparent;color:#fff;border:1px solid #555;border-radius:4px;cursor:pointer;font-size:11px;">详情</button>';
+        html += '<button onclick="openDesignServiceBinding(\'' + Number(r.id) + '\')" style="padding:4px 8px;background:transparent;color:var(--info);border:1px solid var(--info);border-radius:4px;cursor:pointer;font-size:11px;">服务负责员工</button>';
         html += '</td></tr>';
       });
       tbody.innerHTML = html;
@@ -4582,6 +4583,13 @@ async function saveCareRecord() {
     if (btn) btn.disabled = false;
   }
 }
+
+window.openDesignServiceBinding = function(profileId) {
+  if (!requireSuperAdmin('服务负责员工绑定')) return;
+  import('./admin-service-bindings.js?v=689').then(function(module) {
+    module.openAdminServiceBinding({profileId:String(profileId),getSession:getAdminSession});
+  }).catch(function() { toast('服务绑定界面暂时无法打开，请稍后重试', 'err'); });
+};
 
 // 初始化
 initCustAndFu();
