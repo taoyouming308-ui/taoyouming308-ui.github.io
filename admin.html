@@ -4586,7 +4586,7 @@ async function saveCareRecord() {
 
 window.openDesignServiceBinding = function(profileId) {
   if (!requireSuperAdmin('服务负责员工绑定')) return;
-  import('./admin-service-bindings.js?v=688').then(function(module) {
+  import('./admin-service-bindings.js?v=689').then(function(module) {
     module.openAdminServiceBinding({profileId:String(profileId),getSession:getAdminSession});
   }).catch(function() { toast('服务绑定界面暂时无法打开，请稍后重试', 'err'); });
 };

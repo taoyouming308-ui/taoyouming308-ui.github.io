@@ -1,4 +1,4 @@
-## 2026-11-23 · Administrator service binding (App version: v688; release candidate)
+## 2026-11-23 · Administrator service binding (App version: v689; release candidate)
 
 - Owner: Codex. User selected 管理员; reuse only the current `staff.role=admin` custom backend session, not store_admin or operations/job-label inference. Confirmation does not grant photo viewing. Responsible staff is explicitly selected by stable account ID and creation instant.
 - Isolated focused release from protected github/main d40a879/v685, now reconciled with concurrently published 122ae7a/v687 after recovery archives. Preserve all scoped-read changes and the three deployed API updates. The large hosted photo candidate remains separate; no prepared photo entry or legacy workflow fixtures are copied into this release.
