@@ -58,7 +58,16 @@ let browser;
       throw Error('Unexpected operation ' + operation);
     };
   }, real);
-  await page.evaluate(() => loadOverview());
+  await page.evaluate(async () => {
+    const original = renderSheet;
+    let builds = 0;
+    renderSheet = function () { builds++; return original.apply(this, arguments); };
+    try {
+      await loadOverview();
+      if (builds !== 1 || !document.querySelector('#monthly-sheet .sheet-table'))
+        throw Error('Read-only monthly overview must build exactly one complete grid; got ' + builds);
+    } finally { renderSheet = original; }
+  });
   await page.locator('#monthly-edit-toggle').click();
   await page.waitForFunction(() => state.monthlyEditMode === true, null, { timeout: 5000 }).catch(async error => {
     console.error(await page.evaluate(() => ({ mode: state.monthlyEditMode, ready: state.monthlyOverviewReady, status: document.getElementById('sync-status').innerText, calls: calls.map(c => c.operation), month: document.getElementById('month').value, store: currentStore(), toast: document.getElementById('toast')?.innerText })));

@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { customerProfileStoreFilter, scopeCustomerProfile, customerRecordsStoreFilter, customerReadStores, customerIdentityRows, scopeCustomerHairRecords, customerHairPhoneFilter, customerHairIdentityRows } from "../_shared/customer-profile-scope.mjs";
 import { projectBusinessDay } from "../_shared/frontdesk-business-domain.mjs";
+import { encodeReadSync } from "../_shared/read-sync.mjs";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -993,7 +994,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "admin_revoke_session") return json(await revokeFrontdeskSession(payload));
     const session = await requireSession(payload);
     if (operation === "session") return json({ user: await sessionUser(session), expires_at: session.expires_at });
-    if (operation === "dashboard") return json(await dashboard(payload, session));
+    if (operation === "dashboard") return json(await encodeReadSync(payload.read_sync, await dashboard(payload, session)));
     if (operation === "business_details") return json(await businessDetails(payload, session));
     if (operation === "today_customer_save") return json(await saveTodayCustomer(payload, session));
     if (operation === "today_mark_new_customer") return json(await markNewCustomer(payload, session));
@@ -1003,7 +1004,11 @@ Deno.serve(async (request: Request) => {
     if (operation === "customer_detail") return json(await customerDetail(payload, session));
     if (operation === "import_rows") return json(await importRows(payload, session));
     if (operation === "import_batches") return json(await importBatches(session));
-    if (operation === "ledger_records") return json(await ledgerRecords(payload, session));
+    if (operation === "ledger_records") {
+      const data = await ledgerRecords(payload, session);
+      // Suffix lookups and undated, multi-day client histories are always live.
+      return json(data.business_date && !data.phone_suffix ? await encodeReadSync(payload.read_sync, data) : data);
+    }
     if (operation === "ledger_record_save") return json(await saveLedgerRecord(payload, session));
     if (operation === "shampoo_qualification_stats") return json(await shampooQualificationStats(payload, session));
     return json({ error: "不支持的操作" }, 400);

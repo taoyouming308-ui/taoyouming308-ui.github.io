@@ -1,11 +1,21 @@
 ## 2026-11-23 · Administrator service binding (App version: v688; release candidate)
 
 - Owner: Codex. User selected 管理员; reuse only the current `staff.role=admin` custom backend session, not store_admin or operations/job-label inference. Confirmation does not grant photo viewing. Responsible staff is explicitly selected by stable account ID and creation instant.
-- Isolated focused release from protected github/main d40a879/v685 after recovery archives and starting checks. The large hosted photo candidate remains separate; no prepared photo entry or legacy workflow fixtures are copied into this release.
+- Isolated focused release from protected github/main d40a879/v685, now reconciled with concurrently published 122ae7a/v687 after recovery archives. Preserve all scoped-read changes and the three deployed API updates. The large hosted photo candidate remains separate; no prepared photo entry or legacy workflow fixtures are copied into this release.
 - Add private immutable binding revisions, source/profile/staff snapshots, explicit confirmation/revocation, CAS and original request receipts. Fresh responsible-employee resolution is evidence only, not a media/processing/model grant. No source-table DML, row locks, grants, policies, triggers or booking worker changes. API/model keys remain owner-configured last.
 - Existing employee RPC body and service-only ACL were read back; the new atomic migration pins that dependency without replacing it. Canonical existing authentication source is recorded separately as a reference, not reapplied or redeployed.
-- New request/client/verifier tests9 and actual admin-page synthetic browser tests8 passed; exact migration PG26 passed before the latest transaction/precondition review and must be repeated. Complete tracked local gate and protected exact-head CI are mandatory. Then additive migration/new Edge first, normal Pages publication and live byte readback. Actual employee/device and private photo/workflow acceptance remain separate.
+- Initial full local gate and protected run45105229160 passed with Node9/PG26/browser8. The additive binding migration and new Edge v1 are deployed; exact Edge3/SQL6 sources, RLS/ACL, ten cloud denial/preflight cases and unchanged source-table permissions were read back. Concurrent PR182 then advanced main; repeat the complete gate and protected final-head CI before frontend publication. The migration file is aligned to observed deployed history version20261123034747, with SQL bytes unchanged; do not apply it again. Actual employee/device and private photo/workflow acceptance remain separate.
 - See packages/design-production-adapter/LIVE-SERVICE-BINDING.md. No production customer binding is created as a deployment test.
+
+## 2026-11-23 · Scoped read synchronization (App version: v687; opt-in rollout)
+
+- Current owner: Codex. Based on the local v686 latency candidate. Opt-in read previews, revalidation and optional deltas cover selected reporting, front desk and employee reads; full reads remain compatible. No changes to the posting protocol, and no migrations or production data writes.
+- Release approved for the opt-in cohort. Keep protected review and separate Pages/Edge readback; a preview is not a verified record, and synthetic timings are not production latency.
+
+## 2026-11-23 · Foreground and report read latency (App version: v686)
+
+- Based on protected main d40a8799/v685, retaining the published courses. Read independent report data concurrently and suppress redundant frontend rendering/hidden polling. Existing checks, scopes, amounts and write operations are unchanged.
+- Deploy and verify operations-api and Pages separately after protected validation. No migration or live report write; compare natural traffic by operation.
 
 ## 2026-11-22 · Aesthetic training: shoulder-neck collision and posterior weight (App version: v685 unchanged)
 

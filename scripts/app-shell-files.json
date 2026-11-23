@@ -10,6 +10,8 @@
   "customer-design-archive.css",
   "customer-design-archive.js",
   "data-read-client.js",
+  "scoped-read-codec.js",
+  "scoped-read-sync.js",
   "employee-reports.js",
   "frontdesk-business-details.js",
   "frontdesk-manifest.json",

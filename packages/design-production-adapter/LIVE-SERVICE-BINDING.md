@@ -88,3 +88,9 @@ Tests run the exact migration in a new bounded, no-network PG17 container with
 SELECT-only source privileges, the real admin page/modules at 390/1280 widths
 against intercepted synthetic endpoints, and request/client/evidence boundaries.
 These prove the stated synthetic scope; they are not real staff/customer acceptance.
+
+The platform recorded the reviewed migration as `20261123034747`. Its source
+file uses that observed history version; SQL bytes and deployed function bodies
+are unchanged. Do not replay the already-applied migration when reconciling a
+concurrent frontend release. Before publishing, retain the current scoped-read
+frontend and its already-deployed APIs, and rerun final-head release checks.

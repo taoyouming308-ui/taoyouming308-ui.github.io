@@ -37,7 +37,7 @@ try{
  const sourceSnapshot=()=>sql(`select jsonb_build_array((select jsonb_agg(to_jsonb(t) order by id) from staff t),(select jsonb_agg(to_jsonb(t) order by token_hash) from staff_access_sessions t),(select jsonb_agg(to_jsonb(t) order by token_hash) from employee_booking_sessions t),(select jsonb_agg(to_jsonb(t) order by id) from bookings t),(select jsonb_agg(to_jsonb(t) order by id) from customer_profiles t),(select jsonb_agg(to_jsonb(t) order by id) from frontdesk_today_customers t),(select jsonb_agg(jsonb_build_array(relname,relacl::text,relrowsecurity)order by relname)from pg_class where oid in('staff'::regclass,'bookings'::regclass,'customer_profiles'::regclass,'staff_access_sessions'::regclass,'employee_booking_sessions'::regclass,'frontdesk_today_customers'::regclass)));`);
  const before=sourceSnapshot();
  sql(readFileSync(new URL('../supabase/functions/design-employee-authority/session-verifier.sql',import.meta.url),'utf8'));
- sql(readFileSync(new URL('../supabase/migrations/20261123021739_design_admin_service_binding.sql',import.meta.url),'utf8'));
+ sql(readFileSync(new URL('../supabase/migrations/20261123034747_design_admin_service_binding.sql',import.meta.url),'utf8'));
  assert.equal(sourceSnapshot(),before);pass('exact migrations preserve all source records, grants and RLS; no fixture installed in production');
  for(const role of ['anon','authenticated'])assert.throws(()=>call({action:'choices',profileId:'11',date:'2026-11-23'},admin,role));
  assert.throws(()=>call({action:'choices',profileId:'11',date:'2026-11-23'},admin,'postgres'));pass('only service_role may invoke the custom-session boundary');
