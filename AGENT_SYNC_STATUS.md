@@ -1,3 +1,12 @@
+## 2026-11-23 · Administrator service binding (App version: v688; release candidate)
+
+- Owner: Codex. User selected 管理员; reuse only the current `staff.role=admin` custom backend session, not store_admin or operations/job-label inference. Confirmation does not grant photo viewing. Responsible staff is explicitly selected by stable account ID and creation instant.
+- Isolated focused release from protected github/main d40a879/v685 after recovery archives and starting checks. The large hosted photo candidate remains separate; no prepared photo entry or legacy workflow fixtures are copied into this release.
+- Add private immutable binding revisions, source/profile/staff snapshots, explicit confirmation/revocation, CAS and original request receipts. Fresh responsible-employee resolution is evidence only, not a media/processing/model grant. No source-table DML, row locks, grants, policies, triggers or booking worker changes. API/model keys remain owner-configured last.
+- Existing employee RPC body and service-only ACL were read back; the new atomic migration pins that dependency without replacing it. Canonical existing authentication source is recorded separately as a reference, not reapplied or redeployed.
+- New request/client/verifier tests9 and actual admin-page synthetic browser tests8 passed; exact migration PG26 passed before the latest transaction/precondition review and must be repeated. Complete tracked local gate and protected exact-head CI are mandatory. Then additive migration/new Edge first, normal Pages publication and live byte readback. Actual employee/device and private photo/workflow acceptance remain separate.
+- See packages/design-production-adapter/LIVE-SERVICE-BINDING.md. No production customer binding is created as a deployment test.
+
 ## 2026-11-22 · Aesthetic training: shoulder-neck collision and posterior weight (App version: v685 unchanged)
 
 - Current owner: Codex content publisher. Continue the existing focused aesthetic-training PR on protected `github/main` `5baf4ec0`/v685; do not create a duplicate PR. The earlier exact-head run passed the dedicated aesthetic governance and browser coverage but was blocked by four customer-history resume tests. Their independently reviewed fix has since landed on `main`; this content candidate only integrates that protected baseline and does not alter customer-sync code.

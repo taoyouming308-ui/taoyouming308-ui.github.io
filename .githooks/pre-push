@@ -51,3 +51,9 @@ node scripts/test-aesthetic-study-admin-browser.cjs || exit 1
 "$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_mgj_customer_history_resume.py scripts/test_mgj_customer_backlog.py scripts/test_install_mgj_customer_backlog.py || exit 1
 "$ZYSYR_HOOK_PYTHON" -m unittest scripts/test_mgj_source_turns.py scripts/test_mgj_booking_turns.py scripts/test_mgj_customer_turns.py scripts/test_install_mgj_source_turns.py || exit 1
 node scripts/check-agent-sync-status.js || exit 1
+
+# Administrator service binding is separate from employee photo permissions.
+"${ZYSYR_DENO:-deno}" check --no-remote supabase/functions/design-service-bindings/index.ts || exit 1
+node --test scripts/test-design-admin-service-binding.mjs || exit 1
+node scripts/test-design-admin-service-binding-postgres.mjs || exit 1
+node scripts/test-design-admin-service-binding-browser.mjs || exit 1
