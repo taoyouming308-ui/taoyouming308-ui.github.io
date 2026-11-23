@@ -1,3 +1,10 @@
+## 2026-11-24 · Aesthetic training: swim-cap compression, double whorls and nape growth (App version: v691 unchanged)
+
+- Current owner: Codex content publisher. Continue focused aesthetic-training PR #185; do not create a duplicate PR. Preserve all forty-seven prepared cases through November 23 and append only unique stable ID `aesthetic-2026-11-24` from protected `github/main` `327f93e5`/v691.
+- The new case trains a sleek pixie reference against two conflicting crown whorls, upward nape growth, frequent swimming and 60–90 minute cap compression, two-minute no-product recovery and a six-to-eight-week maintenance interval. It includes one original AI-generated fictional current-state four-view WebP, five explicit conditions, one core A/B question, six conditional reference answers and five unscored recaps.
+- Scope remains the aesthetic feed, matching fictional image, transparent review record and public change/handoff notes only. No App/runtime/version, retired academy feed, calculator, customer, finance, database/backend, login/permissions, business sync or automation changes.
+- PR #185's prior exact-head CI failed only in four existing customer-history backlog tests at `ResumeInvalid`; no aesthetic assertion failed. Do not bypass or merge until a latest-main protected run is fully successful. Pages and exact live feed/image/App readback remain mandatory before claiming synchronization.
+
 ## 2026-11-23 · Aesthetic training: men's high taper, proportion and eight-week growth (App version: v691 unchanged)
 
 - Current owner: Codex content publisher. Fresh isolated branch from protected `github/main` `327f93e5`/v691; start gates and daily recovery archive completed before edits. Preserve all forty-six published cases through November 22 and append only unique stable ID `aesthetic-2026-11-23`.
