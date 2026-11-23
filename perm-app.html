@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="690" data-read-sync-rollout="default-on">
+<html lang="zh-CN" data-version="691" data-read-sync-rollout="default-on">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -288,7 +288,6 @@ body.plan-white-mode .booking-item .bi-time { color:#000000; }
 body.plan-white-mode .booking-item .bi-barber { color:#8e8e93; }
 body.plan-white-mode .booking-item .bi-note { color:#555; }
 body.plan-white-mode .bi-plan-btn { color:#111111; background:transparent; }
-body.plan-white-mode .booking-loading { color:#8e8e93; }
 body.plan-white-mode .date-chip { background:transparent; color:#a0a09b; }
 body.plan-white-mode .date-chip.on { background:#111111; color:#ffffff; }
 body.plan-white-mode .identity-bar { background:transparent; color:#000000; }
@@ -1067,8 +1066,8 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=690" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
-<link rel="stylesheet" href="customer-design-archive.css?v=690" media="print" onload="this.media='all'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=691" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link rel="stylesheet" href="customer-design-archive.css?v=691" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -1887,7 +1886,6 @@ body {
       .identity-modal h3 { font-size:16px; margin-bottom:16px; color:var(--text); text-align:center; }
       .identity-modal .opt { display:block; width:100%; padding:12px; margin-bottom:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; cursor:pointer; text-align:center; }
       .identity-modal .opt:active { background:var(--surface-light); border-color:var(--accent); }
-      .booking-loading { text-align:center; padding:40px; color:var(--text-secondary); }
       .booking-empty { display:flex; flex-direction:column; align-items:flex-start; gap:5px; padding:34px 0; color:#111; }
       .booking-empty strong { font-size:14px; font-weight:650; }
       .booking-empty span { color:#aaa9a4; font-size:11px; }
@@ -1925,7 +1923,7 @@ body {
       <button type="button" class="shop-switch on" id="shop-btn-ziyou" onclick="switchShop('自由手艺人')">自由手艺人</button>
       <button type="button" class="shop-switch" id="shop-btn-xiangli" onclick="switchShop('向里造型')">向里造型</button>
     </div>
-    <div id="booking-list"><div class="booking-loading">加载中...</div></div>
+    <div id="booking-list"><div role="status" aria-label="正在核对预约"></div></div>
   </section>
 
   <!-- 内容 Tab（已删除） -->
@@ -3156,14 +3154,14 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=690"></script>
-<script src="customer-design-archive.js?v=690"></script>
-<script defer src="aesthetic-study.js?v=690"></script>
-<script defer src="aesthetic-daily.js?v=690"></script>
-<script defer src="hair-calculator-dialog.js?v=690"></script>
-<script src="aesthetic-knowledge.v1.js?v=690"></script>
-<script src="hair-vision-training.v1.js?v=690"></script>
-<script src="aesthetic-growth.v2.js?v=690"></script>
+<script src="employee-reports.js?v=691"></script>
+<script src="customer-design-archive.js?v=691"></script>
+<script defer src="aesthetic-study.js?v=691"></script>
+<script defer src="aesthetic-daily.js?v=691"></script>
+<script defer src="hair-calculator-dialog.js?v=691"></script>
+<script src="aesthetic-knowledge.v1.js?v=691"></script>
+<script src="hair-vision-training.v1.js?v=691"></script>
+<script src="aesthetic-growth.v2.js?v=691"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -6907,14 +6905,13 @@ function initApp() {
     if (showLoading !== false || list._verifiedBookingScope !== scope) {
       list._verifiedBookingScope = null;
       window._bookingSig = '';
-      list.innerHTML = '<div class="booking-loading" role="status">正在核对预约…</div>';
+      list.innerHTML = '<div role="status" aria-label="正在核对预约"></div>';
     }
     var previewCount = null;
     function currentRead() { var identity = verifiedEmployeeSession(); return identity && identity.session_token === sessionToken && readGeneration === bookingReadGeneration && BOOKING_SHOP === shopName && BOOKING_DATE === requestedDate && BOOKING_BARBER === requestedBarber; }
     employeeBookingsApi('today_bookings', { session_token: sessionToken, date: requestedDate }, {current: currentRead, preview:function(summary){
       if (!currentRead() || !summary || !Number.isSafeInteger(summary.count) || summary.count < 0) return;
       previewCount = summary.count;
-      if (list._verifiedBookingScope !== scope) list.textContent = '上次读取有 ' + previewCount + ' 条预约 · 正在核对，暂不可操作';
     }})
     .then(function(data){
       if (!currentRead()) return;
@@ -13511,9 +13508,9 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<script defer src="data-read-client.js?v=690"></script>
-<script defer src="scoped-read-codec.js?v=690"></script>
-<script defer src="scoped-read-sync.js?v=690"></script>
-<script defer src="app-shell-client.js?v=690"></script>
+<script defer src="data-read-client.js?v=691"></script>
+<script defer src="scoped-read-codec.js?v=691"></script>
+<script defer src="scoped-read-sync.js?v=691"></script>
+<script defer src="app-shell-client.js?v=691"></script>
 </body>
 </html>

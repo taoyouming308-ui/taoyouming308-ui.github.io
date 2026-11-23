@@ -1,3 +1,7 @@
+## 2026-11-23 · Quiet employee bookings check (App version: v691; candidate)
+
+- Display-only change in the employee booking list. Normal checks show no visible cache message; preserve authenticated verification, verified empty states and the existing retry/sign-in paths. No backend, appointment or accounting changes.
+
 ## 2026-11-23 · Three-app read performance (App version: v690; acceptance candidate)
 
 - Based on protected v689. Read paths and public shell only; no changes to server permissions, ledger mutations, historical records, migrations or live sync workers. App entries select the default-on mode in this candidate; per-tab read_preview=0 restores full-read transport.

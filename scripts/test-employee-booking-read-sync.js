@@ -9,7 +9,7 @@ const c = vm.createContext({
   window:{}, document:{getElementById:id=>id==='booking-list'?list:picker}, localStorage,
   verifiedEmployeeSession:()=>c.AUTHENTICATED_STAFF, AUTHENTICATED_STAFF:auth, BOOKING_SHOP:auth.store,
   BOOKING_BARBER:auth.username, BOOKING_DATE:'2026-11-23',bookingReadGeneration:0,BOOKINGS_CACHE:[], showIdentityModal(){},
-  isEmployeeSessionInvalid:e=>e.status===403, renderBookings(rows){renders.push(rows);},
+  isEmployeeSessionInvalid:e=>e.status===403, renderBookings(rows,el){renders.push(rows);el.innerHTML='<div class="booking-item">'+rows[0].customer_name+'</div>';el.textContent=rows[0].customer_name;},
 });
 const renders=[], requests=[], pending=[], configs=[];
 c.employeeBookingsRequest=(op,body)=>{requests.push({op,body});return Promise.resolve({ok:true});};
@@ -29,12 +29,19 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   assert.equal(a.current(),true);assert.equal(a.persist,false);assert.equal(a.secret,auth.session_token);
   assert(!a.scope.includes(auth.session_token));assert.deepEqual(JSON.parse(JSON.stringify(a.summary(currentReport))),{count:1});
   assert.equal(a.summary({...currentReport,store:'wrong'}),null);
-  a.onPreview(currentReport,Date.now()); assert.match(list.textContent,/1 条预约/);
-  assert(!list.textContent.includes('PRIVATE'));assert.equal(renders.length,0,'no action/record until confirmed');
+  const quietMarkup=list.innerHTML;
+  assert.match(quietMarkup,/role="status"/);assert.match(quietMarkup,/aria-label="正在核对预约"/);
+  assert.equal(quietMarkup.replace(/<[^>]+>/g,'').trim(),'');
+  for(const deliver of [()=>a.onPreview(currentReport,Date.now()),()=>a.onSummary({count:0},Date.now())]){
+    deliver();assert.equal(list.innerHTML,quietMarkup);assert.equal(list.textContent,'','normal previews never expose a count or customer');
+  }
+  assert.equal(renders.length,0,'no action/record until confirmed');
   const hint={v:1,rev:'synthetic'};await a.send(hint);assert.equal(requests[0].body.read_sync,hint);
   pending[0].resolve(currentReport);await tick();assert.equal(renders[0][0].id,'1');
+  const verifiedMarkup=list.innerHTML,verifiedText=list.textContent;assert.match(verifiedText,/PRIVATE_CUSTOMER/);
   c.loadBookings(false);const b=configs[1];assert.equal(a.current(),false);assert.equal(b.current(),true);
-  pending[1].reject(new Error('offline'));await tick();assert.match(list.textContent,/尚未核实/);
+  b.onPreview(currentReport,Date.now());assert.equal(list.innerHTML,verifiedMarkup);assert.equal(list.textContent,verifiedText,'background refresh retains the verified list in the same scope');
+  pending[1].reject(new Error('offline'));await tick();assert.match(list.textContent,/上次读取有 1 条预约.*尚未核实.*重试/);assert.doesNotMatch(list.textContent,/当天暂无预约|PRIVATE_CUSTOMER/);
   c.loadBookings(true);const old=configs[2];c.AUTHENTICATED_STAFF={...auth,position:'new role'};assert.equal(old.current(),false);
   c.AUTHENTICATED_STAFF={...auth,session_token:'another token'};assert.equal(old.current(),false);
   c.AUTHENTICATED_STAFF=auth;pending[2].reject(Object.assign(new Error('失效'),{status:403}));await tick();

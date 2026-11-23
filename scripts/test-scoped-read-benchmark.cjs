@@ -12,7 +12,7 @@ const shop='自由手艺人',employee={username:'合成发型师',store:shop,rol
 const front={...employee,position:'前台',stores:[shop],can_import:false};
 const shareholder={username:employee.username,role:'shareholder',role_label:'股东',store:shop,stores:[shop],can_read_daily_reports:true};
 const items=['employee','frontdesk','report'], cfg={
- employee:{path:'perm-app.html',op:'today_bookings',marker:'#booking-list .booking-item',status:'#booking-list',pattern:'上次读取有'},
+ employee:{path:'perm-app.html',op:'today_bookings',marker:'#booking-list .booking-item',status:'#booking-list'},
  frontdesk:{path:'frontdesk.html',op:'dashboard',marker:'.schedule-event',status:'#consumption-status',pattern:'上次核实'},
  report:{path:'operations.html?entry=staff-shareholder',op:'overview',marker:'#monthly-sheet .sheet-table td',status:'#sync-status',pattern:'已找到本机上次查看'}
 };
@@ -66,7 +66,11 @@ async function scenario(browser,dir,variant,app,overview,trial,extra=false){
  if(app==='employee')sessionStorage.setItem('_curPage','bookings');
  const now=()=>Math.round(performance.now());window.BM={start:0,usable:null,summary:null,initial:true,verifiedAt:null,op:c.op,marker:c.marker,status:c.status,pattern:c.pattern};
  const scan=()=>{const m=window.BM,el=document.querySelector(m.marker),status=document.querySelector(m.status);
-  if(m.summary===null&&status?.textContent.includes(m.pattern))m.summary=now()-m.start;
+  // Older employee builds visibly displayed a count while verifying. Only that exact
+  // normal state counts: neither the error with the same prefix nor the new aria-label is a paint.
+  if(m.summary===null&&status&&(m.op==='today_bookings'
+    ? status.getClientRects().length&&getComputedStyle(status).visibility==='visible'&&/^上次读取有 \d+ 条预约 · 正在核对，暂不可操作$/.test(status.innerText.trim())
+    : status.textContent.includes(m.pattern)))m.summary=now()-m.start;
   if(!m.initial&&!m.verifiedAt)return;
   if(m.usable===null&&el?.getClientRects().length&&(m.op!=='overview'||window.state?.monthlyOverviewReady===true))m.usable=now()-m.start;
  };new MutationObserver(scan).observe(document,{subtree:true,childList:true,characterData:true,attributes:true});window.benchScan=scan;
@@ -90,6 +94,7 @@ async function scenario(browser,dir,variant,app,overview,trial,extra=false){
    await page.waitForTimeout(450);
    const m=await page.evaluate(()=>window.BM),req=calls.slice(before),target=req.filter(x=>x.op===c.op);
    assert(target.length>0&&target.every(x=>x.done),app+' '+phase+' target completed');
+   if(variant==='candidate'&&app==='employee')assert.equal(m.summary,null,'the quiet candidate must not paint a normal cached count');
    out.push({variant,app,phase,trial,usableMs:m.usable,cacheSummaryMs:m.summary,verifiedResponseMs:m.verifiedAt,
      calls:req.length,tx:req.reduce((s,x)=>s+x.tx,0),rx:req.reduce((s,x)=>s+x.rx,0),dataRx:target.reduce((s,x)=>s+x.rx,0),
      opCounts:Object.fromEntries([...new Set(req.map(x=>x.op))].map(op=>[op,req.filter(x=>x.op===op).length])),dataHint:target.some(x=>x.hint)});
