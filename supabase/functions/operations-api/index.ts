@@ -27,6 +27,15 @@ import { dailyOriginalReadBridge } from "../_shared/daily-original-read-bridge.t
 import { reportSourceReview } from "../_shared/report-source-review.mjs";
 import { captureMonthlySource, verifyMonthlyUpload, verifySavedMonthlyUpload } from "../_shared/monthly-upload-verification.mjs";
 import { assertUploadSourceStore } from "../_shared/upload-store-guard.mjs";
+import { encodeReadSync } from "../_shared/read-sync.mjs";
+
+// Evaluate the complete authorized read (including effective rights and current
+// source/void status) before considering any client fingerprint. Legacy clients
+// receive exactly the original JSON, without hashing or a protocol envelope.
+async function scopedReportRead(payload: JsonRecord, fresh: Promise<JsonRecord>) {
+  const result = await fresh;
+  return json(payload.read_sync ? await encodeReadSync(payload.read_sync, result) : result);
+}
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -1249,35 +1258,49 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
   const storeId = cleanText(store.id, 40);
   const reportPath = `zysyr_report_uploads?select=id,report_type,report_date,template_code,template_version,version,status,original_filename,mime_type,size_bytes,sha256,uploaded_by_user_id,uploaded_at&company_id=eq.${companyId}&store_id=eq.${storeId}&report_date=gte.${start}&report_date=lt.${end}&order=report_date.desc,version.desc&limit=500`;
   const acknowledgementPath = `zysyr_report_acknowledgements?select=id,month,monthly_report_id,user_id,acknowledged_at&company_id=eq.${companyId}&store_id=eq.${storeId}&month=eq.${month}&order=acknowledged_at.desc&limit=500`;
-  const [rawReports, dailySource, acknowledgements] = await Promise.all([
-    restRowsAll(reportPath), confirmedDailySource(companyId, storeId, month), restRowsAll(acknowledgementPath, 500),
-  ]);
-  markOverviewStage("base_reads");
-  const ackUserIds = Array.from(new Set(acknowledgements.map((row) => cleanText(row.user_id, 40)).filter(Boolean)));
-  const acknowledgementUsersStartedAt = performance.now();
-  const ackUsersPromise = ackUserIds.length
-    ? restRows(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(ackUserIds)}&limit=500`)
-    : Promise.resolve([] as JsonRecord[]);
-  const timedAckUsersPromise = ackUsersPromise.then((rows) => {
+  const rawReportsPromise = restRowsAll(reportPath);
+  const acknowledgementsPromise = restRowsAll(acknowledgementPath, 500);
+  const baseReads = Promise.all([rawReportsPromise, confirmedDailySource(companyId, storeId, month), acknowledgementsPromise]).then((rows) => {
+    markOverviewStage("base_reads");
+    return rows;
+  });
+  const ackUsersPromise = acknowledgementsPromise.then(async (acknowledgements) => {
+    const ackUserIds = Array.from(new Set(acknowledgements.map((row) => cleanText(row.user_id, 40)).filter(Boolean)));
+    const acknowledgementUsersStartedAt = performance.now();
+    const rows = ackUserIds.length
+      ? await restRows(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(ackUserIds)}&limit=500`)
+      : [];
     overviewStageMs.acknowledgement_users = Math.round(performance.now() - acknowledgementUsersStartedAt);
     return rows;
   });
-  const reports = rawReports.filter((row, index, list) => list.findIndex((item) => cleanText(item.report_type, 40) === cleanText(row.report_type, 40)
-    && cleanText(item.report_date, 10) === cleanText(row.report_date, 10)) === index);
-  const monthlyReportCandidate = reports.find((report) => cleanText(report.report_type, 40) === "monthly_profit_loss"
-    && cleanText(report.report_date, 10) === start) || null;
+  // Report metadata is enough to scope these lookups. Don't wait for the
+  // confirmed daily totals or shareholder acknowledgements to finish first.
+  const reportDetails = rawReportsPromise.then(async (rawReports) => {
+    const startedAt = performance.now();
+    const reports = rawReports.filter((row, index, list) => list.findIndex((item) => cleanText(item.report_type, 40) === cleanText(row.report_type, 40)
+      && cleanText(item.report_date, 10) === cleanText(row.report_date, 10)) === index);
+    const monthlyReportCandidate = reports.find((report) => cleanText(report.report_type, 40) === "monthly_profit_loss"
+      && cleanText(report.report_date, 10) === start) || null;
+    const uploaderFilter = uuidIn(reports.map((report) => report.uploaded_by_user_id));
+    const monthlyDisplayPromise = monthlyReportCandidate
+      ? restRows(`zysyr_report_uploads?select=display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${cleanText(monthlyReportCandidate.id, 40)}&limit=1`).then((rows) => {
+        overviewStageMs.monthly_report_display = Math.round(performance.now() - startedAt);
+        return rows;
+      })
+      : Promise.resolve([] as JsonRecord[]);
+    const [vouchers, uploaders, monthlyDisplayRows] = await Promise.all([
+      reportUploadVouchers(companyId, storeId, reports),
+      uploaderFilter === "()" ? Promise.resolve([] as JsonRecord[]) : restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=in.${uploaderFilter}&limit=500`),
+      monthlyDisplayPromise,
+    ]);
+    overviewStageMs.report_evidence_elapsed = Math.round(performance.now() - startedAt);
+    return { reports, monthlyReportCandidate, vouchers, uploaders, monthlyDisplayRows };
+  });
+  const [[, dailySource, acknowledgements], { reports, monthlyReportCandidate, vouchers, uploaders, monthlyDisplayRows }, ackUsers] =
+    await Promise.all([baseReads, reportDetails, ackUsersPromise]);
   const monthlyDailyPerformance = confirmedDailyPerformanceFromSource(dailySource, month);
-  const uploaderFilter = uuidIn(reports.map((report) => report.uploaded_by_user_id));
-  const monthlyDisplayStartedAt = performance.now();
-  const monthlyDisplayPromise = monthlyReportCandidate
-    ? restRows(`zysyr_report_uploads?select=display_data&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${cleanText(monthlyReportCandidate.id, 40)}&limit=1`)
-    : Promise.resolve([] as JsonRecord[]);
-  const [vouchers, uploaders, monthlyDisplayRows] = await Promise.all([
-    reportUploadVouchers(companyId, storeId, reports),
-    uploaderFilter === "()" ? Promise.resolve([] as JsonRecord[]) : restRows(`zysyr_user_accounts?select=id,login_name,display_name&id=in.${uploaderFilter}&limit=500`),
-    monthlyDisplayPromise,
-  ]);
-  if (monthlyReportCandidate) overviewStageMs.monthly_report_display = Math.round(performance.now() - monthlyDisplayStartedAt);
+  // This stage measures residual critical-path wait after the base reads;
+  // report_evidence_elapsed above measures actual (overlapping) work.
   markOverviewStage("report_evidence_and_uploaders");
   const voucherMap = new Map<string, JsonRecord[]>();
   for (const voucher of vouchers) {
@@ -1392,7 +1415,6 @@ async function overview(payload: JsonRecord, session: JsonRecord): Promise<JsonR
     }
   }
   markOverviewStage("historical_fallback_and_projection");
-  const ackUsers = await timedAckUsersPromise;
   const ackUserMap = new Map(ackUsers.map((account) => [cleanText(account.id, 40), {
     login_name: cleanText(account.login_name, 80), display_name: cleanText(account.display_name, 120),
   }]));
@@ -6086,19 +6108,6 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   const drafts = await restRows(`zysyr_daily_sheet_drafts?select=id,source_voucher_id,report_date,template_code,template_version,status,source_sha256,ocr_provider,ocr_model,autofill_view:ocr_raw_result->autofill,validation_result,edit_revision,created_at,updated_at,confirmed_at,confirm_reason&company_id=eq.${companyId}&store_id=eq.${storeId}&id=eq.${draftId}&limit=1`);
   const draft = drafts[0];
   if (!draft) throw new Error("电子日报草稿不存在或不属于当前门店");
-  let currentValidationReview: JsonRecord | null = null;
-  if (cleanText(draft.status, 20) === "confirmed") {
-    const result = await currentDailyValidations(companyId, storeId, [cleanText(draft.id, 40)]);
-    const current = result.byDraft.get(cleanText(draft.id, 40));
-    const savedValidation = draft.validation_result && typeof draft.validation_result === "object"
-      ? draft.validation_result as JsonRecord : {};
-    currentValidationReview = result.unavailable
-      ? { status: "unavailable" }
-      : { status: current?.valid === false ? "current_mismatch"
-        : typeof savedValidation.valid === "boolean" && typeof current?.valid === "boolean" && savedValidation.valid !== current.valid
-          ? "changed" : "current_valid",
-        historical_valid: savedValidation.valid ?? null, current_validation: current ?? null };
-  }
   const reportDate = cleanText(draft.report_date, 10), month = reportDate.slice(0, 7);
   const [cells, links, voids, changes, locks] = await Promise.all([
     restRowsAll(`zysyr_daily_sheet_cells?select=id,section_code,row_key,row_label,row_label_source_method,row_label_confidence,column_code,column_label,row_number,column_number,cell_role,ocr_text,ocr_numeric,corrected_numeric,manual_text,manual_override,confidence,bbox,source_method,updated_at&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=eq.${draftId}&order=row_number.asc,column_number.asc&limit=1000`, 1000),
@@ -6110,11 +6119,27 @@ async function dailySheetData(companyId: string, storeId: string, draftId: strin
   const voucherIds = links.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean);
   const legacyVoucherId = cleanText(draft.source_voucher_id, 40);
   if (legacyVoucherId && !voucherIds.includes(legacyVoucherId)) voucherIds.push(legacyVoucherId);
-  const vouchers = voucherIds.length ? await restRowsAll(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256,audit_status,document_type,uploaded_by,uploaded_by_user_id,uploaded_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=200`, 200) : [];
   const attachmentIds = links.map((link) => cleanText(link.id, 40)).filter(Boolean);
-  const orientations = attachmentIds.length ? await restRowsAll(`zysyr_daily_attachment_orientation_revisions?select=id,daily_sheet_attachment_id,revision,degrees,reason,changed_by_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&daily_sheet_attachment_id=in.${uuidIn(attachmentIds)}&order=revision.desc&limit=1000`, 1000) : [];
   const actorIds = [...new Set(changes.map((change) => cleanText(change.changed_by_user_id, 40)).filter(Boolean))];
-  const actors = actorIds.length ? await restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(actorIds)}&limit=200`, 200) : [];
+  // Same scoped reads; keep history authorization and void filtering intact.
+  const [vouchers, orientations, actors, validationRead] = await Promise.all([
+    voucherIds.length ? restRowsAll(`zysyr_voucher_attachments?select=id,object_path,original_filename,mime_type,size_bytes,sha256,audit_status,document_type,uploaded_by,uploaded_by_user_id,uploaded_at,reviewed_at&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(voucherIds)}&limit=200`, 200) : [],
+    attachmentIds.length ? restRowsAll(`zysyr_daily_attachment_orientation_revisions?select=id,daily_sheet_attachment_id,revision,degrees,reason,changed_by_user_id,created_at&company_id=eq.${companyId}&store_id=eq.${storeId}&daily_sheet_attachment_id=in.${uuidIn(attachmentIds)}&order=revision.desc&limit=1000`, 1000) : [],
+    actorIds.length ? restRowsAll(`zysyr_user_accounts?select=id,login_name,display_name&company_id=eq.${companyId}&id=in.${uuidIn(actorIds)}&limit=200`, 200) : [],
+    cleanText(draft.status, 20) === "confirmed" ? currentDailyValidations(companyId, storeId, [cleanText(draft.id, 40)]) : null,
+  ]);
+  let currentValidationReview: JsonRecord | null = null;
+  if (validationRead) {
+    const current = validationRead.byDraft.get(cleanText(draft.id, 40));
+    const savedValidation = draft.validation_result && typeof draft.validation_result === "object"
+      ? draft.validation_result as JsonRecord : {};
+    currentValidationReview = validationRead.unavailable
+      ? { status: "unavailable" }
+      : { status: current?.valid === false ? "current_mismatch"
+        : typeof savedValidation.valid === "boolean" && typeof current?.valid === "boolean" && savedValidation.valid !== current.valid
+          ? "changed" : "current_valid",
+        historical_valid: savedValidation.valid ?? null, current_validation: current ?? null };
+  }
   const actorMap = new Map(actors.map((actor) => [cleanText(actor.id, 40), cleanText(actor.display_name ?? actor.login_name, 120)]));
   const cellMap = new Map(cells.map((cell) => [cleanText(cell.id, 40), cell]));
   const linkMap = new Map(links.map((link) => [cleanText(link.voucher_id, 40), link]));
@@ -6823,8 +6848,15 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
   const confirmedDraftIds = calendarDrafts
     .filter((draft) => cleanText(draft.status, 20) === "confirmed")
     .map((draft) => cleanText(draft.id, 40)).filter(Boolean);
-  const currentValidations = await currentDailyValidations(companyId, storeId, confirmedDraftIds);
-  const attachmentLinks = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_attachments?select=id,draft_id,voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&limit=5000`, 5000) : [];
+  const reportIds = dailyReports.map((report) => cleanText(report.id, 40)).filter(Boolean);
+  // Only voucher metadata depends on attachment links. All four reads below
+  // use IDs from the already scoped month; preserve existing error semantics.
+  const [currentValidations, attachmentLinks, formalLines, candidateDraftIds] = await Promise.all([
+    currentDailyValidations(companyId, storeId, confirmedDraftIds),
+    draftIds.length ? restRowsAll(`zysyr_daily_sheet_attachments?select=id,draft_id,voucher_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&limit=5000`, 5000) : [],
+    reportIds.length ? restRowsAll(`zysyr_daily_report_lines?select=daily_report_id,line_type,amount&company_id=eq.${companyId}&store_id=eq.${storeId}&daily_report_id=in.${uuidIn(reportIds)}&line_type=eq.income&limit=10000`, 10000) : [],
+    draftIds.length ? restRowsAll(`zysyr_daily_sheet_cells?select=draft_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&source_method=in.(codex_local_candidate,openai_vision_candidate,kimi_vision_candidate)&limit=10000`,10000) : [],
+  ]);
   const attachmentVoucherIds = [...new Set(attachmentLinks.map((link) => cleanText(link.voucher_id, 40)).filter(Boolean))];
   const [attachmentVouchers, attachmentVoids] = await Promise.all([
     attachmentVoucherIds.length ? restRowsAll(`zysyr_voucher_attachments?select=id,audit_status,document_type&company_id=eq.${companyId}&store_id=eq.${storeId}&id=in.${uuidIn(attachmentVoucherIds)}&limit=5000`, 5000) : Promise.resolve([]),
@@ -6837,10 +6869,6 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
     const draftId = cleanText(link.draft_id, 40), list = linksByDraft.get(draftId) || [];
     list.push(link); linksByDraft.set(draftId, list);
   }
-  const reportIds = dailyReports.map((report) => cleanText(report.id, 40)).filter(Boolean);
-  const formalLines = reportIds.length
-    ? await restRowsAll(`zysyr_daily_report_lines?select=daily_report_id,line_type,amount&company_id=eq.${companyId}&store_id=eq.${storeId}&daily_report_id=in.${uuidIn(reportIds)}&line_type=eq.income&limit=10000`, 10000)
-    : [];
   const formalTotals = new Map<string, number>();
   for (const line of formalLines) {
     const reportId = cleanText(line.daily_report_id, 40);
@@ -6903,7 +6931,6 @@ async function dailySheetMonth(payload: JsonRecord, session: JsonRecord): Promis
       missing_original: !report.source_report_id, has_anomaly: false, locked });
   }
   const days = [...byDate.values()].sort((a, b) => String(a.report_date).localeCompare(String(b.report_date)));
-  const candidateDraftIds = draftIds.length ? await restRowsAll(`zysyr_daily_sheet_cells?select=draft_id&company_id=eq.${companyId}&store_id=eq.${storeId}&draft_id=in.${uuidIn(draftIds)}&source_method=in.(codex_local_candidate,openai_vision_candidate,kimi_vision_candidate)&limit=10000`,10000) : [];
   const recognizedDraftIds = new Set(candidateDraftIds.map((cell)=>cleanText(cell.draft_id,40)));
   for (const day of days) day.recognition_saved = recognizedDraftIds.has(cleanText(day.draft_id,40));
   const draftDays = days.filter((day)=>day.status === "draft" && Boolean(day.draft_id));
@@ -7719,7 +7746,7 @@ async function handleOperationsApiRequest(
       rpc:monthlyReviewRpc, selectedStore:selectedStoreInfo, overview, hash:sha256,
       requireFinance:(actor:JsonRecord) => requireFinanceCapability(actor,"report.upload","只有已授权财务可以提交月报"),
     }));
-    if (operation === "overview") return json(await overview(payload, session));
+    if (operation === "overview") return await scopedReportRead(payload, overview(payload, session));
     if (operation === "report_acknowledge") return json(await reportAcknowledge(payload, session));
     if (operation === "monthly_summary") return json(await monthlySummary(payload, session));
     if (operation === "monthly_cell_save") return json(await monthlyCellSave(payload, session));
@@ -7826,13 +7853,13 @@ async function handleOperationsApiRequest(
     if (operation === "daily_sheet_attachment_bind_archive") return json(await bindDailyArchivedOriginal(payload, session));
     if (operation === "daily_sheet_attachment_void") return json(await voidDailySheetAttachment(payload, session));
     if (operation === "daily_attachment_orientation_save") return json(await saveDailyAttachmentOrientation(payload, session));
-    if (operation === "daily_sheet_month") return json(await dailyOriginalReadPresentation("month", await dailySheetMonth(payload, session), payload, session));
+    if (operation === "daily_sheet_month") return await scopedReportRead(payload, dailyOriginalReadPresentation("month", await dailySheetMonth(payload, session), payload, session));
     if (operation === "daily_electronic_sources") return json(await dailyElectronicSources(payload, session));
     if (operation === "daily_business_details") return json(await dailyBusinessDetails(payload, session));
     if (operation === "daily_sheet_fill_blanks") return json(await fillDailySheetBlanks(payload, session));
     if (operation === "daily_sheet_source_preview" || operation === "daily_sheet_source_correct")
       return json(await dailyDraftSourceCorrection(payload, session, operation === "daily_sheet_source_correct"));
-    if (operation === "daily_sheet_read") return json(await dailyOriginalReadPresentation("detail", await dailySheetRead(payload, session), payload, session));
+    if (operation === "daily_sheet_read") return await scopedReportRead(payload, dailyOriginalReadPresentation("detail", await dailySheetRead(payload, session), payload, session));
     if (operation === "photo_daily_import") return json(await photoDailyImport(payload, session));
     if (operation === "history_import_preview") return json(await historyImportPreview(payload, session));
     if (operation === "history_import_read") return json(await historyImportRead(payload, session));
