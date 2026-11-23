@@ -1,3 +1,13 @@
+## 2026-11-23 · Scoped read synchronization (App version: v687; opt-in rollout)
+
+- Current owner: Codex. Based on the local v686 latency candidate. Opt-in read previews, revalidation and optional deltas cover selected reporting, front desk and employee reads; full reads remain compatible. No changes to the posting protocol, and no migrations or production data writes.
+- Release approved for the opt-in cohort. Keep protected review and separate Pages/Edge readback; a preview is not a verified record, and synthetic timings are not production latency.
+
+## 2026-11-23 · Foreground and report read latency (App version: v686)
+
+- Based on protected main d40a8799/v685, retaining the published courses. Read independent report data concurrently and suppress redundant frontend rendering/hidden polling. Existing checks, scopes, amounts and write operations are unchanged.
+- Deploy and verify operations-api and Pages separately after protected validation. No migration or live report write; compare natural traffic by operation.
+
 ## 2026-11-22 · Aesthetic training: shoulder-neck collision and posterior weight (App version: v685 unchanged)
 
 - Current owner: Codex content publisher. Continue the existing focused aesthetic-training PR on protected `github/main` `5baf4ec0`/v685; do not create a duplicate PR. The earlier exact-head run passed the dedicated aesthetic governance and browser coverage but was blocked by four customer-history resume tests. Their independently reviewed fix has since landed on `main`; this content candidate only integrates that protected baseline and does not alter customer-sync code.

@@ -37,8 +37,8 @@ vm.runInContext(stripTypeScriptTypes(`${helper}\nthis.readVouchers = reportUploa
   const overview = api.slice(api.indexOf('async function overview('), api.indexOf('async function reportAcknowledge('));
   assert.match(overview, /const reports = rawReports\.filter\([\s\S]*?reportUploadVouchers\(companyId, storeId, reports\)/);
   assert.doesNotMatch(overview, /record_type=eq\.report&order=uploaded_at\.desc&limit=1000/);
-  assert.match(overview, /const \[rawReports, dailySource, acknowledgements\] = await Promise\.all\([\s\S]*?restRowsAll\(acknowledgementPath, 500\)/,
-    'overview should read report, daily source, and acknowledgements concurrently');
+  assert.match(overview, /Promise\.all\(\[rawReportsPromise, confirmedDailySource\(companyId, storeId, month\), acknowledgementsPromise\]\)/,
+    'overview should start report, daily source, and acknowledgements concurrently');
   assert.match(overview, /const \[vouchers, uploaders, monthlyDisplayRows\] = await Promise\.all\(/,
     'voucher metadata, uploader profiles, and selected monthly display should be fetched concurrently');
   assert.match(overview, /select=display_data&company_id=eq\.\$\{companyId\}&store_id=eq\.\$\{storeId\}&id=eq\.\$\{cleanText\(monthlyReportCandidate\.id, 40\)\}&limit=1/,
@@ -105,6 +105,26 @@ vm.runInContext(stripTypeScriptTypes(`${helper}\nthis.readVouchers = reportUploa
   assert.ok(Number.isFinite(timingEvents[0].stage_ms.base_reads) && timingEvents[0].stage_ms.base_reads >= 0);
   assert.ok(Number.isFinite(timingEvents[0].stage_ms.monthly_cells_and_rules));
   assert.ok(Number.isFinite(timingEvents[0].stage_ms.acknowledgement_users));
+  assert.ok(Number.isFinite(timingEvents[0].stage_ms.report_evidence_elapsed));
+  // Synthetic ordering probe, not a wall-clock SLA or a request to production.
+  let releaseDaily, startedEvidence = false, settled = false;
+  timingSandbox.restRowsAll = async path => path.startsWith('zysyr_report_uploads?') ? [syntheticMonthlyReport] : [];
+  timingSandbox.confirmedDailySource = () => new Promise(resolve => { releaseDaily = resolve; });
+  timingSandbox.reportUploadVouchers = async () => { startedEvidence = true; return []; };
+  const reading = timingSandbox.runOverview({ month: '2026-01' }, { operations_role: 'shareholder' }).then(result => {
+    settled = true;
+    return result;
+  });
+  await new Promise(resolve => setImmediate(resolve));
+  try {
+    assert.equal(startedEvidence, true, 'report evidence must start while a daily source read is unfinished');
+    assert.equal(settled, false, 'overview must wait for the actual confirmed daily source');
+  } finally { releaseDaily([]); }
+  assert.deepEqual(await reading, syntheticResponse, 'parallel scheduling must not change the complete response');
+  timingSandbox.reportUploadVouchers = async () => { throw Error('simulated evidence failure'); };
+  timingSandbox.confirmedDailySource = async () => [];
+  await assert.rejects(timingSandbox.runOverview({ month: '2026-01' }, { operations_role: 'shareholder' }), /simulated evidence failure/,
+    'a failed source must not return a partial or zero-filled report');
   assert.doesNotMatch(JSON.stringify(timingEvents[0]), /synthetic-company|synthetic-store|2026-01|original|account|token/i,
     'runtime telemetry must not include tenant, period, report data, or credentials');
   console.log('ZYSYR monthly overview: store/report voucher scope and independent-read concurrency passed');

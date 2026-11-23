@@ -1,6 +1,7 @@
 <!doctype html>
-<html lang="zh-CN" data-version="685">
+<html lang="zh-CN" data-version="687" data-read-sync-rollout="opt-in">
 <head>
+  <style>.frontdesk-scope-invalid body>:not(#frontdesk-scope-message){display:none!important}#frontdesk-scope-message{padding:30px;font:16px/1.7 system-ui}</style>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f2f0e9">
@@ -177,7 +178,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=685" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=687" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -325,7 +326,7 @@
   <div class="toast hidden" id="toast"></div>
 
   <script data-startup>window.ZysyrStartup.lock();</script>
-  <script src="frontdesk-business-details.js?v=685"></script>
+  <script src="frontdesk-business-details.js?v=687"></script>
   <script>
   (function(){
     'use strict';
@@ -352,6 +353,7 @@
       return window.ZysyrReadFlights ? window.ZysyrReadFlights.request('frontdesk',operation==='dashboard'||operation==='business_details',JSON.stringify([operation,data,state.session&&state.session.session_token,state.store]),send) : send();
     }
     async function apiRequest(operation,data){
+      if(state.frontdeskScopeBlocked)throw new Error('前台会话已变化，请重新打开页面');
       var body=Object.assign({},data||{},{operation:operation});
       if(state.session&&state.session.session_token)body.session_token=state.session.session_token;
       if(state.store&&!body.store)body.store=state.store;
@@ -359,14 +361,58 @@
       try{
       var response=await fetch(ENDPOINT,{signal:controller?controller.signal:undefined,method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},body:JSON.stringify(body)});
       var result={}; try{result=await response.json();}catch(e){if(controller)throw e;}
+      if(state.frontdeskScopeBlocked)throw new Error('前台会话已变化，请重新打开页面');
       if(!response.ok){var error=new Error(result.error||('请求失败 '+response.status));error.status=response.status;error.code=result.code;if(isSessionInvalidError(error)&&operation!=='session'&&state.session&&state.session.session_token===body.session_token)clearSession();throw error;}
       return result;
       }finally{if(timer)clearTimeout(timer)}
     }
     businessUI.init({api:api,scope:function(){return {session:state.session&&state.session.session_token,store:state.store,date:$('today-date').value||localDate()};}});
 
-    function saveSession(session){ state.session=session; localStorage.setItem(STORAGE_KEY,JSON.stringify(session)); applySession(); }
-    function clearSession(){ state.dashboardRequest=(state.dashboardRequest||0)+1;state.dashboard=null;state.store='';state.session=null;businessUI.clear();state.customerRequest++;state.drawerRequest++;state.searchRequest++;state.selected=null;state.drawerCustomer=null;state.drawerData=null;$('customer-results').innerHTML='';$('customer-detail').innerHTML='';$('customer-drawer-content').innerHTML='';$('customer-drawer').classList.add('hidden');localStorage.removeItem(STORAGE_KEY); $('login').classList.remove('hidden'); }
+    // Never log out the new account in another tab. Lock this old page without
+    // replaying a request; reload explicitly to authenticate the new session.
+    function sameFrontdeskIdentity(a,b){
+      if(!a||!b||!a.user||!b.user||!a.session_token||a.session_token!==b.session_token)return false;
+      function rights(s){var u=s.user;return JSON.stringify([u.username,u.role||'',u.position||'',u.store||'',(u.stores||[]).slice().sort(),!!u.can_import])}
+      return rights(a)===rights(b);
+    }
+    function lockFrontdeskScope(){
+      if(state.frontdeskScopeBlocked)return;
+      state.frontdeskScopeBlocked=true;state.session=null;state.store='';state.dashboard=null;state.ledgerRows=[];state.todayRows=[];
+      state.dashboardRequest=(state.dashboardRequest||0)+1;state.ledgerRequest++;state.drawerRequest++;state.customerRequest++;state.searchRequest++;
+      document.documentElement.classList.add('frontdesk-scope-invalid');
+      state.selected=null;state.drawerData=null;state.drawerCustomer=null;state.ledgerReadScope='';
+      // Remove previous read results as well as hiding the shell. Do not submit or reset unsaved forms.
+      ['head-user','scope-user','scope-store','today-list','ledger-table','ledger-count','customer-results','customer-detail',
+        'customer-drawer-content','shampoo-table','batch-list','consumption-status'].forEach(function(id){
+          var el=document.getElementById(id);if(el)el.textContent='';
+        });
+      if(window.ZysyrReadSync)window.ZysyrReadSync.clear();
+      var note=document.createElement('p');note.id='frontdesk-scope-message';note.setAttribute('role','alert');
+      note.textContent='前台已退出登录，或账号和门店权限已变化。本页已锁定，请重新打开。';document.body.appendChild(note);
+    }
+    function checkFrontdeskStored(){
+      if(!state.session||state.frontdeskScopeBlocked)return;
+      var disk;try{disk=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch(_){}
+      if(!sameFrontdeskIdentity(state.session,disk))lockFrontdeskScope();
+    }
+    if(typeof window!=='undefined')window.addEventListener('storage',function(event){
+      if(event.key!==null&&event.key!==STORAGE_KEY)return;
+      checkFrontdeskStored();
+    });
+    if(typeof window!=='undefined')window.addEventListener('pageshow',function(event){if(event.persisted)checkFrontdeskStored()});
+    function saveSession(session){ if(state.frontdeskScopeBlocked)return;state.session=session; localStorage.setItem(STORAGE_KEY,JSON.stringify(session)); applySession(); }
+    function clearSession(){
+      if(window.ZysyrReadSync)window.ZysyrReadSync.clear();
+      checkFrontdeskStored();if(state.frontdeskScopeBlocked)return;
+      state.ledgerRequest++;state.ledgerRows=[];state.ledgerReadScope='';state.todayRows=[];
+      state.dashboardRequest=(state.dashboardRequest||0)+1;state.dashboard=null;state.store='';state.session=null;
+      businessUI.clear();state.customerRequest++;state.drawerRequest++;state.searchRequest++;
+      state.selected=null;state.drawerCustomer=null;state.drawerData=null;
+      ['ledger-table','ledger-count','today-list','consumption-status','sync-label','customer-results','customer-detail','customer-drawer-content'].forEach(function(id){$(id).textContent=''});
+      ['customer-drawer','today-form-overlay','ledger-form-overlay'].forEach(function(id){$(id).classList.add('hidden')});
+      $('today-form').reset();$('ledger-form').reset();
+      localStorage.removeItem(STORAGE_KEY);$('login').classList.remove('hidden');
+    }
     function configureStores(user){
       var stores=Array.isArray(user.stores)?user.stores.filter(Boolean):[];if(user.store&&stores.indexOf(user.store)<0)stores.unshift(user.store);
       var remembered=localStorage.getItem(STORE_KEY)||'',selected=stores.indexOf(remembered)>=0?remembered:(user.store||stores[0]||'');
@@ -495,14 +541,50 @@
       container.scrollLeft=scheduleScrollLeft(previousScroll);container.scrollTop=previousTop;
     }
     function updateStaffOptions(data){[['today-barber-list',data.barbers],['today-technician-list',data.technicians],['today-assistant-list',data.assistants]].forEach(function(pair){$(pair[0]).innerHTML=(pair[1]||[]).map(function(name){return '<option value="'+esc(name)+'"></option>';}).join('');});}
+    // Only verified login/session results reach state.session. Never present
+    // cached customer rows as editable, or use them to submit a transaction.
+    function frontdeskReadScope(operation,store,date){
+      var user=state.session&&state.session.user;
+      if(!user||!user.username||!store||!/^\d{4}-\d{2}-\d{2}$/.test(date))return '';
+      return JSON.stringify(['frontdesk',operation,user.username,user.role||'',user.position||'',user.store||'',
+        (user.stores||[]).slice().sort(),!!user.can_import,store,date]);
+    }
+    function cachedReadTime(value){
+      var date=new Date(value);return Number.isFinite(date.getTime())?'（'+date.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+'）':'';
+    }
+    function frontdeskDayRead(scope,current,send,summary,onSummary){
+      var sync=window.ZysyrReadSync,session=state.session;
+      if(!scope||!sync||sync.enabled!==true||!session||!session.session_token)return send(null);
+      return sync.read({scope:scope,secret:session.session_token,current:current,send:send,persist:false,summary:summary,onSummary:onSummary});
+    }
     async function loadDashboard(options){
       if(!state.session||!state.store)return;
       var request=state.dashboardRequest=(state.dashboardRequest||0)+1,store=state.store,date=$('today-date').value||localDate(),btn=$('refresh-btn');
       var silent=options&&options.silent===true;
       state.dashboardLoading=true;if(!silent)setBusy(btn,true,'刷新中…');
-      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){state.dashboard=null;renderToday({store:store,date:date});$('consumption-status').textContent='正在读取本店当日数据…';}
+      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){
+        state.dashboard=null;renderToday({store:store,date:date});
+        $('kpi-bookings').textContent='—';$('today-caption').textContent='正在读取排班与客户列表…';
+        $('today-list').textContent='正在读取排班…';$('consumption-status').textContent='正在读取本店当日数据…';
+      }
       businessUI.refresh();
-      try{var data=await api('dashboard',{date:date,store:store});if(!state.session||request!==state.dashboardRequest||store!==state.store||date!==($('today-date').value||localDate()))return;state.dashboard=data;updateStaffOptions(data);renderToday(data);}
+      var session=state.session,scope=frontdeskReadScope('dashboard',store,date);
+      var current=function(){return session===state.session&&request===state.dashboardRequest&&store===state.store&&date===($('today-date').value||localDate())&&scope===frontdeskReadScope('dashboard',store,date)};
+      try{
+        var data=await frontdeskDayRead(scope,current,function(hint){
+          var payload={date:date,store:store};if(hint)payload.read_sync=hint;
+          return api('dashboard',payload);
+        },function(data){
+          if(data.store!==store||data.date!==date||!Array.isArray(data.bookings))return null;
+          return {store:store,date:date,count:data.bookings.filter(function(row){return !bookingPlaceholder(row)}).length};
+        },function(summary,when){
+          if(!current()||state.view!=='today'||state.dashboard||!summary||summary.store!==store||summary.date!==date||!Number.isSafeInteger(summary.count)||summary.count<0)return;
+          $('consumption-status').textContent='上次核实'+cachedReadTime(when)+'：预约 '+summary.count+' 条。正在更新；客户明细以本次读取为准。';
+        });
+        if(!current())return;
+        if(!data||data.store!==store||data.date!==date)throw new Error('返回的分店或日期不符，请刷新重试');
+        state.dashboard=data;updateStaffOptions(data);renderToday(data);
+      }
       catch(e){if(request===state.dashboardRequest){$('consumption-status').textContent=state.dashboard?'读取失败，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';if(!silent)toast(e.message,true);}}
       finally{if(request===state.dashboardRequest){state.dashboardLoading=false;setBusy(btn,false);}}
     }
@@ -612,7 +694,24 @@
       if(suffix)payload.phone_suffix=suffix;
       if(date)payload.business_date=date;
       $('ledger-count').textContent='正在读取…';
-      try{var data=await api('ledger_records',payload);if(request!==state.ledgerRequest)return;state.ledgerRows=data.rows||[];renderLedger();}
+      var store=state.store,session=state.session,cacheScope=!suffix&&date?frontdeskReadScope('ledger_records',store,date):'';
+      var rowScope=JSON.stringify([store,date,suffix,session.user&&session.user.username]);
+      if(state.ledgerReadScope!==rowScope){state.ledgerRows=[];state.ledgerReadScope=rowScope;$('ledger-table').textContent='';}
+      var current=function(){return request===state.ledgerRequest&&session===state.session&&store===state.store&&date===state.ledgerDate&&suffix===state.ledgerPhoneSuffix&&(!cacheScope||cacheScope===frontdeskReadScope('ledger_records',store,date))};
+      try{
+        var data=cacheScope?await frontdeskDayRead(cacheScope,current,function(hint){
+          return api('ledger_records',hint?Object.assign({},payload,{read_sync:hint}):payload);
+        },function(data){
+          if(data.store!==store||data.business_date!==date||data.phone_suffix||!Array.isArray(data.rows))return null;
+          return {store:store,date:date,count:data.rows.length};
+        },function(summary,when){
+          if(current()&&state.view==='import'&&summary&&summary.store===store&&summary.date===date&&Number.isSafeInteger(summary.count)&&summary.count>=0)
+            $('ledger-count').textContent='上次核实'+cachedReadTime(when)+'：'+summary.count+' 条。正在更新…';
+        }):await api('ledger_records',payload);
+        if(!current())return;
+        if(cacheScope&&(!data||data.store!==store||data.business_date!==date||data.phone_suffix))throw new Error('返回的分店或日期不符，请刷新重试');
+        state.ledgerRows=data.rows||[];renderLedger();
+      }
       catch(e){if(request!==state.ledgerRequest)return;$('ledger-count').textContent='读取失败';$('ledger-table').innerHTML='<div class="empty danger"><b>客户数据表读取失败</b>'+esc(e.message)+'</div>';}
     }
     $('ledger-search').addEventListener('input',function(){var suffix=phoneSuffixQuery(this.value);if(suffix!==state.ledgerPhoneSuffix)loadLedger(suffix);else renderLedger();});$('ledger-search-btn').addEventListener('click',function(){loadLedger();});$('ledger-date').addEventListener('change',function(){loadLedger();});$('ledger-source').addEventListener('change',renderLedger);$('ledger-refresh').addEventListener('click',function(){loadLedger();});
@@ -637,14 +736,21 @@
     (function(){var now=new Date(),y=now.getFullYear(),m=now.getMonth(),opts=[];for(var i=0;i<12;i++){var d=new Date(y,m-i,1),yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0');opts.push('<option value="'+yy+'-'+mm+'">'+yy+'年'+mm+'月</option>');}$('shampoo-month').innerHTML=opts.join('');})();$('shampoo-stats-btn').addEventListener('click',loadShampooStats);
     async function loadShampooStats(){var month=$('shampoo-month').value;if(!month){toast('请选择月份',true);return;}var btn=$('shampoo-stats-btn');setBusy(btn,true,'统计中…');$('shampoo-table').innerHTML='<div class="empty">正在统计…</div>';try{var data=await api('shampoo_qualification_stats',{month:month});renderShampooStats(data);}catch(e){$('shampoo-table').innerHTML='<div class="empty danger">'+esc(e.message)+'</div>';}finally{setBusy(btn,false);}}
     function renderShampooStats(data){var stats=data.stats||[];$('shampoo-caption').textContent=(data.month||'')+' · '+stats.length+' 位助理';if(!stats.length){$('shampoo-table').innerHTML='<div class="empty">该月暂无带助理的接待记录</div>';return;}if(isMobileView()){$('shampoo-table').innerHTML='<div class="mobile-stats-list">'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<article class="mobile-stat-card"><div><b>'+esc(s.assistant)+'</b><span>洗发 '+s.total+' 次 · 合格 '+s.qualified+' 次</span></div><strong style="color:'+tone+'">'+s.rate+'%</strong></article>';}).join('')+'</div>';}else{$('shampoo-table').innerHTML='<table class="ledger-table"><thead><tr><th>助理</th><th>洗发次数</th><th>合格次数</th><th>合格率</th></tr></thead><tbody>'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<tr><td><b>'+esc(s.assistant)+'</b></td><td>'+s.total+'</td><td>'+s.qualified+'</td><td style="color:'+tone+';font-weight:800">'+s.rate+'%</td></tr>';}).join('')+'</tbody></table>';}}
-    document.addEventListener('visibilitychange',function(){if(!document.hidden&&state.session&&state.view==='today')loadDashboard();});
+    document.addEventListener('visibilitychange',function(){
+      if(document.hidden||!state.session)return;
+      checkFrontdeskStored();if(state.frontdeskScopeBlocked)return;
+      if(state.view==='today')loadDashboard();
+      else if(window.ZysyrReadSync&&window.ZysyrReadSync.enabled===true&&state.view==='import'&&$('ledger-date').value&&!phoneSuffixQuery($('ledger-search').value)&&$('ledger-form-overlay').classList.contains('hidden'))loadLedger();
+    });
     setInterval(function(){if(!document.hidden&&state.session&&state.view==='today'&&!state.dashboardLoading)loadDashboard({silent:true});},30000);
     var startupStyle=document.getElementById('frontdesk-startup-style');
     var startupStyleReady=startupStyle.dataset.failed?Promise.reject(new Error('样式未载入')):startupStyle.dataset.loaded==='true'?Promise.resolve():new Promise(function(resolve,reject){startupStyle.addEventListener('load',resolve,{once:true});startupStyle.addEventListener('error',reject,{once:true});});
     Promise.all([restoreSession(),startupStyleReady]).then(function(){startupStyle.media='all';window.ZysyrStartup.finish();},window.ZysyrStartup.failed);
   })();
   </script>
-<script defer src="data-read-client.js?v=685"></script>
-<script defer src="app-shell-client.js?v=685"></script>
+<script defer src="data-read-client.js?v=687"></script>
+<script defer src="scoped-read-codec.js?v=687"></script>
+<script defer src="scoped-read-sync.js?v=687"></script>
+<script defer src="app-shell-client.js?v=687"></script>
 </body>
 </html>

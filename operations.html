@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="zh-CN" data-version="685">
+<html lang="zh-CN" data-version="687" data-read-sync-rollout="opt-in">
 <head>
   <meta charset="utf-8">
+  <style>.report-scope-invalid body>:not(#report-scope-message){display:none!important}#report-scope-message{padding:30px;font:16px/1.7 system-ui}</style>
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f1efe9">
   <title>ZYSYR 悦西智营</title>
@@ -157,7 +158,7 @@
   #view-monthly .sheet-table input[data-monthly-cell]{font-size:13px!important}
   .monthly-daily-completeness-text{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.5}
 </style>
-  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=685" media="print" onload="this.media='all'">
+  <link id="operations-report-morandi" rel="stylesheet" href="operations-report-morandi.css?v=687" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -795,19 +796,19 @@
     }
   </style>
   <script data-startup>window.ZysyrStartup.lock();</script>
-<script src="operations-voucher-combinations.js?v=685"></script>
-<script src="operations-expense-voucher-workspace.js?v=685"></script>
-<script src="operations-petty-detail-import.js?v=685"></script>
+<script src="operations-voucher-combinations.js?v=687"></script>
+<script src="operations-expense-voucher-workspace.js?v=687"></script>
+<script src="operations-petty-detail-import.js?v=687"></script>
 
-<script src="operations-time.js?v=685"></script>
-<script src="operations-staff-view.js?v=685"></script>
-<script src="operations-monthly-daily-performance.js?v=685"></script>
-  <script src="operations-report-fit.js?v=685"></script>
-  <script src="operations-auth-bridge.js?v=685"></script>
-  <script src="operations-voucher-preview.js?v=685"></script>
-  <script src="operations-voucher-view.js?v=685"></script>
-<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=685"></script>
-  <script src="operations-monthly-verification.js?v=685"></script>
+<script src="operations-time.js?v=687"></script>
+<script src="operations-staff-view.js?v=687"></script>
+<script src="operations-monthly-daily-performance.js?v=687"></script>
+  <script src="operations-report-fit.js?v=687"></script>
+  <script src="operations-auth-bridge.js?v=687"></script>
+  <script src="operations-voucher-preview.js?v=687"></script>
+  <script src="operations-voucher-view.js?v=687"></script>
+<script data-optional-display="daily-original" src="operations-daily-original-display.js?v=687"></script>
+  <script src="operations-monthly-verification.js?v=687"></script>
 <script>
   var SUPABASE_URL='https://pdssrmpeiuwvxzsgschm.supabase.co';
   var SUPABASE_KEY='sb_publishable_MDx4d2QzQpTojF8yLRHIqw_uKQW7A7t';
@@ -991,23 +992,126 @@
     return data;
   }
   function currentStore(){return $('store-select').value||(state.user&&state.user.store)||''}
+  // Cached reports never authorize an operation. Only static, non-financial text
+  // is shown before a fresh server read has rechecked identity and permissions.
+  var reportSyncPrincipal=null,reportSyncEpoch=0,reportSyncCalendarVisit='',reportSyncMonthlyVisit='',reportReadsPending=0,reportLocalDemo=false;
+  function reportPrincipal(){
+    // Local sample roles are not authenticated principals. Never reuse a
+    // cache for them; changing sample fixtures must not lock the demo.
+    var u=state.user;if(!u||reportLocalDemo)return null;
+    return JSON.stringify([StaffReportView.enabled?'staff':'operations',u.username,u.role,u.store,
+      (u.stores||[]).slice().sort(),u.personal_scope===true,
+      Object.keys(u).filter(function(k){return k.indexOf('can_')===0&&u[k]===true}).sort(),
+      state.auth&&state.auth.scope&&state.auth.scope.user&&state.auth.scope.user.id||'']);
+  }
+  function clearReportSync(){
+    reportSyncEpoch++;reportSyncPrincipal=null;reportSyncCalendarVisit='';reportSyncMonthlyVisit='';
+    if(window.ZysyrReadSync)Promise.resolve(window.ZysyrReadSync.clear()).catch(function(){});
+  }
+  function checkReportPrincipal(){
+    var p=reportPrincipal();if(reportSyncPrincipal!==null&&p!==reportSyncPrincipal)blockReportTab('报表账号或授权范围已变化。');
+    reportSyncPrincipal=p;return p;
+  }
+  function reportReadSecret(){
+    if(StaffReportView.enabled){try{return (JSON.parse(localStorage.getItem('booking-session')||'null')||{}).session_token||''}catch(_){return ''}}
+    return state.session||authAccessToken()||'';
+  }
+  function reportReadDenied(error){return error&&(error.status===401||error.status===403||isSessionInvalidError(error)||/没有.{0,16}权限|权限不足|无权(?:访问|查看)|不在授权范围/.test(error.message||''))}
+  function blockReportTab(message){
+    clearReportSync();
+    // Hide the previous actor's work without saving, clearing dirty fields,
+    // reloading, or signing a different tab out. Only a fresh page can reopen.
+    document.documentElement.classList.add('report-scope-invalid');
+    ['daily-report-calendar','daily-open-status','daily-report-status','sync-status'].forEach(function(id){var el=$(id);if(el)el.textContent=''});
+    state.dailyReportMonth=null;
+    var note=$('report-scope-message');
+    if(!note){note=document.createElement('p');note.id='report-scope-message';note.setAttribute('role','alert');document.body.appendChild(note)}
+    note.textContent=message+' 请重新打开本页。';
+  }
+  async function readScopedReport(operation,payload,active,onPreview){
+    if(!['overview','daily_sheet_month','daily_sheet_read'].includes(operation))throw new Error('不是可同步的报表读取');
+    var core=window.ZysyrReadSync,who=checkReportPrincipal(),epoch=reportSyncEpoch,secret=reportReadSecret();
+    var month=$('month').value,view=state.view;
+    function current(){return !document.documentElement.classList.contains('report-scope-invalid')&&epoch===reportSyncEpoch&&who===reportPrincipal()&&active()&&currentStore()===payload.store&&$('month').value===month}
+    function send(hint){return api(operation,hint?Object.assign({},payload,{read_sync:hint}):payload)}
+    reportReadsPending++;
+    try{
+      var sync=core&&core.enabled===true&&who&&secret.length>=24&&Array.isArray(state.user.stores)&&state.user.stores.indexOf(payload.store)>=0;
+      var summary=operation==='daily_sheet_month'?function(data){return calendarDateSummary(data,month)}
+        :operation==='overview'?function(){return {month:month}}:undefined;
+      function preview(info,at){if(onPreview&&current()&&state.view===view&&!monthlyHasUnsaved()&&!dailySheetDirtyCount()&&!state.monthlyEditMode)onPreview(info,at)}
+      var result=!sync?await send():await core.read({scope:JSON.stringify(['report-v2',who,operation,payload.store,month,payload.draft_id||'']),
+        secret:secret,persist:false,current:current,send:send,summary:summary,onSummary:preview,
+        onPreview:operation==='daily_sheet_read'?function(_,at){preview(null,at)}:undefined});
+      if(!current())throw new Error('报表范围已变化，请重新打开');
+      return result;
+    }catch(error){
+      if(reportReadDenied(error)&&current())blockReportTab('当前会话已过期或不再具有报表授权。');
+      throw error;
+    }finally{reportReadsPending--}
+  }
+  function calendarDateSummary(data,month){
+    var days=data&&Array.isArray(data.days)&&data.month===month?data.days:[];
+    var dates=Array.from(new Set(days.map(function(d){return String(d.report_date||'')}).filter(function(d){return /^\d{4}-\d{2}-(?:0[1-9]|[12]\d|3[01])$/.test(d)&&d.slice(0,7)===month}))).sort();
+    return {month:month,dates:dates};
+  }
+  function calendarPreviewText(summary,month){
+    if(!summary||summary.month!==month||!Array.isArray(summary.dates))return '';
+    var dates=calendarDateSummary({month:month,days:summary.dates.slice(0,31).map(function(d){return {report_date:d}})},month).dates;
+    return '上次查看的 '+month+' 月历（非最新） · '+dates.length+' 个记录日期'+(dates.length?'：'+dates.map(function(d){return d.slice(8)}).join('、'):'')+'。仅供查看，联网核对后才可操作。';
+  }
+  function revalidateVisitedReport(){
+    if(!window.ZysyrReadSync||window.ZysyrReadSync.enabled!==true||reportReadsPending||document.hidden||navigator.onLine===false||isLocalPreview()||
+      !state.user||$('app').classList.contains('hidden')||document.documentElement.classList.contains('report-scope-invalid')||
+      monthlyHasUnsaved()||dailySheetDirtyCount()||state.monthlySaving||state.monthlyEditMode||
+      (window.ZysyrDailyReview&&window.ZysyrDailyReview.hasWork())||document.querySelector('dialog[open],.drawer-backdrop:not(.hidden)'))return;
+    var place=JSON.stringify([reportPrincipal(),currentStore(),$('month').value]);
+    if(state.view==='daily-report'&&state.user.can_read_daily_reports&&reportSyncCalendarVisit===place&&!dailyOpenState&&$('daily-report-detail').classList.contains('hidden')){
+      loadDailyReportOverview({background:true});return;
+    }
+    // Finance editors and open sheets may have untracked work in controls.
+    // Do not redraw either on resume. Their next explicit read still revalidates.
+    if(state.view==='monthly'&&reportSyncMonthlyVisit===place&&state.monthlyOverviewReady===true&&!(state.monthlySummary&&state.monthlySummary.active)&&
+      !state.user.can_upload_reports&&!state.user.can_adjust_confirmed_finance&&!state.user.can_lock_reports&&
+      !document.querySelector('#view-monthly input:focus,#view-monthly textarea:focus'))loadOverview({foreground:true});
+  }
+  var reportHiddenSince=0;
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){reportHiddenSince=Date.now();return}
+    var elapsed=reportHiddenSince?Date.now()-reportHiddenSince:0;reportHiddenSince=0;
+    if(elapsed>=60000)revalidateVisitedReport();
+  });
+  window.addEventListener('storage',function(e){
+    if(!state.user)return;
+    if(StaffReportView.enabled&&e.key==='booking-session'){
+      var previous,next;try{previous=JSON.parse(e.oldValue||'null');next=JSON.parse(e.newValue||'null')}catch(_){}
+      if(!previous||!next||previous.session_token!==next.session_token)blockReportTab('员工会话已变化。');
+    }else if(e.key===null||(!StaffReportView.enabled&&e.key==='zysyr-operations-session-v1')){
+      if(e.key===null||e.oldValue!==e.newValue)blockReportTab('登录账号或会话已变化。');
+    }else if(!StaffReportView.enabled&&e.key==='zysyr-operations-auth-v1'){
+      var before,after;try{before=JSON.parse(e.oldValue||'null');after=JSON.parse(e.newValue||'null')}catch(_){}
+      // Ignore a routine token rotation for the same verified account/grants.
+      if(!before||!after||!before.scope||!after.scope||!before.scope.user||!before.scope.user.id||
+        JSON.stringify(before.scope)!==JSON.stringify(after.scope))blockReportTab('登录账号或授权范围已变化。');
+    }
+  });
   function beginScopedRead(key,view){var request=(state.readRequests[key]||0)+1;state.readRequests[key]=request;return{request:request,store:currentStore(),month:$('month').value,view:view}}
   function isCurrentScopedRead(key,context){return Boolean(context&&state.readRequests[key]===context.request&&currentStore()===context.store&&$('month').value===context.month&&state.view===context.view)}
   function fileBase64(file){return new Promise(function(resolve,reject){var reader=new FileReader();reader.onerror=function(){reject(new Error('文件读取失败'))};reader.onload=function(){resolve(String(reader.result).split(',')[1]||'')};reader.readAsDataURL(file)})}
-  function showLogin(message){if(StaffReportView.enabled){StaffReportView.blocked(message);return}state.session='';state.auth=null;state.authWarning='';state.user=null;if(window.ZysyrDailyHistory)window.ZysyrDailyHistory.syncAccess();localStorage.removeItem('zysyr-operations-session-v1');authBridge.signOut().catch(function(){authBridge.clear()});$('app').classList.add('hidden');$('login').classList.remove('hidden');$('login-error').textContent=message||''}
+  function showLogin(message){clearReportSync();if(StaffReportView.enabled){StaffReportView.blocked(message);return}state.session='';state.auth=null;state.authWarning='';state.user=null;if(window.ZysyrDailyHistory)window.ZysyrDailyHistory.syncAccess();localStorage.removeItem('zysyr-operations-session-v1');authBridge.signOut().catch(function(){authBridge.clear()});$('app').classList.add('hidden');$('login').classList.remove('hidden');$('login-error').textContent=message||''}
   var restoreInFlight=null,reconnectTimer=null,reconnectDelay=3000;
   function scheduleSessionRestore(){if(reconnectTimer||(!localStorage.getItem('zysyr-operations-session-v1')&&!(authBridge.read&&authBridge.read())))return;reconnectTimer=setTimeout(function(){reconnectTimer=null;if(state.user)maintainSession();else restoreSession()},reconnectDelay);reconnectDelay=Math.min(reconnectDelay*2,60000)}
   function showLoginSoft(message){if(StaffReportView.enabled){StaffReportView.blocked(message||'报表暂时无法读取，请返回工作台后重试');return}var text=message||'网络不稳定，登录状态已保留，正在自动恢复';if(state.user){$('sync-status').textContent=text;toast(text)}else{$('app').classList.add('hidden');$('login').classList.remove('hidden');$('login-error').textContent=text}scheduleSessionRestore()}
   function hasAuthCapability(code){var list=state.auth&&state.auth.scope&&state.auth.scope.capabilities;return Array.isArray(list)&&list.some(function(item){return item&&item.code===code&&Array.isArray(item.scopes)&&item.scopes.some(function(scope){return scope&&scope.type==='company'})})}
   function canManageFinanceAccounts(){return !!(state.user&&((state.user.can_manage_finance_accounts&&hasAuthCapability('finance_account.create'))||(state.user.can_manage_workforce_accounts&&hasAuthCapability('workforce_account.create'))))}
   function renderUserCard(){var admin=state.user.role==='shareholder'&&(state.user.can_manage_stores||state.user.can_manage_finance_accounts),perspective=admin?'股东管理员 · 可维护组织':state.user.role==='shareholder'?'股东视角 · 只读':state.user.role==='finance'?'财务视角 · 可上传':state.user.role==='employee'?'员工视角 · 仅本人':'受限视角',warning=state.authWarning?'<br><span style="color:#8d2f25">'+esc(state.authWarning)+'</span>':'';$('user-card').innerHTML='<strong>'+esc(state.user.username)+'</strong><br>'+esc(state.user.role_label)+' · '+esc(perspective)+'<br>'+esc(state.user.store||'可切换授权门店')+'<br><span class="tag">'+(StaffReportView.enabled?'员工账号 · 已授权门店':state.auth?'Supabase Auth 已验证':'旧登录过渡')+'</span>'+warning+(StaffReportView.enabled?'':'<br><button class="ghost" style="margin-top:9px" onclick="logout()">退出登录</button>')}
-  function refreshRoleEntries(){if(window.ZysyrDailyHistory)window.ZysyrDailyHistory.syncAccess();document.querySelectorAll('.finance-upload').forEach(function(el){el.classList.toggle('hidden',!state.user.can_upload_reports)});document.querySelectorAll('.finance-voucher-upload').forEach(function(el){el.classList.toggle('hidden',!state.user.can_upload_vouchers)});document.querySelectorAll('.import-entry').forEach(function(el){el.classList.toggle('hidden',!state.user.can_import_photo_reports)});document.querySelectorAll('.history-import-entry').forEach(function(el){el.classList.toggle('hidden',state.user.role!=='finance'||!state.user.can_manage_finance_workbench)});document.querySelectorAll('.daily-report-entry').forEach(function(el){el.classList.toggle('hidden',!state.user.can_read_daily_reports)});document.querySelectorAll('.salary-report-entry').forEach(function(el){el.classList.toggle('hidden',!state.user.can_read_salary)});document.querySelectorAll('.finance-workbench-entry').forEach(function(el){el.classList.toggle('hidden',!(state.user.can_manage_finance_workbench||state.user.can_read_petty_cash_reports))});document.querySelectorAll('.payroll-entry').forEach(function(el){el.classList.toggle('hidden',!(state.user.can_read_salary||state.user.can_view_personal_payroll))});document.querySelectorAll('.inventory-entry').forEach(function(el){el.classList.toggle('hidden',!['shareholder','finance','store_manager'].includes(state.user.role))});document.querySelectorAll('.analysis-entry').forEach(function(el){el.classList.toggle('hidden',!(state.user.can_read_ai_analysis||state.user.can_create_question||state.user.can_respond_question))});var allowed=canManageFinanceAccounts();document.querySelectorAll('.finance-account-admin').forEach(function(el){el.classList.toggle('hidden',!allowed)});var isShareholderAdmin=state.user.role==='shareholder'&&(state.user.can_manage_stores||state.user.can_manage_finance_accounts);document.querySelectorAll('.catalog-admin').forEach(function(el){el.classList.toggle('hidden',!state.user.can_manage_stores)});if(state.user.role==='shareholder'&&!isShareholderAdmin)document.querySelectorAll('.nav [data-view]').forEach(function(el){var v=el.dataset.view;el.classList.toggle('hidden',['monthly','daily-report','salary-report','finance-workbench','archive'].indexOf(v)<0)});if(state.user.personal_scope)document.querySelectorAll('.nav [data-view]:not([data-view="payroll"])').forEach(function(el){el.classList.add('hidden')});var stores=state.auth&&state.auth.scope&&state.auth.scope.stores||[];$('finance-store').innerHTML=stores.filter(function(store){return store&&store.status==='active'}).map(function(store){return'<option value="'+esc(store.id)+'">'+esc(store.name)+'</option>'}).join('')}
+  function refreshRoleEntries(){checkReportPrincipal();if(window.ZysyrDailyHistory)window.ZysyrDailyHistory.syncAccess();document.querySelectorAll('.finance-upload').forEach(function(el){el.classList.toggle('hidden',!state.user.can_upload_reports)});document.querySelectorAll('.finance-voucher-upload').forEach(function(el){el.classList.toggle('hidden',!state.user.can_upload_vouchers)});document.querySelectorAll('.import-entry').forEach(function(el){el.classList.toggle('hidden',!state.user.can_import_photo_reports)});document.querySelectorAll('.history-import-entry').forEach(function(el){el.classList.toggle('hidden',state.user.role!=='finance'||!state.user.can_manage_finance_workbench)});document.querySelectorAll('.daily-report-entry').forEach(function(el){el.classList.toggle('hidden',!state.user.can_read_daily_reports)});document.querySelectorAll('.salary-report-entry').forEach(function(el){el.classList.toggle('hidden',!state.user.can_read_salary)});document.querySelectorAll('.finance-workbench-entry').forEach(function(el){el.classList.toggle('hidden',!(state.user.can_manage_finance_workbench||state.user.can_read_petty_cash_reports))});document.querySelectorAll('.payroll-entry').forEach(function(el){el.classList.toggle('hidden',!(state.user.can_read_salary||state.user.can_view_personal_payroll))});document.querySelectorAll('.inventory-entry').forEach(function(el){el.classList.toggle('hidden',!['shareholder','finance','store_manager'].includes(state.user.role))});document.querySelectorAll('.analysis-entry').forEach(function(el){el.classList.toggle('hidden',!(state.user.can_read_ai_analysis||state.user.can_create_question||state.user.can_respond_question))});var allowed=canManageFinanceAccounts();document.querySelectorAll('.finance-account-admin').forEach(function(el){el.classList.toggle('hidden',!allowed)});var isShareholderAdmin=state.user.role==='shareholder'&&(state.user.can_manage_stores||state.user.can_manage_finance_accounts);document.querySelectorAll('.catalog-admin').forEach(function(el){el.classList.toggle('hidden',!state.user.can_manage_stores)});if(state.user.role==='shareholder'&&!isShareholderAdmin)document.querySelectorAll('.nav [data-view]').forEach(function(el){var v=el.dataset.view;el.classList.toggle('hidden',['monthly','daily-report','salary-report','finance-workbench','archive'].indexOf(v)<0)});if(state.user.personal_scope)document.querySelectorAll('.nav [data-view]:not([data-view="payroll"])').forEach(function(el){el.classList.add('hidden')});var stores=state.auth&&state.auth.scope&&state.auth.scope.stores||[];$('finance-store').innerHTML=stores.filter(function(store){return store&&store.status==='active'}).map(function(store){return'<option value="'+esc(store.id)+'">'+esc(store.name)+'</option>'}).join('')}
   function orderedReportStores(authorizedStores){var stores=(authorizedStores||[]).slice(),preferred='自由手艺人',index=stores.indexOf(preferred);if(index>0){stores.splice(index,1);stores.unshift(preferred)}return stores}
-  function showApp(){if(StaffReportView.enabled)StaffReportView.ready();$('login').classList.add('hidden');$('app').classList.remove('hidden');document.body.classList.toggle('report-focus',['monthly','daily-report','salary-report'].indexOf(state.view)>=0);var stores=orderedReportStores(state.user.stores);$('store-select').innerHTML=stores.map(function(store){return'<option>'+esc(store)+'</option>'}).join('');var defaultStore=stores.indexOf('自由手艺人')>=0?'自由手艺人':state.user.store;if(defaultStore&&stores.indexOf(defaultStore)>=0)$('store-select').value=defaultStore;$('store-select').disabled=stores.length<2;refreshRoleEntries();renderUserCard()}
+  function showApp(){checkReportPrincipal();if(StaffReportView.enabled)StaffReportView.ready();$('login').classList.add('hidden');$('app').classList.remove('hidden');document.body.classList.toggle('report-focus',['monthly','daily-report','salary-report'].indexOf(state.view)>=0);var stores=orderedReportStores(state.user.stores);$('store-select').innerHTML=stores.map(function(store){return'<option>'+esc(store)+'</option>'}).join('');var defaultStore=stores.indexOf('自由手艺人')>=0?'自由手艺人':state.user.store;if(defaultStore&&stores.indexOf(defaultStore)>=0)$('store-select').value=defaultStore;$('store-select').disabled=stores.length<2;refreshRoleEntries();renderUserCard()}
   function startInitialView(){Promise.resolve(loadInitialView()).catch(function(error){if(isSessionInvalidError(error))showLogin(error.message);else $('sync-status').textContent='数据暂时加载失败，请点击刷新重试'})}
   async function loadInitialView(){if(state.user.personal_scope){showView('payroll');return}showView('monthly');await loadOverview()}
   function resultNeedsAuth(user){return user&&['shareholder','finance','store_manager','employee'].indexOf(user.role)>=0}
-  async function restoreSession(){if(StaffReportView.enabled){state.session='';state.auth=null;try{state.user=(await api('session')).user;showApp();startInitialView()}catch(e){StaffReportView.blocked(e.message)}return}if(isLocalPreview()){startLocalPreview();return}if(restoreInFlight)return restoreInFlight;restoreInFlight=(async function(){try{state.auth=await authBridge.restore();if(state.auth||state.session){state.user=(await api('session')).user;reconnectDelay=3000;showApp();startInitialView();return}showLogin()}catch(error){if(isSessionInvalidError(error)){showLogin(error.message);return}showLoginSoft('网络不稳定，登录状态已保留并会自动恢复')}})();try{return await restoreInFlight}finally{restoreInFlight=null}}
+  async function restoreSession(){if(StaffReportView.enabled){state.session='';state.auth=null;try{state.user=(await api('session')).user;showApp();startInitialView()}catch(e){if(reportReadDenied(e))clearReportSync();StaffReportView.blocked(e.message)}return}if(isLocalPreview()){startLocalPreview();return}if(restoreInFlight)return restoreInFlight;restoreInFlight=(async function(){try{state.auth=await authBridge.restore();if(state.auth||state.session){state.user=(await api('session')).user;reconnectDelay=3000;showApp();startInitialView();return}showLogin()}catch(error){if(isSessionInvalidError(error)){showLogin(error.message);return}showLoginSoft('网络不稳定，登录状态已保留并会自动恢复')}})();try{return await restoreInFlight}finally{restoreInFlight=null}}
   $('login-form').addEventListener('submit',async function(event){event.preventDefault();if(StaffReportView.enabled)return;var username=$('login-name').value.trim(),password=$('login-pass').value;$('login-error').textContent='正在验证…';state.auth=null;state.authWarning='';var legacy=null,legacyError=null;try{legacy=await api('login',{username:username,password:password})}catch(error){legacyError=error}try{if(legacy){state.session=legacy.session_token;state.user=legacy.user;localStorage.setItem('zysyr-operations-session-v1',state.session);if(resultNeedsAuth(state.user)||state.user.role==='employee'){try{state.auth=await authBridge.login(username,password);state.user=(await api('session')).user}catch(_){authBridge.clear();state.authWarning='新认证暂未完成，当前已安全使用旧登录'}}}else{state.auth=await authBridge.login(username,password);state.session='';localStorage.removeItem('zysyr-operations-session-v1');state.user=(await api('session')).user}$('login-pass').value='';reconnectDelay=3000;showApp()}catch(error){state.auth=null;authBridge.clear();$('login-pass').value='';$('login-error').textContent=(legacyError&&legacyError.message)||error.message;return}try{await loadInitialView();if(state.auth)toast('Supabase Auth 已验证');else if(state.authWarning)toast(state.authWarning);else toast('已安全登录')}catch(error){if(isSessionInvalidError(error))showLogin(error.message);else showLoginSoft('数据暂时加载失败，登录状态仍然保留')}});
   $('login-to-register').addEventListener('click',function(){$('login-form').classList.add('hidden');$('register-form').classList.remove('hidden');$('login-error').textContent=''});
   $('register-to-login').addEventListener('click',function(){$('register-form').classList.add('hidden');$('login-form').classList.remove('hidden')});
@@ -1015,7 +1119,7 @@
 
   var showViewWithMonthlyEditGuard=showView;
   showView=async function(name){if(name!==state.view&&!confirmMonthlyDiscard('离开当前月报'))return;return showViewWithMonthlyEditGuard(name)}
-  async function logout(){if(StaffReportView.enabled){StaffReportView.blocked('请使用上方返回工作台。');return}if(!confirmMonthlyDiscard('退出登录'))return;try{await Promise.allSettled([api('logout'),authBridge.signOut()])}catch(_){}showLogin('已安全退出')}
+  async function logout(){if(StaffReportView.enabled){StaffReportView.blocked('请使用上方返回工作台。');return}if(!confirmMonthlyDiscard('退出登录'))return;clearReportSync();try{await Promise.allSettled([api('logout'),authBridge.signOut()])}catch(_){}showLogin('已安全退出')}
   async function showView(name){if(name==='daily-report'&&!state.user.can_read_daily_reports)return;if(name==='salary-report'&&!state.user.can_read_salary)return;if(name==='petty-cash-report'&&!state.user.can_read_petty_cash_reports)return;if(name==='upload'&&!state.user.can_upload_reports)return;if(name==='import'&&!state.user.can_import_photo_reports)return;if(name==='history-import'&&(state.user.role!=='finance'||!state.user.can_manage_finance_workbench))return;if(name==='finance-workbench'&&!(state.user.can_manage_finance_workbench||state.user.can_read_petty_cash_reports))return;if(name==='payroll'&&!(state.user.can_read_salary||state.user.can_view_personal_payroll))return;if(name==='inventory'&&!['shareholder','finance','store_manager'].includes(state.user.role))return;if(name==='analysis'&&!(state.user.can_read_ai_analysis||state.user.can_create_question||state.user.can_respond_question))return;if(name==='finance-account'&&!canManageFinanceAccounts())return;if(name!==state.view&&!await ensureDailySheetSaved())return;if(name!==state.view&&!await ensureSalarySheetSaved())return;state.view=name;document.body.classList.toggle('report-focus',['monthly','daily-report','salary-report'].indexOf(name)>=0);document.querySelectorAll('.view').forEach(function(el){el.classList.add('hidden')});$('view-'+name).classList.remove('hidden');document.querySelectorAll('[data-view]').forEach(function(el){el.classList.toggle('active',el.dataset.view===name)});if(name==='catalog')loadCatalog();if(name==='finance-account')loadShareholderRegistrations();if(name==='upload'){loadFinanceWorkbench();loadVoucherCenter();}if(name==='finance-workbench'){if(state.user.can_manage_finance_workbench)loadFinanceWorkbench();loadPettyCashReport();}if(name==='salary-report')loadSalaryReport();if(name==='payroll')loadPayroll();if(name==='inventory')loadInventory();if(name==='analysis')loadAnalysis();if(name==='history-import')loadHistoryImport();if(name==='import')loadImportCenter();if(name==='daily-report')await loadDailyReportOverview()}
   async function openDailyViewWithFeedback(button,view,label){
     if(button.getAttribute('aria-busy')==='true')return;
@@ -1112,7 +1216,7 @@
   function userLabel(user){return user&&((user.display_name||'').trim()||(user.login_name||'').trim())||'未知上传人'}
   function renderAll(){if(window.MonthlyUploadVerification)window.MonthlyUploadVerification.render($('monthly-upload-verification'),state.data.monthly_report);var report=state.data.monthly_report,month=$('month').value,summary=state.data.trace_summary||{},warnings=(summary.mismatch||0)+(summary.missing_evidence||0)+(summary.unlinked||0),trace='<span class="trace-summary"><span>凭证已齐 '+esc(summary.matched||0)+'</span><span>原表来源 '+esc(summary.source_report||0)+'</span><span>无需凭证 '+esc(summary.not_required||0)+'</span><span>公式 '+esc(summary.formula||0)+'</span><span class="'+(warnings?'warn':'')+'">待完善 '+esc(warnings)+'</span></span>';var acks=state.data.acknowledgements||[],ackNames=acks.map(function(a){return(a.user&&a.user.display_name||'股东')+' '+formatShortDateTime(a.acknowledged_at)}).join('、'),ackHtml=acks.length?'<span class="help">历史已阅（不代表新版本无异议确认）：'+esc(ackNames)+'</span>':'';$('monthly-title').textContent=(month?month.replace('-','年')+'月':'月度')+'盈亏表';if(report){var draft=/^系统电子月报草稿_/.test(report.original_filename||'');$('report-state').innerHTML='<div><strong>'+(draft?'当月电子月报草稿':'财务上传原件')+' v'+esc(report.version)+'</strong>'+esc(report.original_filename)+' · '+esc(userLabel(report.uploaded_by))+' · '+esc(formatDateTime(report.uploaded_at))+trace+'</div><div class="state-actions"><button class="ghost" data-open-report="'+esc(report.id)+'">打开原文件</button>'+((report.vouchers||[]).map(function(v,i){return'<button class="ghost" data-open-voucher="'+esc(v.id)+'">凭证 '+(i+1)+'</button>'}).join(''))+'</div><div class="ack-wrap" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px">'+ackHtml+'</div>';renderSheet(report.display_data,false,state.user.role==='finance')}else{$('report-state').innerHTML='<div><strong>本月尚未建立电子月报</strong>财务点击“开始填写本月月报”，系统会沿用本门店最近一期原版表格。</div><div class="ack-wrap" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px">'+ackHtml+'</div>';renderSheet(blankMonthlyTemplate(),false,state.user.role==='finance')}bindOpenButtons();var ackBtn=$('monthly-ack');if(ackBtn)ackBtn.onclick=async function(){var button=ackBtn;button.disabled=true;try{if(isLocalPreview()){toast('本地预览不写入数据库');return}await api('report_acknowledge',{store:currentStore(),month:month,monthly_report_id:report?report.id:null});toast('已确认知晓本月经营情况');await loadOverview()}catch(error){toast(error.message)}finally{button.disabled=false}};renderArchive()}
   function monthlyVerificationReceipt(value){return window.MonthlyUploadVerification?window.MonthlyUploadVerification.receipt(value):'草稿已保存，原件核对结果暂未加载，请刷新核验；未自动入账。'}
-  function renderMonthlyAuditControls(keepEditMode){var report=state.data.monthly_report,locked=Boolean(state.data.monthly_period_was_locked),approved=hasMonthlyApproval(),requests=state.data.monthly_unlock_requests||[],pending=requests.filter(function(row){return row.status==='pending'}),canAdjust=Boolean(state.user.can_adjust_confirmed_finance&&state.user.role==='finance');if(!keepEditMode)state.monthlyEditMode=false;$('monthly-lock-status').textContent=locked?(approved?'本月已锁账 · 已获一次修改授权':'本月已锁账'):'本月未锁账';$('monthly-edit-toggle').textContent=report?(state.monthlyEditMode?'结束编辑':'编辑月报'):'开始填写本月月报';$('monthly-edit-toggle').classList.toggle('hidden',!canAdjust||locked);$('monthly-save-cells').classList.toggle('hidden',!report||!state.monthlyEditMode);$('monthly-unlock-request').classList.toggle('hidden',!canAdjust||!locked||approved||pending.length>0);if(report)renderSheet(report.display_data,false,canAdjust);if(canManageFinanceAccounts()&&pending.length){var panel=document.createElement('div');panel.className='unlock-approval-panel';panel.innerHTML='<strong>待审批的锁账修改申请</strong>'+pending.map(function(row){return'<div class="trace-row"><div><strong>'+esc(userLabel(row.requested_by))+' · '+esc(String(row.period_month||'').slice(0,7))+'</strong><small>'+esc(row.request_reason)+' · '+esc(formatDateTime(row.requested_at))+'</small></div><div class="compact-actions"><button class="secondary" data-unlock-decision="approved" data-request-id="'+esc(row.id)+'">批准一次修改</button><button class="ghost" data-unlock-decision="rejected" data-request-id="'+esc(row.id)+'">拒绝</button></div></div>'}).join('');$('report-state').appendChild(panel);panel.querySelectorAll('[data-unlock-decision]').forEach(function(button){button.onclick=async function(){var label=button.dataset.unlockDecision==='approved'?'批准':'拒绝',reason=window.prompt('请输入'+label+'原因：');if(!reason)return;button.disabled=true;try{await api('monthly_cell_unlock_decide',{store:currentStore(),request_id:button.dataset.requestId,decision:button.dataset.unlockDecision,reason:reason});toast(label+'结果已记录');await loadOverview()}catch(error){toast(error.message)}finally{button.disabled=false}}})}}
+  function renderMonthlyAuditControls(keepEditMode,readOnlyGridReady){var report=state.data.monthly_report,locked=Boolean(state.data.monthly_period_was_locked),approved=hasMonthlyApproval(),requests=state.data.monthly_unlock_requests||[],pending=requests.filter(function(row){return row.status==='pending'}),canAdjust=Boolean(state.user.can_adjust_confirmed_finance&&state.user.role==='finance');if(!keepEditMode)state.monthlyEditMode=false;$('monthly-lock-status').textContent=locked?(approved?'本月已锁账 · 已获一次修改授权':'本月已锁账'):'本月未锁账';$('monthly-edit-toggle').textContent=report?(state.monthlyEditMode?'结束编辑':'编辑月报'):'开始填写本月月报';$('monthly-edit-toggle').classList.toggle('hidden',!canAdjust||locked);$('monthly-save-cells').classList.toggle('hidden',!report||!state.monthlyEditMode);$('monthly-unlock-request').classList.toggle('hidden',!canAdjust||!locked||approved||pending.length>0);if(report&&(!readOnlyGridReady||state.monthlyEditMode))renderSheet(report.display_data,false,canAdjust);if(canManageFinanceAccounts()&&pending.length){var panel=document.createElement('div');panel.className='unlock-approval-panel';panel.innerHTML='<strong>待审批的锁账修改申请</strong>'+pending.map(function(row){return'<div class="trace-row"><div><strong>'+esc(userLabel(row.requested_by))+' · '+esc(String(row.period_month||'').slice(0,7))+'</strong><small>'+esc(row.request_reason)+' · '+esc(formatDateTime(row.requested_at))+'</small></div><div class="compact-actions"><button class="secondary" data-unlock-decision="approved" data-request-id="'+esc(row.id)+'">批准一次修改</button><button class="ghost" data-unlock-decision="rejected" data-request-id="'+esc(row.id)+'">拒绝</button></div></div>'}).join('');$('report-state').appendChild(panel);panel.querySelectorAll('[data-unlock-decision]').forEach(function(button){button.onclick=async function(){var label=button.dataset.unlockDecision==='approved'?'批准':'拒绝',reason=window.prompt('请输入'+label+'原因：');if(!reason)return;button.disabled=true;try{await api('monthly_cell_unlock_decide',{store:currentStore(),request_id:button.dataset.requestId,decision:button.dataset.unlockDecision,reason:reason});toast(label+'结果已记录');await loadOverview()}catch(error){toast(error.message)}finally{button.disabled=false}}})}}
   function renderArchive(){var reports=state.data.reports||[];if(!reports.length){$('archive').innerHTML='<div class="empty">当前门店、当前月份暂无财务上传报表。</div>';return}$('archive').innerHTML='<div class="archive-wrap"><table class="archive-table"><thead><tr><th>报表日期</th><th>类型</th><th>原文件</th><th>版本</th><th>上传人</th><th>消费凭证</th><th>上传时间</th><th>操作</th></tr></thead><tbody>'+reports.map(function(r){return'<tr><td>'+esc(r.report_date)+'</td><td>'+esc(reportTypeLabel(r.report_type))+'</td><td>'+esc(r.original_filename)+'</td><td>v'+esc(r.version)+'</td><td>'+esc(userLabel(r.uploaded_by))+'</td><td>'+esc((r.vouchers||[]).length)+' 份</td><td>'+esc(formatDateTime(r.uploaded_at))+'</td><td><button class="ghost" data-open-report="'+esc(r.id)+'">原件</button> <button class="ghost" data-report-lineage="'+esc(r.id)+'">查看关联</button> '+(r.vouchers||[]).map(function(v,i){return'<button class="ghost" data-open-voucher="'+esc(v.id)+'">凭证'+(i+1)+'</button>'}).join(' ')+'</td></tr>'}).join('')+'</tbody></table></div>';bindOpenButtons()}
   var renderAllCore=renderAll;renderAll=function(){renderAllCore();var report=state.data.monthly_report;if(!report||!report.historical)return;var strong=$('report-state').querySelector('strong');if(strong)strong.textContent='历史原表正式账 v'+report.version;var evidenceIds=(report.vouchers||[]).map(function(item){return item.id});document.querySelectorAll('[data-open-voucher]').forEach(function(button){if(evidenceIds.indexOf(button.dataset.openVoucher)>=0){button.dataset.openHistoryFile=button.dataset.openVoucher;button.dataset.historyFileKind='evidence';button.removeAttribute('data-open-voucher')}});document.querySelectorAll('[data-report-lineage="'+report.id+'"]').forEach(function(button){button.classList.add('hidden')});var ack=$('monthly-ack');if(ack)ack.onclick=async function(){ack.disabled=true;try{await api('report_acknowledge',{store:currentStore(),month:$('month').value,monthly_report_id:null});toast('已确认知晓本月经营情况');await loadOverview()}catch(error){toast(error.message)}finally{ack.disabled=false}};bindOpenButtons()};
   var renderHistoricalMonthlyHeaderCore=renderAll;
@@ -1201,7 +1305,7 @@
     if(pettyCashEvidenceModulePromise)return pettyCashEvidenceModulePromise;
     pettyCashEvidenceModulePromise=new Promise(function(resolve,reject){
       var script=document.createElement('script');
-      script.src='operations-petty-cash-evidence.js?v=685';
+      script.src='operations-petty-cash-evidence.js?v=687';
       script.onload=function(){if(window.ZysyrPettyCashEvidenceReady)resolve();else reject(new Error('备用金凭证模块未能初始化'))};
       script.onerror=function(){reject(new Error('备用金凭证功能加载失败，请刷新后重试'))};
       document.head.appendChild(script);
@@ -1333,23 +1437,31 @@
   function loadPrivateLink(operation,payload){var key=privateLinkKey(operation,payload),fresh=freshPrivateLink(operation,payload);if(fresh)return Promise.resolve(fresh.result);var existing=privateLinkCache.get(key);if(existing&&existing.pending)return existing.pending;var entry={expiresAt:0,result:null,pending:null,image:null};entry.pending=api(operation,Object.assign({store:currentStore()},payload)).then(function(result){entry.result=result;entry.expiresAt=Date.now()+Math.max(30,Math.min(Number(result.expires_in||300),240))*1000;entry.pending=null;return result}).catch(function(error){privateLinkCache.delete(key);throw error});privateLinkCache.set(key,entry);return entry.pending}
   function primePrivateLink(operation,payload,preloadImage){return loadPrivateLink(operation,payload).then(function(result){if(preloadImage&&result&&result.url){var entry=privateLinkCache.get(privateLinkKey(operation,payload)),image=new Image();image.decoding='async';image.fetchPriority='low';image.src=result.url;if(entry)entry.image=image}return result}).catch(function(){return null})}
   async function openPrivate(operation,payload){var fresh=freshPrivateLink(operation,payload),target=window.open(fresh&&fresh.result&&fresh.result.url?fresh.result.url:'about:blank','_blank');if(target)target.opener=null;if(fresh)return true;try{var result=await loadPrivateLink(operation,payload);if(target)target.location=result.url;else window.location.href=result.url;return true}catch(error){if(target)target.close();toast(error.message);return false}}
-  async function loadOverview(){
+  async function loadOverview(options){
     if(state.view==='monthly'&&state.monthlySummary&&state.monthlySummary.active)return window.ZysyrMonthlySummary.refresh();
     var store=currentStore(),month=$('month').value,requestId=(state.monthlyLoadRequest||0)+1;
     state.monthlyLoadRequest=requestId;state.monthlyOverviewReady=false;
     $('sync-status').textContent='读取财务上传记录…';
-    if(!monthlyHasUnsaved()){if(window.MonthlyUploadVerification)window.MonthlyUploadVerification.render($('monthly-upload-verification'),null);$('report-state').textContent='月报正在加载，可先使用其他已授权栏目。';$('monthly-sheet').innerHTML='<div class="empty" role="status">正在读取本店本月月报…</div>'}
+    if(!(options&&options.foreground)&&!monthlyHasUnsaved()){if(window.MonthlyUploadVerification)window.MonthlyUploadVerification.render($('monthly-upload-verification'),null);$('report-state').textContent='月报正在加载，可先使用其他已授权栏目。';$('monthly-sheet').innerHTML='<div class="empty" role="status">正在读取本店本月月报…</div>'}
     $('monthly-edit-toggle').disabled=true;$('monthly-save-cells').disabled=true;
     $('monthly-sheet').style.pointerEvents='none';
     var isCurrent=function(){return requestId===state.monthlyLoadRequest&&store===currentStore()&&month===$('month').value&&!(state.view==='monthly'&&state.monthlySummary&&state.monthlySummary.active)};
     try{
-      var data=await api('overview',{store:store,month:month});
+      var data=await readScopedReport('overview',{store:store,month:month},isCurrent,function(){
+        if(state.view==='monthly')$('sync-status').textContent='已找到本机上次查看的月报，正在核对本月最新数据与权限…';
+      });
       if(!isCurrent())return false;
       state.data=data;state.monthlyOverviewReady=true;
+      if(state.view==='monthly')reportSyncMonthlyVisit=JSON.stringify([reportPrincipal(),store,month]);
       state.data.monthly_period_was_locked=Boolean(state.data.monthly_period_locked);
       if(hasMonthlyApproval())state.data.monthly_period_locked=false;
       state.monthlyFreshOverview=true;
-      try{renderAll();renderMonthlyAuditControls(monthlyHasUnsaved())}
+      try{
+        renderAll();
+        // The normal read-only overview already built the final grid. Editing
+        // and pending-cell reconciliation still use their established redraw.
+        renderMonthlyAuditControls(monthlyHasUnsaved(),!state.monthlyEditMode)
+      }
       finally{state.monthlyFreshOverview=false}
       $('sync-status').textContent='已更新 '+beijingTimeNow();
       return true;
@@ -1495,14 +1607,30 @@
     var generation=++dailyOverviewRequest,store=currentStore(),input=$('daily-month'),mainMonth=$('month').value||currentMonthInput();
     if(input.value!==mainMonth)input.value=mainMonth;
     $('daily-report-status').textContent='正在读取本月日报…';
-    if(!background){$('daily-report-detail').classList.add('hidden');$('daily-report-calendar').classList.remove('hidden')}
+    if(!background){$('daily-report-detail').classList.add('hidden');$('daily-report-calendar').classList.remove('hidden');$('daily-report-calendar').textContent='正在读取本店本月日报…'}
+    var lastPreview='';
+    function active(){return generation===dailyOverviewRequest&&currentStore()===store&&$('month').value===mainMonth&&state.view==='daily-report'}
     try{
-      var data=isLocalPreview()?previewDailySheetMonth():await api('daily_sheet_month',{store:store,month:mainMonth});
+      var data=isLocalPreview()?previewDailySheetMonth():await readScopedReport('daily_sheet_month',{store:store,month:mainMonth},active,function(snapshot){
+        lastPreview=calendarPreviewText(snapshot,mainMonth);
+        if(lastPreview&&!detailOpen&&!dailyOpenState)$('daily-report-calendar').textContent=lastPreview;
+      });
       if(generation!==dailyOverviewRequest||currentStore()!==store||$('month').value!==mainMonth||state.view!=='daily-report')return;
       state.dailyReportMonth=data;renderDailyReportCalendar(data);
+      reportSyncCalendarVisit=JSON.stringify([reportPrincipal(),store,mainMonth]);
       $('daily-report-status').textContent='已更新 '+beijingTimeNow();
       return true;
-    }catch(error){if(generation===dailyOverviewRequest&&currentStore()===store&&$('month').value===mainMonth&&state.view==='daily-report'){$('daily-report-status').textContent=error.message;if(!background||!state.dailyReportMonth)$('daily-report-calendar').innerHTML='<div class="empty">'+esc(error.message)+'</div>'}return false}
+    }catch(error){
+      if(active()){
+        $('daily-report-status').textContent=error.message;
+        // The offline fallback is a date-only projection (never an actionable
+        // calendar or a cached zero/amount). No summary survives revocation.
+        var transient=!document.documentElement.classList.contains('report-scope-invalid')&&!reportReadDenied(error)
+          &&(navigator.onLine===false||[408,429,502,503,504].includes(error.status)||['API_NETWORK_FAILED','API_READ_TIMEOUT','STAFF_REPORT_READ_TIMEOUT'].includes(error.code));
+        if(!detailOpen||!background)$('daily-report-calendar').textContent=transient&&lastPreview?lastPreview+' 未能核对最新数据。':error.message;
+      }
+      return false;
+    }
   }
   function dailyArchivePresence(value){return window.ZysyrDailyOriginalDisplay?window.ZysyrDailyOriginalDisplay.presence(value):{state:value?'unavailable':'legacy',count:null}}
   function dailyArchiveLabel(status){return status==='confirmed'?'原图已存档':'原图已存档 · 待核对'}
@@ -1569,7 +1697,9 @@
       }
       var sheet=preview?previewDailySheetData():empty
         ?await api('daily_sheet_create',{store:scope.store,report_date:date,voucher_id:null,reason:'从日报月历创建当天电子日报'})
-        :await api('daily_sheet_read',{store:scope.store,draft_id:draftId});
+        :await readScopedReport('daily_sheet_read',{store:scope.store,draft_id:draftId},current,function(){
+          feedback.message='已找到 '+date+' 的本机记录，正在联网核对日报和原图…';renderDailyOpenFeedback();
+        });
       if(!current())return;
       if(preview){
         if(empty){
@@ -1819,7 +1949,7 @@ function calculateDailyControls(root,cardSalesCheck){
   $('daily-save').addEventListener('click',async function(){if(!state.imports.sheet||dailySheetDirtyCount()===0)return;var button=this;button.disabled=true;try{await saveDailySheetDirty(null,'人工填写已保存并重新校验')}catch(error){toast(error.message)}finally{button.disabled=false}});
   $('daily-save-top').addEventListener('click',async function(){if(!state.imports.sheet||dailySheetDirtyCount()===0)return;var button=this;button.disabled=true;try{await saveDailySheetDirty(null,'人工填写已保存并重新校验')}catch(error){toast(error.message)}finally{button.disabled=false}});
   window.addEventListener('beforeunload',function(event){if(state.imports.sheet&&dailySheetDirtyCount()>0){event.preventDefault();event.returnValue=''}});
-  window.addEventListener('pagehide',function(){var draft=state.imports.sheet&&state.imports.sheet.draft;if(!draft||draft.status!=='draft'||dailySheetDirtyCount()===0||isLocalPreview()||String(draft.id).indexOf('preview')===0)return;var cells=collectDailySheetCells();if(!cells.length)return;var headers={'Content-Type':'application/json','apikey':SUPABASE_KEY},token=authAccessToken();if(token)headers.Authorization='Bearer '+token;try{fetch(API,{method:'POST',headers:headers,keepalive:true,body:JSON.stringify(Object.assign({operation:'daily_sheet_save',session_token:state.session,store:currentStore(),draft_id:draft.id,expected_revision:Number(draft.edit_revision),cells:cells,reason:'离开页面时尽力自动保存人工填写'}))})}catch(error){}});
+  window.addEventListener('pagehide',function(){if(document.documentElement.classList.contains('report-scope-invalid'))return;var draft=state.imports.sheet&&state.imports.sheet.draft;if(!draft||draft.status!=='draft'||dailySheetDirtyCount()===0||isLocalPreview()||String(draft.id).indexOf('preview')===0)return;var cells=collectDailySheetCells();if(!cells.length)return;var headers={'Content-Type':'application/json','apikey':SUPABASE_KEY},token=authAccessToken();if(token)headers.Authorization='Bearer '+token;try{fetch(API,{method:'POST',headers:headers,keepalive:true,body:JSON.stringify(Object.assign({operation:'daily_sheet_save',session_token:state.session,store:currentStore(),draft_id:draft.id,expected_revision:Number(draft.edit_revision),cells:cells,reason:'离开页面时尽力自动保存人工填写'}))})}catch(error){}});
   $('daily-reviewed-all').addEventListener('change',function(){state.imports.reviewed=this.checked;renderDailyControls()});
   $('daily-zoom-out').addEventListener('click',function(){setDailyZoom(state.imports.zoom-.2)});$('daily-zoom-reset').addEventListener('click',function(){setDailyZoom(1)});$('daily-zoom-in').addEventListener('click',function(){setDailyZoom(state.imports.zoom+.2)});
   $('daily-confirm').addEventListener('click',async function(){if(!state.imports.sheet||this.disabled)return;if(!confirm('确认已经逐格对照原图并全部人工填写正确？确认后将生成不可变版本、正式日报和收入明细，不能直接覆盖。'))return;var button=this,mode=$('import-business-day').value;button.disabled=true;try{var draft=state.imports.sheet.draft;var result=await api('daily_sheet_confirm',{store:currentStore(),draft_id:draft.id,expected_revision:Number(draft.edit_revision),is_business_day:mode==='auto'?null:mode==='yes',reviewed_all:true,reason:$('import-reason').value||'财务对照原图逐格人工填写并最终确认'});state.imports.sheet=await api('daily_sheet_get',{store:currentStore(),draft_id:draft.id});state.imports.dirty={};renderDailySheet();await loadImportCenter();$('import-result').textContent='最终确认完成：人工填写值、独立校验、来源单元格、正式日报、收入明细和原图凭证已固化。';toast('人工电子日报已最终确认并入账')}catch(error){toast(error.message)}finally{button.disabled=false}});
@@ -1981,6 +2111,8 @@ function calculateDailyControls(root,cardSalesCheck){
   function previewCatalogData(){return{company_id:'preview-company',store_id:'preview-store',store:'太合中心店',employees:[{id:'preview-employee-1',employee_code:'01',name:'无名',position:'发型师',level:'总监',join_date:'2022-05-01',leave_date:null,employment_status:'active'}],service_items:[{id:'preview-service-1',name:'剪发',category:'美发服务',status:'active'}],products:[{id:'preview-product-1',name:'卡诗洗发水',category:'洗护',unit:'瓶',default_cost:138.5,status:'active'}],suppliers:[{id:'preview-supplier-1',name:'卡诗供应商',category:'洗护产品',contact:'财务登记联系方式',status:'active'}],stores:[{id:'preview-store',name:'太合中心店',code:'taihe',city:'上海',address:'原门店地址',status:'active',manager_employee_id:null}]}}
   function previewVoucherData(){var uploader={display_name:'财务 张敏',login_name:'finance.zhang'},report={id:'preview-daily-01',report_type:'daily',report_date:$('month').value+'-01',version:1,original_filename:'太合中心店日报表.xlsx'},performance={id:'preview-performance-01',report_type:'performance',report_date:$('month').value+'-01',version:1,original_filename:'太合中心店员工业绩表.xlsx'};return{can_upload:state.user.role==='finance',can_review:state.user.role==='finance',ocr_provider_configured:false,reports:[report,performance],vouchers:[{id:'preview-center-voucher',record_type:'report',record_id:report.id,original_filename:'4月1日采购送货单.jpg',mime_type:'image/jpeg',size_bytes:348221,note:'采购资料',sha256:'preview',ocr_status:'processing',audit_status:'pending',document_type:'purchase',uploaded_by:uploader,uploaded_at:new Date().toISOString(),latest_ocr_task:{provider:'PaddleOCR',status:'succeeded',candidate_fields:{document_date:'2026-04-01',amount:'1137.50',counterparty:'卡诗供应商',document_number:'PO-0401'},field_confidences:{document_date:.96,amount:.72,counterparty:.88,document_number:.61}},latest_review:null,links:[{business_type:'report_upload',business_id:report.id},{business_type:'report_upload',business_id:performance.id}]}]}}
   function startLocalPreview(){
+    if(!isLocalPreview()||StaffReportView.enabled)return;
+    reportLocalDemo=true;
     var params=new URLSearchParams(location.search),role=params.get('role')||'shareholder',finance=role==='finance',employee=role==='employee',admin=!finance&&!employee&&params.get('admin')!=='0',previewStore=(params.get('store')||'太合中心店').slice(0,60),uploader={display_name:'财务 张敏',login_name:'finance.zhang'},daily={id:'preview-daily-01',report_type:'daily',report_date:$('month').value+'-01',version:1,original_filename:previewStore+'日报表.xlsx',uploaded_at:new Date().toISOString(),uploaded_by:uploader,vouchers:[{id:'preview-daily-voucher',original_filename:'8月1日消费凭证.pdf'}]},dailyCells=[{id:'preview-source-F18',cell_address:'F18',row_number:18,column_number:6,cell_kind:'input',display_value:'268256.55',numeric_value:268256.55,label:'当日美发收入'}],monthly=previewFilledMonthly();
     state.user={username:'本地预览',role:role,role_label:finance?'财务':employee?'员工':'股东',stores:[previewStore],store:'',can_upload_reports:finance,can_import_photo_reports:finance,can_upload_vouchers:finance,can_read_daily_reports:!employee,can_review_vouchers:finance,can_manage_finance_workbench:finance,can_review_expenses:finance,can_confirm_payments:finance,can_lock_reports:finance,can_adjust_confirmed_finance:finance,can_read_salary:true,can_read_petty_cash_reports:!employee,can_manage_payroll:finance,can_view_personal_payroll:employee,can_read_ai_analysis:!employee,can_create_question:!finance&&!employee,can_respond_question:finance,personal_scope:employee,can_manage_finance_accounts:admin,can_manage_workforce_accounts:admin,can_manage_service_items:finance,can_manage_inventory_catalog:finance,can_manage_employees:finance,can_manage_stores:admin};
     if(admin)state.auth={session:{},scope:{capabilities:[{code:'finance_account.create',scopes:[{type:'company'}]},{code:'workforce_account.create',scopes:[{type:'company'}]}],stores:[{id:'preview-store',company_id:'preview-company',name:previewStore,status:'active'}]}};
@@ -2024,7 +2156,7 @@ function calculateDailyControls(root,cardSalesCheck){
     $('monthly-save-cells').addEventListener('click',function(){if(window.ZysyrMonthlySave)window.ZysyrMonthlySave.submit();else toast('保存功能尚未加载，修改仍保留在本页。')});
     $('monthly-unlock-request').addEventListener('click',async function(){var reason=window.prompt('请输入申请修改锁账月份的原因：');if(!reason)return;var button=this;button.disabled=true;try{if(isLocalPreview()){toast('本地预览不写入数据库');return}await api('monthly_cell_unlock_request',{store:currentStore(),month:$('month').value,reason:reason});toast('申请已提交，等待公司管理员审批');await loadOverview()}catch(error){toast(error.message)}finally{button.disabled=false}});
 
-  async function maintainSession(){if(StaffReportView.enabled){try{state.user=(await api('session')).user;refreshRoleEntries()}catch(e){StaffReportView.blocked(e.message)}return}if(document.hidden)return;if(!state.user){scheduleSessionRestore();return}if(!state.auth||!authBridge.ensureFresh)return;try{var fresh=await authBridge.ensureFresh();if(fresh){state.auth=fresh;reconnectDelay=3000}}catch(error){if(isSessionInvalidError(error))showLogin(error.message);else showLoginSoft('网络不稳定，登录状态已保留并会自动恢复')}}
+  async function maintainSession(){if(StaffReportView.enabled){try{state.user=(await api('session')).user;refreshRoleEntries()}catch(e){if(reportReadDenied(e))clearReportSync();StaffReportView.blocked(e.message)}return}if(document.hidden)return;if(!state.user){scheduleSessionRestore();return}if(!state.auth||!authBridge.ensureFresh)return;try{var fresh=await authBridge.ensureFresh();if(fresh){state.auth=fresh;reconnectDelay=3000}}catch(error){if(isSessionInvalidError(error))showLogin(error.message);else showLoginSoft('网络不稳定，登录状态已保留并会自动恢复')}}
   ['store-select','month'].forEach(function(id){$(id).addEventListener('change',function(event){if(!monthlyHasUnsaved()&&!state.monthlySaving)return;var scope=state.monthlyDirtyScope||state.monthlySaving||{},label=id==='month'?'切换月份':'切换门店';if(confirmMonthlyDiscard(label))return;this.value=id==='month'?(scope.month||this.value):(scope.store||this.value);event.stopImmediatePropagation()},true)});
   $('refresh').addEventListener('click',refreshCurrentView);$('store-select').addEventListener('change',function(){closeMonthlyWorkbench();refreshCurrentView()});$('month').addEventListener('change',function(){closeMonthlyWorkbench();$('report-month').value=$('month').value;refreshCurrentView()});setDefaultDates();updateReportDateField();updateFinanceStoreField();var initialSessionRestore=restoreSession();setInterval(maintainSession,20*60*1000);window.addEventListener('online',maintainSession);document.addEventListener('visibilitychange',function(){if(!document.hidden)maintainSession()});
   var renderCellTraceBase=renderCellTrace;
@@ -2033,21 +2165,23 @@ function calculateDailyControls(root,cardSalesCheck){
   salaryInputCell=function(field,row,readonly){if(field.kind==='employee'&&readonly&&row.historical)return'<td class="salary-employee-name">'+esc(row.employee_name||'—')+'</td>';return salaryInputCellBase(field,row,readonly)};
   $('daily-detail-archive').addEventListener('click',function(){var sheet=state.imports.sheet;if(!sheet||!sheet.draft)return;if(window.ZysyrDailyBatchUpload&&window.ZysyrDailyBatchUpload.openArchive)window.ZysyrDailyBatchUpload.openArchive(sheet.draft.report_date);else toast('原图存档功能尚未加载，请稍后重试');});
   </script>
-  <script src="operations-voucher-ai-settings.js?v=685"></script>
-  <script src="operations-daily-review.js?v=685"></script>
-  <script src="operations-daily-correction.js?v=685"></script>
-  <script src="operations-daily-electronic.js?v=685"></script>
-  <script src="operations-monthly-workbench.js?v=685"></script>
-  <script src="operations-daily-recognition.js?v=685"></script>
-  <script src="operations-daily-batch-upload.js?v=685"></script>
-<script src="operations-daily-history.js?v=685"></script>
-<link rel="stylesheet" href="operations-monthly-review.css?v=685">
-<script src="operations-monthly-review.js?v=685"></script>
-<script src="operations-monthly-save.js?v=685"></script>
-<script src="operations-monthly-source-archive.js?v=685"></script>
-<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=685"></script>
+  <script src="operations-voucher-ai-settings.js?v=687"></script>
+  <script src="operations-daily-review.js?v=687"></script>
+  <script src="operations-daily-correction.js?v=687"></script>
+  <script src="operations-daily-electronic.js?v=687"></script>
+  <script src="operations-monthly-workbench.js?v=687"></script>
+  <script src="operations-daily-recognition.js?v=687"></script>
+  <script src="operations-daily-batch-upload.js?v=687"></script>
+<script src="operations-daily-history.js?v=687"></script>
+<link rel="stylesheet" href="operations-monthly-review.css?v=687">
+<script src="operations-monthly-review.js?v=687"></script>
+<script src="operations-monthly-save.js?v=687"></script>
+<script src="operations-monthly-source-archive.js?v=687"></script>
+<script data-optional-display="report-source-review" src="operations-report-source-review.js?v=687"></script>
 <script data-startup>Promise.resolve(initialSessionRestore).then(window.ZysyrStartup.finish,window.ZysyrStartup.failed);</script>
-<script defer src="data-read-client.js?v=685"></script>
-<script defer src="app-shell-client.js?v=685"></script>
+<script defer src="data-read-client.js?v=687"></script>
+<script defer src="scoped-read-codec.js?v=687"></script>
+<script defer src="scoped-read-sync.js?v=687"></script>
+<script defer src="app-shell-client.js?v=687"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { CustomerDesignError, handleCustomerDesign, isCustomerDesignOperation } from "../_shared/customer-design-archive.ts";
 import { mergeEmployeeBookingRows } from "../_shared/employee-booking-merge.mjs";
+import { encodeReadSync } from "../_shared/read-sync.mjs";
 import { customerProfileStoreFilter, scopeCustomerProfile, customerReadStores, customerIdentityRows, scopeCustomerHairRecords, customerHairPhoneFilter, customerHairIdentityRows } from "../_shared/customer-profile-scope.mjs";
 
 type JsonRecord = Record<string, unknown>;
@@ -243,7 +244,10 @@ Deno.serve(async (request: Request) => {
     if (operation === "logout") return json(await employeeLogout(payload));
     const session = await requireEmployeeSession(payload);
     if (operation === "session") return json({ user: session, expires_at: session.expires_at });
-    if (operation === "today_bookings") return json(await todayBookings(payload, session));
+    if (operation === "today_bookings") {
+      const result = await todayBookings(payload, session);
+      return json(payload.read_sync ? await encodeReadSync(payload.read_sync, result) : result);
+    }
     if (operation === "customer_profiles") return json(await customerProfiles(payload, session));
     if (operation === "customer_history") return json(await customerHistory(payload, session));
     if (operation === "customer_hair_records") return json(await customerHairRecords(payload, session));

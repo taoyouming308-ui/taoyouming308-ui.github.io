@@ -28,16 +28,32 @@ for (const entry of ['perm-app.html', 'frontdesk.html', 'operations.html']) {
       let release;
       const barrier = new Promise(resolve => { release = resolve; });
       let navigations = 0;
-      let showcaseReads = 0;
+      let showcaseReads = 0, carouselReads = 0;
+      const employee = {username:'synthetic-stylist',store:'synthetic-store',position:'发型师'};
+      if(mode==='script-delay') await page.addInitScript(user=>{
+        localStorage.setItem('booking-session',JSON.stringify({...user,session_token:'synthetic-session-only',loggedAt:Date.now()}));
+      }, employee);
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));
       try {
         await page.route('**/*', async route => {
           const url = new URL(route.request().url());
           if (url.origin !== origin) {
+            if(mode==='script-delay' && route.request().method()==='POST'){
+              const op=route.request().postDataJSON().operation;
+              if(url.pathname==='/functions/v1/employee-bookings-api' && op==='session') return route.fulfill({json:{user:employee}});
+              if(url.pathname==='/functions/v1/staff-access-api' && op==='report_access') return route.fulfill({json:{enabled:false}});
+              if(url.pathname==='/functions/v1/aesthetic-study' && op==='bootstrap') return route.fulfill({status:503,json:{error:'synthetic unavailable'}});
+            }
             assert.equal(route.request().method(), 'GET', 'startup must not submit external writes');
-            if (url.pathname === '/rest/v1/showcase_images' && (url.searchParams.get('select') || '').startsWith('id,')) {
-              showcaseReads++;
+            if (url.pathname === '/rest/v1/showcase_images') {
+              if(url.searchParams.get('is_carousel')==='eq.true'){
+                assert.equal(url.searchParams.get('limit'),'3','home loads only the carousel');
+                carouselReads++;
+              } else {
+                assert.equal(url.searchParams.get('limit'),'100','full gallery is a separate read');
+                showcaseReads++;
+              }
               return route.fulfill({ json: [] });
             }
             return route.fulfill({ status: 503, json: { error: 'synthetic unavailable' } });
@@ -62,6 +78,7 @@ for (const entry of ['perm-app.html', 'frontdesk.html', 'operations.html']) {
           await page.waitForTimeout(2200);
           assert.deepEqual(errors, [], 'slow scripts must not run showcase before API config exists');
           assert.equal(showcaseReads, 0, 'no showcase read before main initialization');
+          assert.equal(carouselReads, 0, 'no carousel read before main initialization');
           release();
         } else if (mode === 'delay') {
           await page.locator('#app-startup').waitFor({ state: 'visible' });
@@ -86,7 +103,16 @@ for (const entry of ['perm-app.html', 'frontdesk.html', 'operations.html']) {
           if (mode === 'script-delay') {
             await page.waitForTimeout(1700);
             assert.deepEqual(errors, []);
-            assert.equal(showcaseReads, 1, 'showcase starts once after initialization');
+            assert.equal(carouselReads, 1, 'home requests the lightweight carousel once');
+            assert.equal(showcaseReads, 0, 'home never prefetches the full gallery');
+            const gallery = page.waitForRequest(req=>{
+              const u=new URL(req.url());return u.pathname==='/rest/v1/showcase_images'&&u.searchParams.get('limit')==='100';
+            });
+            await page.locator('#home-page .carousel-box').click();
+            await gallery;
+            await page.locator('#tab-showcase.active').waitFor();
+            assert.equal(showcaseReads, 1, 'actual gallery entry triggers exactly one list read');
+            assert.equal(carouselReads, 1, 'opening gallery does not reread home carousel');
           }
         }
         assert.equal(navigations, 1, 'no automatic reload');
