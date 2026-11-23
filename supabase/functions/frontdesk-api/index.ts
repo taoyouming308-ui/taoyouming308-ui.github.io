@@ -623,6 +623,36 @@ function selectCustomerRows(
   return matches.filter((row) => comparable && comparableCustomerName(row[nameField]) === comparable);
 }
 
+// For modern clients do not transfer the old inline photo blobs, even between the
+// DB and Edge. Preserve every legacy identity/store fallback needed by the original filters.
+const hairBaseColumns = 'id,customer_name,customer_phone,technician,barber,status,created_at';
+const hairOutlineKeys = ['shopName','shop_name','store','customerPhone','customerPhoneNormalized','customerName','visitDate','bookingDate','date','technician','barber'];
+const hairOutlineColumns = hairBaseColumns + ',' + hairOutlineKeys.map(key => 'hdr_'+key+':record_data->>'+key).join(',')+
+  ',hdr_form_phone:record_data->formFields->>hair-form-phone,hdr_form_name:record_data->formFields->>hair-form-name';
+async function hairOutlines(phone: string): Promise<JsonRecord[]> {
+  const rows=await readCustomerPages(`hair_records?select=${hairOutlineColumns}&status=neq.deleted&${customerHairPhoneFilter(phone)}&order=created_at.desc,id.asc`);
+  return rows.map(row=>{
+    const data:JsonRecord={formFields:{'hair-form-phone':row.hdr_form_phone,'hair-form-name':row.hdr_form_name}};
+    for(const key of hairOutlineKeys)data[key]=row['hdr_'+key];
+    return {id:row.id,customer_name:row.customer_name,customer_phone:row.customer_phone,technician:row.technician,barber:row.barber,status:row.status,created_at:row.created_at,record_data:data,archive_deferred:true};
+  });
+}
+function permittedHair(rows: JsonRecord[],phone: string,name: string,store: string,scope: string): JsonRecord[] {
+  return scopeCustomerHairRecords(customerHairIdentityRows(rows,phone,name),store,scope);
+}
+async function customerArchiveBody(id: string,phone: string,name: string,store: string,scope: string): Promise<JsonRecord> {
+  const unavailable='该档案不可用或已变更，请返回客户资料重新核对。';
+  if(phone.length<11||!/^[a-zA-Z0-9_-]{1,80}$/.test(id))throw new Error(unavailable);
+  const family=await hairOutlines(phone);
+  if(!permittedHair(family,phone,name,store,scope).some(row=>String(row.id)===id))throw new Error(unavailable);
+  const rows=await restRows(`hair_records?select=${hairBaseColumns},record_data&id=eq.${encodeURIComponent(id)}&status=neq.deleted&${customerHairPhoneFilter(phone)}&limit=1`);
+  if(rows.length!==1||String(rows[0].id)!==id)throw new Error(unavailable);
+  // Re-check the actual row (which may have moved, changed name, or been deleted)
+  // together with the other family identities, not in isolation.
+  const matched=permittedHair(family.filter(row=>String(row.id)!==id).concat(rows),phone,name,store,scope).find(row=>String(row.id)===id);
+  if(!matched||!matched.record_data||typeof matched.record_data!=='object')throw new Error(unavailable);
+  return {store,customer_scope:scope,read_only:true,archive_id:id,archive_projection:'body-v1',record_data:matched.record_data};
+}
 async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
   const store = selectedStore(session, payload);
   if (!store) throw new Error("请先选择分店");
@@ -631,6 +661,8 @@ async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise
   const phone = cleanPhone(payload.phone);
   const name = cleanText(payload.name, 160);
   if (!phone && !name) throw new Error("缺少客户信息");
+  if(payload.archive_projection==='body-v1')return customerArchiveBody(String(payload.archive_id||''),phone,name,store,scope);
+  const outline=payload.archive_projection==='outline-v1';
   const profileFilter = phone
     ? `phone=ilike.${encodeURIComponent(`*${phone}*`)}`
     : `name=eq.${encodeURIComponent(name)}`;
@@ -647,12 +679,12 @@ async function customerDetail(payload: JsonRecord, session: JsonRecord): Promise
     fullIdentity || profileId ? restRows(`customer_profiles?select=*&${fullIdentity ? profileFilter : 'id=eq.' + profileId}&${customerProfileStoreFilter(store, scope)}&order=last_visit_date.desc.nullslast&limit=200`) : Promise.resolve([]),
     fullIdentity ? readCustomerPages(`mgj_service_records?select=source_id,bill_no,customer_phone,customer_name,shop_name,service_date,service_time,staff,items,service_types,amount,synced_at&${serviceFilter}&${customerRecordsStoreFilter('shop_name', store, scope)}&order=service_date.desc,service_time.desc,source_id.asc`) : Promise.resolve([]),
     fullIdentity || importId ? readCustomerPages(`frontdesk_import_records?select=id,customer_phone,customer_name,visit_date,coupon_code,service_items,barber_name,technician_name,assistant_name,amount,payment_summary,package_note,store,source_file&${fullIdentity ? importedFilter : 'id=eq.' + importId}&${customerRecordsStoreFilter('store', store, scope)}&order=visit_date.desc,id.asc`) : Promise.resolve([]),
-    fullIdentity ? readCustomerPages(`hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&${customerHairPhoneFilter(phone)}&order=created_at.desc,id.asc`) : Promise.resolve([]),
+    fullIdentity ? (outline ? hairOutlines(phone) : readCustomerPages(`hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&${customerHairPhoneFilter(phone)}&order=created_at.desc,id.asc`)) : Promise.resolve([]),
   ]);
   const profiles: JsonRecord[] = (fullIdentity ? customerIdentityRows(profileRows, phone, name) : profileRows).map((row: JsonRecord) => scopeCustomerProfile(row, store, scope)).filter(Boolean);
   const live = customerIdentityRows(liveRows, phone, name, "customer_phone", "customer_name");
   const imported: JsonRecord[] = fullIdentity ? customerIdentityRows(importedRows, phone, name, "customer_phone", "customer_name") : importedRows;
-  const hair = scopeCustomerHairRecords(customerHairIdentityRows(hairRows, phone, name), store, scope);
+  const hair = permittedHair(hairRows,phone,name,store,scope);
   const history = historyFromProfiles(profiles, store, scope);
   for (const row of live) {
     history.push({

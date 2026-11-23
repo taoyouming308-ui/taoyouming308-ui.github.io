@@ -24,6 +24,10 @@
   var batchLoadGeneration = 0;
   var batchUploadSummaryText = '';
   var batchUploadSummaryKey = '';
+  if(window.addEventListener)window.addEventListener('zysyr:report-session-ended',function(){
+    clearTimeout(batchPollTimer);batchLoadGeneration++;batchStatusData=null;batchStatusKey='';
+    batchDrafts={};batchDirtyFields={};batchUploadSummaryText='';batchUploadSummaryKey='';
+  });
 
   function styleOnce() {
     if (document.getElementById('petty-evidence-style')) return;
@@ -472,7 +476,9 @@
 
   async function loadBatchStatus(batchId) {
     var panel = document.getElementById('petty-batch-panel');
-    if (!panel) return;
+    if (!panel || state.view!=='finance-workbench') return;
+    var navigation=state.reportNavigation||0;
+    function onPage(){return state.view==='finance-workbench'&&navigation===(state.reportNavigation||0)&&!document.documentElement.classList.contains('report-scope-invalid');}
     var generation = ++batchLoadGeneration;
     var scopeKey = currentBatchKey();
     var sessionKey = (window.ZysyrPettyScopeIdentity ? window.ZysyrPettyScopeIdentity() : JSON.stringify([state.session,state.user&&state.user.username]));
@@ -488,19 +494,19 @@
     try {
       var readPayload={store:currentStore(),month:month,batch_id:batchId||null};
       var data = await (expenseWorkspace()?window.ZysyrExpenseVoucherWorkspace.read(readPayload):api('petty_cash_batch_status',readPayload));
-      if (generation !== batchLoadGeneration || scopeKey !== currentBatchKey() || sessionKey !== (window.ZysyrPettyScopeIdentity ? window.ZysyrPettyScopeIdentity() : JSON.stringify([state.session,state.user&&state.user.username])) || !document.getElementById('petty-batch-panel')) return;
+      if (!onPage() || generation !== batchLoadGeneration || scopeKey !== currentBatchKey() || sessionKey !== (window.ZysyrPettyScopeIdentity ? window.ZysyrPettyScopeIdentity() : JSON.stringify([state.session,state.user&&state.user.username])) || !document.getElementById('petty-batch-panel')) return;
       batchStatusData = data;
       batchStatusKey = currentBatchKey();
       renderBatchStatus(data);
       scheduleBatchPoll(data);
       if(expenseWorkspace()){
-        var stillCurrent=function(){return generation===batchLoadGeneration&&scopeKey===currentBatchKey();};
+        var stillCurrent=function(){return onPage()&&generation===batchLoadGeneration&&scopeKey===currentBatchKey();};
         try{var matched=await window.ZysyrExpenseVoucherWorkspace.autoMatch(automaticWorkspaceData(data),readPayload,stillCurrent,function(id){return Object.keys(batchDirtyFields[id]||{}).length>0;},false);
           if(matched&&stillCurrent())loadBatchStatus(batchId);
         }catch(e){if(stillCurrent()&&status)status.textContent='自动匹配结果暂未确认：'+e.message+'。原件保留，请刷新核验。';}
       }
     } catch (error) {
-      if(generation !== batchLoadGeneration || scopeKey !== currentBatchKey() || sessionKey !== (window.ZysyrPettyScopeIdentity ? window.ZysyrPettyScopeIdentity() : JSON.stringify([state.session,state.user&&state.user.username])))return;
+      if(!onPage() || generation !== batchLoadGeneration || scopeKey !== currentBatchKey() || sessionKey !== (window.ZysyrPettyScopeIdentity ? window.ZysyrPettyScopeIdentity() : JSON.stringify([state.session,state.user&&state.user.username])))return;
       if (status) status.textContent = '批量凭证状态读取失败：' + error.message + '。原件及手工填写保留，可刷新重试。';
       if(batchStatusData && batchStatusKey===scopeKey)scheduleBatchPoll(batchStatusData);
     }

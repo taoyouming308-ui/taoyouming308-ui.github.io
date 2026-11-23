@@ -2,8 +2,8 @@
 // Example: BENCH_BASE=/path/to/v686-baseline node scripts/test-scoped-read-benchmark.cjs
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const {chromium}=require('playwright');
-if(!process.env.BENCH_BASE)throw Error('Set BENCH_BASE to a separate checkout of the v686 baseline (584915f4).');
+const {chromium,webkit}=require('playwright');
+if(!process.env.BENCH_BASE)throw Error('Set BENCH_BASE to a separate snapshot of the release being compared.');
 const root=path.resolve(__dirname,'..'),base=path.resolve(process.env.BENCH_BASE);
 const origin='http://127.0.0.1:43857',delay=Number(process.env.BENCH_RTT||160),bps=256*1024,reps=Number(process.env.BENCH_REPS||3);
 const wait=ms=>new Promise(r=>setTimeout(r,ms)),expires='2099-01-01T00:00:00Z';
@@ -56,8 +56,8 @@ async function scenario(browser,dir,variant,app,overview,trial,extra=false){
  const json=JSON.stringify(answer);q.rx=Buffer.byteLength(json);await wait(delay+1000*(q.tx+q.rx)/bps);
  q.done=true;await r.fulfill({status,contentType:'application/json',body:json}).catch(()=>{});
  });
- await ctx.addInitScript(({app,c,token,expires,employee,front,variant})=>{
- if(variant==='candidate')sessionStorage.setItem('zysyr-scoped-read-preview','1');
+ await ctx.addInitScript(({app,c,token,expires,employee,front,variant,normalEntry})=>{
+ if(variant==='candidate'&&!normalEntry)sessionStorage.setItem('zysyr-scoped-read-preview','1');
  if(!localStorage.getItem('bench-initialized')){
    if(app==='frontdesk')localStorage.setItem('zysyr-frontdesk-session-v1',JSON.stringify({user:front,session_token:token,expires_at:expires}));
    else localStorage.setItem('booking-session',JSON.stringify({...employee,session_token:token,loggedAt:Date.now(),expires_at:expires}));
@@ -73,7 +73,7 @@ async function scenario(browser,dir,variant,app,overview,trial,extra=false){
  const fetch0=window.fetch;window.fetch=async function(input,options){const res=await fetch0.apply(this,arguments);
  let op;try{op=JSON.parse(options?.body||'{}').operation}catch{}if(op===window.BM.op&&res.ok){const m=window.BM; m.verifiedAt=now()-m.start||1;}
  return res;};
- },{app,c,token,expires,employee,front,variant});
+ },{app,c,token,expires,employee,front,variant,normalEntry:process.env.BENCH_NORMAL_ENTRY==='1'});
  const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));const url=origin+'/'+c.path;
  try{
  for(const phase of ['cold','repeat','reopen']){
@@ -126,7 +126,7 @@ async function scenario(browser,dir,variant,app,overview,trial,extra=false){
  assert.deepEqual(unexpected,[]);assert.deepEqual(errors,[]);return out;
  }catch(e){console.error({variant,app,calls,errors,unexpected,body:(await page.locator('body').innerText().catch(()=>'' )).slice(-1200)});throw e}finally{await ctx.close()}
 }
-(async()=>{const browser=await chromium.launch({headless:true,...(process.platform==='darwin'?{channel:'chrome'}:{})});try{
+(async()=>{const useWebKit=process.env.STARTUP_BROWSER==='webkit';const browser=await (useWebKit?webkit:chromium).launch({headless:true,...(!useWebKit&&process.platform==='darwin'?{channel:'chrome'}:{})});try{
  const overview=await fixtures(browser),samples=[];
  for(let trial=1;trial<=reps;trial++)for(const app of items.filter(x=>!process.env.BENCH_APP||x===process.env.BENCH_APP))for(const variant of (trial%2?['baseline','candidate']:['candidate','baseline'])){
    const out=await scenario(browser,variant==='baseline'?base:root,variant,app,overview,trial,trial===1&&variant==='candidate');samples.push(...out);console.error('done',app,variant,trial);

@@ -185,13 +185,94 @@ async function customerHairRecords(payload: JsonRecord, session: JsonRecord): Pr
   customerReadStores(store, scope);
   const phone = cleanText(payload.phone, 60).replace(/\D/g, '').replace(/^86(?=1\d{10}$)/, '');
   if (phone.length < 11) return { rows: [], identity_warning: '缺少完整手机号，暂不跨档案关联，避免同名客户混淆。', read_only: true };
+  const view = payload.read_view === 'index' || payload.read_view === 'record' ? payload.read_view : '';
+  const fullFields = 'id,customer_name,customer_phone,technician,barber,status,record_data,created_at';
+  // These paths also cover the legacy identity/store and booking-date fallbacks.
+  // Never transmit photos, technique notes or the full form for a list of visits.
+  const keys = ['id','seq','customerName','name','customerPhone','phone','customerPhoneNormalized','shopName','shop_name','store','bookingId','booking_id','bookingDate','booking_date','visitDate','date','createdAt','created_at','technician','barber','serviceType','targetColor','tone','toneOther','developer'];
+  const paths = [...keys.map(k=>`h_${k}:record_data->${k}`),
+    'h_form_phone:record_data->formFields->hair-form-phone','h_form_name:record_data->formFields->hair-form-name',
+    ...['root','mid','end'].map(k=>`h_level_${k}:record_data->threeSection->${k}->level`)];
+  const fields = view ? ['id,customer_name,customer_phone,technician,barber,status,created_at',...paths].join(',') : fullFields;
+  const phoneFilter = customerHairPhoneFilter(phone);
   const rows: JsonRecord[] = [];
   for (let offset = 0; ; offset += 500) {
-    const page = await restRows(`hair_records?select=id,customer_name,customer_phone,technician,barber,status,record_data,created_at&status=neq.deleted&${customerHairPhoneFilter(phone)}&order=created_at.desc,id.asc&limit=500&offset=${offset}`);
-    rows.push(...page);
+    const page = await restRows(`hair_records?select=${fields}&status=neq.deleted&${phoneFilter}&order=created_at.desc,id.asc&limit=500&offset=${offset}`);
+    for (const row of page) {
+      if (!view) { rows.push(row); continue; }
+      const bits: JsonRecord = {};
+      for (const key of keys) if (row['h_'+key] != null) bits[key]=row['h_'+key];
+      bits.formFields = {'hair-form-phone':row.h_form_phone,'hair-form-name':row.h_form_name};
+      if (['root','mid','end'].every(k=>row['h_level_'+k]!=null)) {
+        bits.threeSection = Object.fromEntries(['root','mid','end'].map(k=>[k,{level:row['h_level_'+k]}]));
+      }
+      rows.push({id:row.id,customer_name:row.customer_name,customer_phone:row.customer_phone,created_at:row.created_at,
+        technician:row.technician,barber:row.barber,status:row.status,record_data:bits});
+    }
     if (page.length < 500) break;
   }
-  return { rows: scopeCustomerHairRecords(customerHairIdentityRows(rows, phone, payload.name), store, scope), customer_scope: scope, read_only: true };
+  const identified = customerHairIdentityRows(rows, phone, payload.name);
+  const visible = scopeCustomerHairRecords(identified, store, scope);
+  if (view !== 'record') return {rows:visible,...(view ? {read_view:view,...(rows.length && !identified.length ? {identity_warning:'无法核实所选顾客身份，请核对后再查看。'} : {})} : {}),customer_scope:scope,read_only:true};
+  const selected = visible.find((r:JsonRecord)=>String(r.id)===String(payload.record_id));
+  if (!selected) return {rows:[],read_view:view,customer_scope:scope,read_only:true};
+  // A requested ID is not authority: first resolve all identities above, then
+  // re-read by ID + phone and check name, origin and deletion on the fresh row.
+  const exact = await restRows(`hair_records?select=${fullFields}&status=neq.deleted&${phoneFilter}&id=eq.${safeFilterValue(String(selected.id))}&limit=1`);
+  const detail = scopeCustomerHairRecords(customerHairIdentityRows(exact,phone,payload.name),store,scope)
+    .filter((r:JsonRecord)=>String(r.id)===String(selected.id) && r.customer_name===selected.customer_name && r.archive_store===selected.archive_store);
+  return {rows:detail,read_view:view,customer_scope:scope,read_only:true};
+}
+
+// User-initiated, one verified visit only. The calendar never scans or exports
+// the store's hair-record/phone directory just to decorate its buttons.
+async function bookingHairStatus(payload:JsonRecord,session:JsonRecord):Promise<JsonRecord>{
+  const store=cleanText(session.store,100),barber=cleanText(session.username,80),date=cleanText(payload.date,10);
+  const prefix='frontdesk:',fullId=cleanText(payload.booking_id,80),desk=fullId.startsWith(prefix),id=desk?fullId.slice(prefix.length):fullId;
+  const scope=cleanText(payload.customer_scope || 'store',20);customerReadStores(store,scope);
+  const uncertain={verified:false,read_only:true};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^[a-zA-Z0-9_-]{1,64}$/.test(id))return uncertain;
+  const path=(desk?'frontdesk_today_customers?select=id,customer_phone,customer_name,status&business_date=':'bookings?select=id,customer_phone,customer_name,status&date=')+'eq.'+date+
+    '&'+(desk?'store':'shop_name')+'=eq.'+safeFilterValue(store)+'&barber_name=eq.'+safeFilterValue(barber)+'&id=eq.'+safeFilterValue(id)+'&limit=1';
+  const visit=(await restRows(path))[0];
+  // Same source eligibility as design_admin_service_binding: cancelled, null
+  // or future unknown states cannot authorize reading this visit or a new task.
+  const activeStatuses=desk?['waiting','arrived','in_service','completed']:['0','1','3','4'];
+  if(!visit || String(visit.id)!==id || !activeStatuses.includes(String(visit.status)))return uncertain;
+  const phoneKey=(v:unknown)=>cleanText(v,60).replace(/\D/g,'').replace(/^86(?=1\d{10}$)/,'');
+  const nameKey=(v:unknown)=>cleanText(v,120).replace(/\s/g,'').toLowerCase();
+  const phone=phoneKey(visit?.customer_phone),name=nameKey(visit?.customer_name);
+  if(!visit || !/^1\d{10}$/.test(phone) || !name || phone!==phoneKey(payload.phone) || name!==nameKey(payload.name))return uncertain;
+  const index=await customerHairRecords({phone,name:visit.customer_name,customer_scope:scope,read_view:'index'},session);
+  if(index.identity_warning)return uncertain;
+  const rows=(index.rows as JsonRecord[]).flatMap(r=>{
+    const bits=(r.record_data || {}) as JsonRecord, visitId=cleanText(bits.bookingId || bits.booking_id,80);
+    // Keep ambiguous legacy date strings for the existing client date parser.
+    const stamp=cleanText(bits.bookingDate || bits.booking_date || bits.visitDate || bits.date || r.created_at || bits.createdAt,80);
+    const iso=stamp.match(/^(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);
+    if(visitId ? visitId!==fullId : iso && [iso[1],iso[2].padStart(2,'0'),iso[3].padStart(2,'0')].join('-')!==date)return [];
+    return [{id:r.id,customer_phone:r.customer_phone,created_at:r.created_at,record_data:{bookingId:visitId,bookingDate:stamp}}];
+  });
+  const queue:JsonRecord[]=[];let unclear=false;
+  const tomorrow=new Date(Date.parse(date+'T00:00:00Z')+86400000).toISOString().slice(0,10);
+  const visitFilter='or('+( /^\d+$/.test(fullId) ? 'booking_id.eq.'+fullId+',' : '')+'booking_date.eq.'+date+
+    ',and(booking_date.is.null,created_at.gte.'+date+'T00:00:00Z,created_at.lt.'+tomorrow+'T00:00:00Z))';
+  const storeFilter='or(shop_name.eq.'+JSON.stringify(store)+',shop_name.is.null,shop_name.eq."")';
+  // Include formatted legacy phones as candidates; check normalized identity before using any result.
+  for(let offset=0;;offset+=250){
+    const page=await restRows('hair_analysis_queue?select=phone,booking_id,booking_date,created_at,status,customer_name,shop_name,barber_name&phone=ilike.'+
+      '*'+phone.split('').join('*')+'*&and='+encodeURIComponent('('+storeFilter+','+visitFilter+')')+
+      '&order=created_at.desc,id.asc&limit=250&offset='+offset);
+    for(const q of page){
+      if(phoneKey(q.phone)!==phone)continue;
+      const booking=cleanText(q.booking_id,80),day=cleanText(q.booking_date || q.created_at,30).slice(0,10);
+      if(booking ? booking!==fullId : day!==date)continue;
+      if(q.shop_name!==store || (q.customer_name && nameKey(q.customer_name)!==name) || (!booking && (!nameKey(q.customer_name) || q.barber_name!==barber))){unclear=true;continue;}
+      queue.push({booking_id:booking,booking_date:day,status:q.status});
+    }
+    if(page.length<250)break;
+  }
+  return {verified:true,rows,queue,unclear,read_only:true};
 }
 
 async function customerHistory(payload: JsonRecord, session: JsonRecord): Promise<JsonRecord> {
@@ -251,6 +332,7 @@ Deno.serve(async (request: Request) => {
     if (operation === "customer_profiles") return json(await customerProfiles(payload, session));
     if (operation === "customer_history") return json(await customerHistory(payload, session));
     if (operation === "customer_hair_records") return json(await customerHairRecords(payload, session));
+    if (operation === "booking_hair_status") return json(await bookingHairStatus(payload, session));
     return json({ error: "不支持的操作" }, 400);
   } catch (error) {
     if (error instanceof CustomerDesignError) return json({ error: error.message, code: error.code }, error.status);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="689" data-read-sync-rollout="opt-in">
+<html lang="zh-CN" data-version="690" data-read-sync-rollout="default-on">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1067,8 +1067,8 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=689" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
-<link rel="stylesheet" href="customer-design-archive.css?v=689" media="print" onload="this.media='all'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=690" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link rel="stylesheet" href="customer-design-archive.css?v=690" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -3156,14 +3156,14 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=689"></script>
-<script src="customer-design-archive.js?v=689"></script>
-<script defer src="aesthetic-study.js?v=689"></script>
-<script defer src="aesthetic-daily.js?v=689"></script>
-<script defer src="hair-calculator-dialog.js?v=689"></script>
-<script src="aesthetic-knowledge.v1.js?v=689"></script>
-<script src="hair-vision-training.v1.js?v=689"></script>
-<script src="aesthetic-growth.v2.js?v=689"></script>
+<script src="employee-reports.js?v=690"></script>
+<script src="customer-design-archive.js?v=690"></script>
+<script defer src="aesthetic-study.js?v=690"></script>
+<script defer src="aesthetic-daily.js?v=690"></script>
+<script defer src="hair-calculator-dialog.js?v=690"></script>
+<script src="aesthetic-knowledge.v1.js?v=690"></script>
+<script src="hair-vision-training.v1.js?v=690"></script>
+<script src="aesthetic-growth.v2.js?v=690"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -4615,16 +4615,18 @@ var AESTHETIC_METHOD_HINTS = {
 };
 
 function addAestheticChatMessage(role, content, meta) {
-  aestheticTrainingState.messages.push({ role: role, content: String(content || ''), meta: meta || {}, createdAt: new Date().toISOString() });
-  renderAestheticChatMessages();
+  var message = { role: role, content: String(content || ''), meta: meta || {}, createdAt: new Date().toISOString() };
+  aestheticTrainingState.messages.push(message);
+  renderAestheticChatMessages(message);
   saveAestheticSession();
 }
 
-function renderAestheticChatMessages() {
+function renderAestheticChatMessages(added) {
   var box = document.getElementById('ae-chat-messages');
   if (!box) return;
   var mentor = aestheticTrainingState.growthPlan && aestheticTrainingState.growthPlan.mentor || { avatar: '师', name: '美学导师' };
-  box.innerHTML = aestheticTrainingState.messages.map(function(message) {
+  var messages = aestheticTrainingState.messages, mentorKey = JSON.stringify([mentor.name, mentor.avatar]);
+  function renderRow(message) {
     var user = message.role === 'user';
     return '<div class="ae-chat-row ' + (user ? 'user' : 'coach') + '">' +
       (user ? '' : '<div class="ae-chat-avatar" title="' + aestheticEscape(mentor.name) + '">' + aestheticEscape(mentor.avatar || '师') + '</div>') +
@@ -4632,8 +4634,16 @@ function renderAestheticChatMessages() {
       (message.meta && message.meta.transition ? '<div class="ae-chat-meta">训练重点已自然转向：' + aestheticEscape(AESTHETIC_GOAL_LABELS[message.meta.goal] || message.meta.goal) + '</div>' : '') +
       (message.meta && message.meta.mastery && message.meta.mastery.status === 'needs_evidence' ? '<div class="ae-chat-meta">还不能算掌握：需要更具体的画面证据</div>' : '') +
       '</div></div>';
-  }).join('');
-  box.scrollTop = box.scrollHeight;
+  }
+  // Restore, switch of case/mentor, or edits to an earlier answer still redraw the whole conversation.
+  var append = !!added && added === messages[messages.length - 1] && box._chatRows === messages &&
+    box._mentorKey === mentorKey && box.childElementCount === messages.length - 1;
+  var follow = !append || added.role === 'user' || box.scrollTop + box.clientHeight >= box.scrollHeight - 8;
+  if (append) box.insertAdjacentHTML('beforeend', renderRow(added));
+  else box.innerHTML = messages.map(renderRow).join('');
+  box._chatRows = messages;
+  box._mentorKey = mentorKey;
+  if (follow) box.scrollTop = box.scrollHeight;
 }
 
 function updateAestheticConversationChrome(goal) {
@@ -6492,7 +6502,12 @@ function initApp() {
   function employeeBookingsApi(operation, payload, display) {
     function send(body) {
       var request = function(){ return employeeBookingsRequest(operation, body); };
-      return window.ZysyrReadFlights ? window.ZysyrReadFlights.request('employee',operation==='today_bookings',JSON.stringify([operation,body]),request) : request();
+      // Coalesce only identical in-flight reads. No customer data is replayed from
+      // disk or reused after completion; session, role, store and scope are part of the key.
+      // Design history is deliberately excluded: its post-save/conflict re-read must be fresh.
+      var read = ['today_bookings','customer_profiles','customer_history','customer_hair_records','customer_design_photo_urls'].indexOf(operation) !== -1;
+      var staff = (typeof AUTHENTICATED_STAFF !== 'undefined' && AUTHENTICATED_STAFF) || {};
+      return window.ZysyrReadFlights ? window.ZysyrReadFlights.request('employee',read,JSON.stringify([staff.username,staff.store,staff.position,operation,body]),request) : request();
     }
     if (operation !== 'today_bookings' || !display || !window.ZysyrReadSync) return send(payload);
     var auth = verifiedEmployeeSession();
@@ -6572,7 +6587,7 @@ function initApp() {
   var identityPending = null, identityPendingKey = '', identityReadGeneration = 0, identityChangedElsewhere = false, hairViewOwner = null;
   var identityLockedRoots = new Map();
   function lockPrivateViews() {
-    ['home-page','app-content','hair-analysis-modal','home-drawer'].forEach(function(id){
+    ['home-page','app-content','hair-analysis-modal','home-drawer','plan-modal','profile-detail'].forEach(function(id){
       var el = document.getElementById(id); if (!el || identityLockedRoots.has(el)) return;
       var startup = document.getElementById('app-startup');
       identityLockedRoots.set(el, {visibility:el.style.visibility,inert:startup && !startup.hidden ? false : el.inert});
@@ -7073,62 +7088,36 @@ function initApp() {
 
   // ===== 烫染标记：按预约ID判断；旧记录只按手机号+同日兼容 =====
   window.loadHairTagStatuses = function() {
-    var tags = document.querySelectorAll('.bi-hair-tag');
-    if (tags.length === 0) return;
-    var phones = [];
-    var phoneSet = {};
+    var tags=document.querySelectorAll('.bi-hair-tag'),owner=customerReadOwner(),day=BOOKING_DATE;
     tags.forEach(function(t){
-      var p = t.getAttribute('data-phone');
-      if (p && !phoneSet[p]) { phones.push(p); phoneSet[p] = true; }
-    });
-    if (phones.length === 0) return;
-    var hairRecordsPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=id,customer_phone,status,record_data,created_at&status=neq.deleted&order=created_at.desc&limit=1000', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
-    var orParts = phones.map(function(p){ return 'phone.eq.'+encodeURIComponent(p); }).join(',');
-    var queuePromise = fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,booking_id,booking_date,status,created_at&or=('+orParts+')&order=created_at.desc&limit=500', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
-    Promise.all([hairRecordsPromise, queuePromise]).then(function(results){
-      var hairRows = Array.isArray(results[0]) ? results[0] : [];
-      var rows = Array.isArray(results[1]) ? results[1] : [];
-      tags.forEach(function(t){
-        var bookingId = t.getAttribute('data-booking-id') || '';
-        var phone = t.getAttribute('data-phone');
-        var name = t.getAttribute('data-name') || '';
-        var barber = t.getAttribute('data-barber') || '';
-        var bdate = t.getAttribute('data-bdate') || '';
-        var matchedRecord = findHairRecordForBooking(hairRows, bookingId, bdate, phone);
-        var st = matchedRecord ? 'record_saved' : '';
-        if (!st) {
-          var matchedQueueRows = findHairQueueRowsForBooking(rows, bookingId, bdate, phone);
-          for (var ri = 0; ri < matchedQueueRows.length; ri++) {
-            var rowStatus = matchedQueueRows[ri].status || '';
-            if (rowStatus === 'record_saved' || rowStatus === 'completed') {
-              st = rowStatus;
-              break;
-            }
-            if (!st || rowStatus === 'pending' || rowStatus === 'processing') st = rowStatus;
+      var phone=t.dataset.phone,name=t.dataset.name,barber=t.dataset.barber,bdate=t.dataset.bdate,id=t.dataset.bookingId;
+      t.textContent='烫染 · 核对状态';
+      function current(scope){return t.isConnected && owner===customerReadOwner() && day===BOOKING_DATE && scope===getCustomerReadScope() && isForegroundFeature('bookings') && !document.getElementById('hair-analysis-modal') && !document.getElementById('plan-modal');}
+      t.onclick=async function(){
+        var scope=getCustomerReadScope(),auth=verifiedEmployeeSession();
+        if(!current(scope) || t.dataset.reading==='1' || !auth)return;
+        var explicitNew=t.dataset.offerNew==='1', seq=window._hairBookingOpenSeq=(window._hairBookingOpenSeq || 0)+1;
+        delete t.dataset.offerNew;t.dataset.reading='1';t.textContent='正在核对…';
+        try{
+          var status=await employeeBookingsApi('booking_hair_status',{session_token:auth.session_token,customer_scope:scope,booking_id:id,date:bdate,phone:phone,name:name});
+          if(!current(scope) || seq!==window._hairBookingOpenSeq){t.textContent='烫染 · 核对状态';return;}
+          if(!status || status.verified!==true || !Array.isArray(status.rows) || !Array.isArray(status.queue))throw new Error('未核实');
+          var matched=findHairRecordForBooking(status.rows,id,bdate,phone);
+          if(matched){t.textContent='已分析';window.showHairRecordByPhone(phone,id,bdate,name,matched.id);return;}
+          if(status.unclear || status.queue.some(function(q){return !['pending','processing'].includes(q.status);})){
+            t.textContent='原档待核对';window.showToast('未核实有效原档，请查看顾客历史或核对原记录。');return;
           }
-        }
-        if (st === 'pending' || st === 'processing') {
-          t.textContent = '\u5F85\u5206\u6790';
-          t.style.background = 'rgba(232,168,23,0.2)';
-          t.style.color = '#e8a817';
-          t.onclick = function(){ window.openHairAnalysisForBooking(name, phone, barber, bdate, bookingId); };
-        } else if (st === 'record_saved' || st === 'completed') {
-          t.textContent = '\u5DF2\u5206\u6790';
-          t.style.background = 'rgba(46,204,113,0.2)';
-          t.style.color = '#2ecc71';
-          t.onclick = function(){ window.showHairRecordByPhone(phone, bookingId, bdate); };
-        } else {
-          t.textContent = '\u70EB\u67D3';
-          t.style.background = 'rgba(255,80,80,0.2)';
-          t.style.color = '#ff5050';
-          t.onclick = function(){ window.createAndOpenHairTask(name, phone, barber, bdate, bookingId); };
-        }
-      });
-    }).catch(function(){});
+          if(status.queue.length){t.textContent='待分析';window.openHairAnalysisForBooking(name,phone,barber,bdate,id);return;}
+          if(explicitNew){
+            t.textContent='正在打开…';
+            // A frontdesk reception's ID is not a numeric Meiguanjia booking ID.
+            if(String(id).startsWith('frontdesk:'))window.openHairAnalysisForBooking(name,phone,barber,bdate,id);
+            else window.createAndOpenHairTask(name,phone,barber,bdate,id);
+          }else{t.textContent='新建分析';t.dataset.offerNew='1';window.showToast('本次未查到已存档案或分析任务，可点「新建分析」。');}
+        }catch(_){if(current(scope))t.textContent='状态未核实 · 重试';}
+        finally{delete t.dataset.reading;}
+      };
+    });
   };
 
   window.openHairAnalysisForBooking = function(name, phone, barber, bdate, bookingId) {
@@ -7142,66 +7131,32 @@ function initApp() {
     }, 200);
   };
 
-  window.showHairRecordByPhone = function(phone, bookingId, bookingDate) {
+  window.showHairRecordByPhone = function(phone, bookingId, bookingDate, customerName, selectedId) {
+    var intent = window._hairBookingOpenSeq = (window._hairBookingOpenSeq || 0)+1;
+    var owner = customerReadOwner(), openingDate = BOOKING_DATE, scope=getCustomerReadScope();
+    var existingForm = document.getElementById('hair-analysis-modal');
+    function current(){return intent === window._hairBookingOpenSeq && customerReadOwner() === owner && scope===getCustomerReadScope() &&
+      openingDate === BOOKING_DATE && isForegroundFeature('bookings') && existingForm === document.getElementById('hair-analysis-modal') && !document.getElementById('plan-modal');}
     var hasBookingContext = !!(String(bookingId || '').trim() || normalizeHairBookingDate(bookingDate));
     var context = hasBookingContext ? hairBookingContext(bookingId, bookingDate, phone, '', '') : null;
     function openRecord(rec) {
       window.showHairAnalysisPage(phone, context);
+      var modal = document.getElementById('hair-analysis-modal');
+      var edits = hairArchiveEditStamp(modal);
       setTimeout(function(){
+        if (!modal || !modal.isConnected || owner !== customerReadOwner() || intent !== window._hairBookingOpenSeq || edits!==hairArchiveEditStamp(modal)) return;
         if (window.loadHairRecordData) window.loadHairRecordData(rec);
       }, 200);
     }
-    function openLegacyRecord() {
-      var records = window.getHairRecords ? window.getHairRecords() : [];
-      var found = hasBookingContext
-        ? findHairRecordForBooking(records, bookingId, bookingDate, phone)
-        : findLatestHairRecordForCustomer(records, phone, '');
-      if (found) {
-        if (window.showHairRecordSummary) window.showHairRecordSummary(found.id);
-        return;
-      }
-      fetch(SUPABASE_URL + '/rest/v1/hair_analysis_queue?select=phone,booking_id,booking_date,ai_analysis,status,created_at&phone=eq.'+encodeURIComponent(phone)+'&order=created_at.desc&limit=100', {
-        headers: { 'apikey': SUPABASE_KEY }
-      }).then(function(r){ return r.json(); }).then(function(rows){
-        if (!rows || rows.length === 0) { alert('\u6682\u65E0\u5206\u6790\u8BB0\u5F55'); return; }
-        var row = null;
-        if (hasBookingContext) {
-          var matchedRows = findHairQueueRowsForBooking(rows, bookingId, bookingDate, phone);
-          row = matchedRows.length ? matchedRows[0] : null;
-        } else {
-          row = rows[0];
-        }
-        if (!row) { alert('当前预约暂无发质分析记录'); return; }
-        var rec = (row.ai_analysis && row.ai_analysis.record) || {};
-        if (!rec.bookingId && row.booking_id) rec.bookingId = String(row.booking_id);
-        if (!rec.bookingDate && row.booking_date) rec.bookingDate = row.booking_date;
-        window.showHairAnalysisPage(phone, context);
-        setTimeout(function(){
-          if (rec.customerName) {
-            var ne = document.getElementById('hair-form-name');
-            if (ne) ne.value = rec.customerName;
-          }
-          if (rec.customerPhone || phone) {
-            var pe = document.getElementById('hair-form-phone');
-            if (pe) pe.value = rec.customerPhone || phone;
-          }
-          if (window.loadHairRecordData) window.loadHairRecordData(rec);
-        }, 200);
-      }).catch(function(){ alert('\u67E5\u8BE2\u5931\u8D25'); });
-    }
-    fetchHairRecordsForCustomer(phone, '', 100, 'all').then(function(list) {
-      if (list && list.length > 0) {
-        var found = hasBookingContext
-          ? findHairRecordForBooking(list, bookingId, bookingDate, phone)
-          : list[0];
-        if (found) {
-          openRecord(found);
-          return;
-        }
-      }
-      openLegacyRecord();
+    var lookup=selectedId ? fetchHairRecordsForCustomer(phone,customerName || '',0,{scope:scope,view:'record',recordId:selectedId})
+      .then(function(rows){return findHairRecordForBooking(rows, bookingId, bookingDate, phone);}) :
+      readSelectedHairArchive(phone,customerName || '',bookingId,bookingDate,scope,current);
+    lookup.then(function(found) {
+      if (!current()) return;
+      if (found) {openRecord(found);return;}
+      alert('暂无可核实的本次云端档案。旧分析队列不能证明原件仍有效；本机未提交的记录请在原发质分析编辑入口查看。');
     }).catch(function(){
-      openLegacyRecord();
+      if (current()) alert('无法核实当前档案，请检查网络或重新登录后重试');
     });
   };
 
@@ -7270,7 +7225,10 @@ function initApp() {
     var div = document.createElement('div');
     div.className = 'plan-modal' + (contextOptions.hairForm ? ' hair-form-design-modal' : '');
     div.id = 'plan-modal';
+    div.dataset.customerName = name || '';
     var scope = getCustomerReadScope();
+    var owner = customerReadOwner();
+    function currentModal() { return div.isConnected && owner === customerReadOwner() && scope === getCustomerReadScope(); }
     div.innerHTML = '<div class="box">' + (contextOptions.hairForm ? '<button type="button" class="hair-design-return" onclick="closePlanModal()">← 返回发质分析</button>' : '') + '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;">查看范围 <select class="customer-read-scope" aria-label="客户资料查看范围" style="padding:8px;max-width:160px;"><option value="all">全部门店</option><option value="store">本店</option></select></label><div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">仅共享查档；套餐使用仍按原门店规则。旧发质档案未标门店的，在全部门店查看。</div><div class="customer-design-root"></div><div class="plan-customer-body"><h3>'+esc(name||'客户')+'</h3><div class="loading">加载中...</div></div></div>';
     div.querySelector('.customer-read-scope').value = scope;
     div.querySelector('.customer-read-scope').addEventListener('change', function(event) {
@@ -7291,7 +7249,7 @@ function initApp() {
       // 优先查Supabase customer_profiles（有完整的美管加消费数据）
       fetchCustomerProfileRows(phone, name, 1000, scope)
       .then(function(rows){
-        if (!div.isConnected) return;
+        if (!currentModal()) return;
         rows = Array.isArray(rows) ? rows : [];
         if (rows && rows.length > 0) {
           // 服务端按明确的只读范围裁剪套餐和消费明细。
@@ -7492,7 +7450,7 @@ function initApp() {
         // customer_profiles没找到 → 降级到预约记录
         employeeBookingsApi('customer_history', { session_token: AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token, phone: phone, name: name, customer_scope: scope })
         .then(function(history){
-          if (!div.isConnected) return;
+          if (!currentModal()) return;
           var bookingRows = history && Array.isArray(history.bookings) ? history.bookings : [];
           bookingRows = Array.isArray(bookingRows) ? bookingRows : [];
           if (!bookingRows || bookingRows.length === 0) {
@@ -7556,12 +7514,14 @@ function initApp() {
           div.querySelector('.plan-customer-body').insertAdjacentHTML('beforeend', '<div id="plan-customer-history"></div>');
           renderCustomerHistory(phone, name);
         }).catch(function(e){
+          if (!currentModal()) return;
           console.log('[catch-b] bookings error:', e && e.message ? e.message : e);
           div.querySelector('.plan-customer-body').innerHTML =
             '<h3>'+esc(name||'客户')+'</h3><div class="no-data">加载失败(b)</div>'+
             '<button class="close-btn" onclick="closePlanModal()">关闭</button>';
         });
       }).catch(function(e){
+        if (!currentModal()) return;
         console.log('[catch-c] profiles error:', e && e.message ? e.message : e);
         div.querySelector('.plan-customer-body').innerHTML =
           '<h3>'+esc(name||'客户')+'</h3><div class="no-data">'+esc(e.message || '客户档案加载失败，请重新打开重试')+'</div>'+
@@ -7627,6 +7587,7 @@ function initApp() {
       container.innerHTML = '<section class="hair-archive-section"><h3>设计思路</h3><p>设计档案组件暂未加载，请稍后重新打开。</p></section>';
       return null;
     }
+    var designOwner = customerReadOwner();
     return window.CustomerDesignArchive.mount(container, Object.assign({}, context, {
       barberName: (AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.username) || context.barberName,
       api: function(operation, payload) {
@@ -7634,14 +7595,23 @@ function initApp() {
           session_token: AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token
         });
         // Writes never enter read-flight deduplication or automatic retries.
-        return operation === 'customer_design_save' || operation === 'customer_design_upload'
-          ? employeeBookingsRequest(operation, body) : employeeBookingsApi(operation, body);
+        if (operation === 'customer_design_save' || operation === 'customer_design_upload') return employeeBookingsRequest(operation, body);
+        function allowed(){return container.isConnected && designOwner === customerReadOwner() && context.scope === getCustomerReadScope();}
+        if (!allowed()) return Promise.reject(new Error('查看身份已变更，请重新打开档案'));
+        return employeeBookingsApi(operation, body).then(function(data){
+          if (!allowed()) throw new Error('查看身份已变更，请重新打开档案');
+          return data;
+        });
       }
     }));
   }
 
   function getCustomerReadScope() {
     return window._customerReadScope === 'store' ? 'store' : 'all';
+  }
+  function customerReadOwner() {
+    var staff = AUTHENTICATED_STAFF || {};
+    return JSON.stringify([staff.session_token,staff.username,staff.store,staff.position]);
   }
 
   function hairArchiveStoreForSave(existing, editing) {
@@ -7834,13 +7804,13 @@ function initApp() {
     return html;
   }
   function hydrateHairRecordReadOnly(phone, name, holderId, localFound, bookingId, bookingDate) {
-    fetchHairRecordsForCustomer(phone, name, 0).then(function(list) {
+    var initialHolder = document.getElementById(holderId), owner = customerReadOwner(), scope = getCustomerReadScope();
+    if (!initialHolder) return; // closed before the deferred read began
+    readSelectedHairArchive(phone,name,bookingId,bookingDate,scope,function(){
+      return initialHolder.isConnected && owner === customerReadOwner() && scope === getCustomerReadScope();
+    }).then(function(cloudFound) {
       var holder = document.getElementById(holderId);
-      if (!holder) return;
-      var hasBookingContext = !!(String(bookingId || '').trim() || normalizeHairBookingDate(bookingDate));
-      var cloudFound = hasBookingContext
-        ? findHairRecordForBooking(list, bookingId, bookingDate, phone)
-        : findLatestHairRecordForCustomer(list, phone, name);
+      if (holder !== initialHolder || owner !== customerReadOwner() || scope !== getCustomerReadScope()) return;
       if (cloudFound) {
         holder.innerHTML = renderHairRecordReadOnlyCard(cloudFound, '本次预约 · 云端同步', bookingId, bookingDate, phone);
       } else if (!localFound) {
@@ -7848,22 +7818,15 @@ function initApp() {
       }
     }).catch(function() {
       var holder = document.getElementById(holderId);
-      if (holder && !localFound) holder.innerHTML = '<div style="margin-top:10px;padding:10px;border:1px solid var(--danger);border-radius:7px;color:var(--danger);font-size:12px;">发质档案加载失败，请重试</div>';
+      if (holder === initialHolder && owner === customerReadOwner() && scope === getCustomerReadScope() && !localFound) holder.innerHTML = '<div style="margin-top:10px;padding:10px;border:1px solid var(--danger);border-radius:7px;color:var(--danger);font-size:12px;">发质档案加载失败，请重试</div>';
     });
   }
-  // 只读展示已有发质分析记录：云端 hair_records 优先，本地只做兜底缓存
+  // Unscoped legacy drafts are never a verified customer archive. They remain
+  // available to their original workflow and are not erased or changed.
   window.renderHairRecordReadOnly = function(phone, name, bookingId, bookingDate) {
-    var records = [];
-    try { records = JSON.parse(localStorage.getItem('hair_records') || '[]'); } catch(e) {}
-    var hasBookingContext = !!(String(bookingId || '').trim() || normalizeHairBookingDate(bookingDate));
-    var found = hasBookingContext
-      ? findHairRecordForBooking(records, bookingId, bookingDate, phone)
-      : findLatestHairRecordForCustomer(records, phone, name);
     var holderId = 'hair-record-readonly-' + Math.random().toString(36).slice(2);
-    setTimeout(function(){ hydrateHairRecordReadOnly(phone, name, holderId, !!found, bookingId, bookingDate); }, 0);
-    return '<div id="' + holderId + '">' + (found
-      ? renderHairRecordReadOnlyCard(found, '本次预约 · 本地缓存', bookingId, bookingDate, phone)
-      : '<div style="margin-top:10px;padding:10px;border:1px solid var(--border);border-radius:7px;color:var(--text-secondary);font-size:12px;">正在加载本次预约的发质分析表...</div>') + '</div>';
+    setTimeout(function(){ hydrateHairRecordReadOnly(phone, name, holderId, false, bookingId, bookingDate); }, 0);
+    return '<div id="' + holderId + '"><div style="margin-top:10px;padding:10px;border:1px solid var(--border);border-radius:7px;color:var(--text-secondary);font-size:12px;">正在核实本次预约的云端档案…</div></div>';
   };
 
   // 客户历史档案（在方案弹窗内加载）
@@ -7892,7 +7855,9 @@ function initApp() {
       return;
     }
     container.innerHTML = '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-secondary);">☁️ 加载历史记录...</div>';
+    // Timeline rows do not render care products. The complete form still loads them.
     return fetchHairRecordsForCustomer(phone, name, 0).then(function(rows) {
+      if (container !== document.getElementById('plan-customer-history')) return;
       if (!rows || rows.length === 0) {
         container.innerHTML = renderCustomerHistoryButton(phone, name, '暂无历史记录');
         return;
@@ -7929,6 +7894,7 @@ function initApp() {
       html += '<div style="text-align:center;padding:2px;"><button type="button" class="hair-history-toggle" data-phone="'+escAttr(phone || '')+'" data-name="'+escAttr(name || '')+'" style="background:none;border:none;color:var(--text-secondary);font-size:10px;cursor:pointer;font-family:var(--font);padding:4px;">收起</button></div>';
       container.innerHTML = html;
     }).catch(function(){
+      if (container !== document.getElementById('plan-customer-history')) return;
       container.innerHTML = renderCustomerHistoryButton(phone, name, '历史档案加载失败，请重试', true);
     });
   };
@@ -7988,46 +7954,52 @@ function initApp() {
     }
   });
 
-  // 每次预约只给一次分析，localStorage跟踪
-  var _analyzedPhones = null;
-  function _loadAnalyzed() {
-    if (_analyzedPhones) return;
-    try { _analyzedPhones = JSON.parse(localStorage.getItem('ai_analyzed') || '{}'); } catch(e) { _analyzedPhones = {}; }
+  // The legacy ai_analyzed blob has no account, store or expiry. Never read,
+  // rewrite or delete it here. A fresh authorized result is a transient view.
+  var aiReadOwner = '', analyzedInView = new Map();
+  function aiReadKey(phone,dateKey,barberName) {
+    var staff = verifiedEmployeeSession(), owner = staff ? customerReadOwner() : '';
+    if (owner !== aiReadOwner) {analyzedInView.clear();aiReadOwner = owner;}
+    analyzedInView.forEach(function(item,key){if (item.until <= Date.now()) analyzedInView.delete(key);});
+    return owner && phone ? JSON.stringify([getCustomerReadScope(),phone,dateKey || getLocalDateStr(),barberName || '']) : '';
   }
-  function _isPhoneAnalyzed(phone, dateKey) {
-    _loadAnalyzed();
-    var key = dateKey || getLocalDateStr();
-    var rec = _analyzedPhones[phone];
-    return rec && rec.date === key;
+  window.addEventListener('staff-identity-changed',function(){aiReadKey('','','');});
+  function _markPhoneAnalyzed(phone, analysisText, dateKey, barberName) {
+    var key = aiReadKey(phone,dateKey,barberName);
+    if (!key || !analysisText) return;
+    analyzedInView.set(key,{text:analysisText,until:Date.now()+15*60*1000});
+    if (analyzedInView.size>20) analyzedInView.delete(analyzedInView.keys().next().value);
   }
-  function _markPhoneAnalyzed(phone, analysisText, dateKey) {
-    _loadAnalyzed();
-    var key = dateKey || getLocalDateStr();
-    _analyzedPhones[phone] = { date: key, text: analysisText || '' };
-    try { localStorage.setItem('ai_analyzed', JSON.stringify(_analyzedPhones)); } catch(e) { console.warn('AI分析状态保存失败:', e); }
-  }
-  function _getCachedAnalysis(phone, dateKey) {
-    _loadAnalyzed();
-    var key = dateKey || getLocalDateStr();
-    var rec = _analyzedPhones[phone];
-    if (rec && rec.date === key && rec.text) return rec.text;
-    return null;
+  function _getCachedAnalysis(phone, dateKey, barberName) {
+    var record = analyzedInView.get(aiReadKey(phone,dateKey,barberName));
+    return record && record.text;
   }
 
   // 顾客AI分析使用独立的Codex plan_server地址，不与美感训练接口共用配置。
-  var CUSTOMER_PLAN_URL = 'https://petersburg-parade-traveller-existed.trycloudflare.com/api/codex-plan';
-  (function() {
-    fetch('customer-plan-url.json?_t=' + Date.now())
+  var CUSTOMER_PLAN_URL = '';
+  var customerPlanConfigPending = null, customerPlanConfigUntil = 0;
+  function resolveCustomerPlanConfig() {
+    if (Date.now() < customerPlanConfigUntil) return Promise.resolve();
+    if (customerPlanConfigPending) return customerPlanConfigPending;
+    var timer, controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var config = fetch('customer-plan-url.json?_t=' + Date.now(), controller ? {signal:controller.signal} : {})
       .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function(d){
         if (d && /^https:\/\//.test(d.url || '') && /\/api\/codex-plan$/.test(d.url)) {
-          CUSTOMER_PLAN_URL = d.url;
+          return d.url;
         } else {
           throw new Error('顾客分析地址格式无效');
         }
-      })
-      .catch(function(e){ console.warn('获取顾客Codex分析地址失败，使用内置备用地址:', e); });
-  })();
+      });
+    var deadline = new Promise(function(_,reject){timer = setTimeout(function(){
+      if (controller) controller.abort();
+      reject(new Error('读取配置超时'));
+    }, 4000);});
+    customerPlanConfigPending = Promise.race([config,deadline]).then(function(url){
+      CUSTOMER_PLAN_URL = url; customerPlanConfigUntil = Date.now() + 60000;
+    }).finally(function(){clearTimeout(timer);customerPlanConfigPending = null;});
+    return customerPlanConfigPending;
+  }
 
   function getAiUrl(phone, barberName) {
     var barberParam = barberName ? '&barber=' + encodeURIComponent(barberName) : '';
@@ -8035,14 +8007,11 @@ function initApp() {
   }
 
   function renderAiButton(phone, name, barberName, dateKey) {
-    if (_isPhoneAnalyzed(phone, dateKey)) {
-      var cached = _getCachedAnalysis(phone, dateKey);
-      if (cached) {
+    var cached = _getCachedAnalysis(phone,dateKey,barberName);
+    if (cached) {
         return '<div class="ai-result" style="margin-top:8px;"><div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 AI分析建议</div><div style="font-size:11px;line-height:1.6;color:var(--text);white-space:pre-wrap;">'+esc(cached)+'</div></div>';
-      }
-      return '<div class="ai-result" style="margin-top:8px;text-align:center;font-size:12px;color:var(--text-secondary);">✅ 今日已分析</div>';
     }
-    return '<button class="ai-btn" data-phone="'+escAttr(phone||'')+'" data-name="'+escAttr(name||'')+'" data-bdate="'+escAttr(dateKey||'')+'" data-barber="'+escAttr(barberName||'')+'">🤖 AI分析建议</button>';
+    return '<button class="ai-btn" data-phone="'+escAttr(phone||'')+'" data-name="'+escAttr(name||'')+'" data-bdate="'+escAttr(dateKey||'')+'" data-barber="'+escAttr(barberName||'')+'">🤖 AI分析建议</button><small style="color:var(--text-secondary)">旧手机缓存未标明所属账号，不自动显示。可点此重新分析，已保存的发质档案不变。</small>';
   }
   function updateAiButtonsAvailability() {
     // 不限网络，始终可用
@@ -8052,6 +8021,7 @@ function initApp() {
   window.runAiAnalysis = function(phone, name, barberName, bookingDate) {
     var box = document.querySelector('#plan-modal .box');
     if (!box) return;
+    if (!verifiedEmployeeSession()) {window.showToast('请验证员工身份后再分析');return;}
     if (box.getAttribute('data-ai-requesting') === '1') return;
     box.setAttribute('data-ai-requesting', '1');
     box.querySelectorAll('.ai-result.error').forEach(function(el){ el.remove(); });
@@ -8061,15 +8031,17 @@ function initApp() {
     box.insertAdjacentHTML('beforeend', '<div id="ai-loading" style="padding:12px 0;text-align:center;color:var(--text-secondary);font-size:13px;">🤖 Codex分析中（约30秒）…</div>');
     var loadingEl = document.getElementById('ai-loading');
     // 禁掉按钮防重复点击
-    var btns = box.querySelectorAll('button');
+    var btns = box.querySelectorAll('.ai-btn'), owner = customerReadOwner(), scope = getCustomerReadScope();
+    function current() {return box.isConnected && verifiedEmployeeSession() && owner === customerReadOwner() && scope === getCustomerReadScope();}
     btns.forEach(function(b){ b.disabled = true; b.style.opacity = '0.5'; });
-    var url = getAiUrl(phone, barberName);
     function finishRequest() {
       box.removeAttribute('data-ai-requesting');
       if (loadingEl) loadingEl.remove();
       btns.forEach(function(b){ b.disabled = false; b.style.opacity = '1'; });
     }
     function doRequest() {
+      if (!current()) {finishRequest();return;}
+      var url = getAiUrl(phone, barberName);
       var xhr = new XMLHttpRequest();
       var done = false;
       var timeoutMs = 95000;
@@ -8078,6 +8050,7 @@ function initApp() {
         done = true;
         try { xhr.abort(); } catch(e) {}
         finishRequest();
+        if (!current()) return;
         box.insertAdjacentHTML('beforeend', '<div class="ai-result error">⏱️ Codex分析超时，稍后重试</div>');
       }, timeoutMs);
       xhr.open('GET', url, true);
@@ -8087,6 +8060,7 @@ function initApp() {
         done = true;
         clearTimeout(timeoutTimer);
         finishRequest();
+        if (!current()) return;
         try {
           if (xhr.status < 200 || xhr.status >= 300) throw new Error('HTTP ' + xhr.status);
           var data = JSON.parse(xhr.responseText);
@@ -8094,12 +8068,13 @@ function initApp() {
             box.insertAdjacentHTML('beforeend', '<div class="ai-result error">❌ ' + esc(data.error) + '</div>');
             return;
           }
-          var analysis = data.analysis || '无分析结果';
+          var analysis = typeof data.analysis === 'string' && data.analysis.trim();
+          if (!analysis) throw new Error('服务未返回分析内容，请重试');
           var html = '<div class="ai-result">';
           html += '<div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">🤖 AI分析建议</div>';
           html += '<div style="font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;">' + esc(analysis) + '</div>';
           html += '</div>';
-          _markPhoneAnalyzed(phone, analysis, bookingDate);
+          _markPhoneAnalyzed(phone, analysis, bookingDate, barberName);
           // 移除AI按钮，防止重复点击
           var aiBtn = box.querySelector('.ai-btn');
           if (aiBtn) aiBtn.remove();
@@ -8116,6 +8091,7 @@ function initApp() {
         done = true;
         clearTimeout(timeoutTimer);
         finishRequest();
+        if (!current()) return;
         box.insertAdjacentHTML('beforeend', '<div class="ai-result error">❌ 无法连接Codex分析服务</div>');
       };
       xhr.ontimeout = function() {
@@ -8123,11 +8099,15 @@ function initApp() {
         done = true;
         clearTimeout(timeoutTimer);
         finishRequest();
+        if (!current()) return;
         box.insertAdjacentHTML('beforeend', '<div class="ai-result error">⏱️ Codex分析超时，稍后重试</div>');
       };
       xhr.send();
     }
-    doRequest();
+    resolveCustomerPlanConfig().then(doRequest).catch(function(){
+      finishRequest();
+      if (current()) box.insertAdjacentHTML('beforeend','<div class="ai-result error">未能连接当前分析服务，请稍后重试。本次未提交分析。</div>');
+    });
   };
 
   // ===== 本地保存烫发记录（localStorage） =====
@@ -8176,15 +8156,28 @@ function initApp() {
   var _hairSeqSyncPromise = null;
   function syncHairSeqCounterFromCloud() {
     if (_hairSeqSyncPromise) return _hairSeqSyncPromise;
-    _hairSeqSyncPromise = fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data&status=neq.deleted&limit=2000', {
-      headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    }).then(function(rows) {
+    function readSeqFields(legacy) {
+      // Same visible sample, filter and limit. The normal path never downloads a customer's whole form.
+      var fields = legacy ? 'record_data' : 'seq:record_data->seq';
+      return fetch(SUPABASE_URL + '/rest/v1/hair_records?select=' + encodeURIComponent(fields) + '&status=neq.deleted&limit=2000', {
+        headers: { 'apikey': SUPABASE_KEY }
+      }).then(function(r) {
+        if (!legacy && r.status === 400) return r.json().then(function(error) {
+          if (error && (error.code === 'PGRST100' || error.code === '42883')) return readSeqFields(true);
+          throw new Error('HTTP 400');
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json().then(function(rows) {
+          return (Array.isArray(rows) ? rows : []).map(function(row) {
+            return legacy ? row && row.record_data && row.record_data.seq : row && row.seq;
+          });
+        });
+      });
+    }
+    _hairSeqSyncPromise = readSeqFields(false).then(function(values) {
       var maxSeq = 0;
-      (Array.isArray(rows) ? rows : []).forEach(function(row) {
-        var seq = parseHairRecordSeq(row && row.record_data && row.record_data.seq);
+      values.forEach(function(value) {
+        var seq = parseHairRecordSeq(value);
         if (seq > maxSeq) maxSeq = seq;
       });
       ensureHairSeqCounterAtLeast(maxSeq);
@@ -8444,11 +8437,20 @@ function initApp() {
 
   function fetchHairRecordsForCustomer(phone, name, limit, scope) {
     limit = parseInt(limit, 10) || 0;
+    var options = scope && typeof scope === 'object' ? scope : (scope ? {} : {view:'index',includeCare:false});
+    var includeCare = options.includeCare !== false;
+    if (scope && typeof scope === 'object') scope = options.scope;
     var sessionToken = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token;
     if (!sessionToken) return Promise.reject(new Error('请先登录员工账号后查看客户资料'));
-    return employeeBookingsApi('customer_hair_records', { session_token: sessionToken, phone: phone, name: name, customer_scope: scope || getCustomerReadScope() }).then(function(data) {
+    var body = { session_token: sessionToken, phone: phone, name: name, customer_scope: scope || getCustomerReadScope() };
+    if (options.view) body.read_view = options.view;
+    if (options.view === 'record') body.record_id = options.recordId;
+    var owner = customerReadOwner();
+    return employeeBookingsApi('customer_hair_records', body).then(function(data) {
+      if (owner !== customerReadOwner()) throw new Error('查看身份已变更');
       if (data.identity_warning) throw new Error(data.identity_warning);
       var rows = data && Array.isArray(data.rows) ? data.rows : [];
+      if (options.view === 'record') rows = rows.filter(function(row){return String(row.id) === String(options.recordId);}); // older servers return full authorized history
       var list = rows.map(normalizeHairCloudRecord).filter(function(rec) {
         return hairRecordMatchesCustomer(rec, phone, name);
       });
@@ -8458,7 +8460,25 @@ function initApp() {
         return tb - ta;
       });
       if (limit > 0) list = list.slice(0, limit);
-      return enrichHairRecordsWithCareRows(list);
+      if (data.read_view === 'index') list.forEach(function(rec){rec._archiveIndexOnly = true;});
+      return includeCare ? enrichHairRecordsWithCareRows(list) : list;
+    });
+  }
+
+  function readSelectedHairArchive(phone,name,bookingId,bookingDate,scope,current) {
+    var hasBooking = !!(String(bookingId || '').trim() || normalizeHairBookingDate(bookingDate));
+    function choose(list){return hasBooking ? findHairRecordForBooking(list, bookingId, bookingDate, phone) : findLatestHairRecordForCustomer(list,phone,name);}
+    return fetchHairRecordsForCustomer(phone,name,0,{scope:scope,view:'index',includeCare:false}).then(function(index){
+      if (!current()) return null;
+      var selected = choose(index);
+      if (!selected) return null;
+      if (!selected._archiveIndexOnly) return enrichHairRecordsWithCareRows([selected]).then(function(rows){return rows[0];});
+      return fetchHairRecordsForCustomer(phone,name,0,{scope:scope,view:'record',recordId:selected._cloudRecordId}).then(function(detail){
+        if (!current()) return null;
+        var found = choose(detail);
+        if (!found) throw new Error('这份档案已变更，请重新打开核对');
+        return found;
+      });
     });
   }
 
@@ -10453,12 +10473,32 @@ function initApp() {
     }
   };
 
+  function hairArchiveEditStamp(modal) {
+    if (!modal) return -1;
+    if (modal._archiveEdits == null) {
+      modal._archiveEdits = 0;
+      var bump = function(event){
+        if (event.target.closest && event.target.closest('#hair-form-flow') &&
+          (event.type!== 'click' || event.target.closest('button,[role="button"],[data-val],.hair-chip'))) modal._archiveEdits++;
+      };
+      ['click','input','change'].forEach(function(type){modal.addEventListener(type,bump,true);});
+    }
+    return modal._archiveEdits;
+  }
   window.openHairRecordArchive = function(recordId, phone, bookingId, bookingDate) {
     if (!recordId) return;
+    var plan = document.getElementById('plan-modal'), owner=customerReadOwner(), scope=getCustomerReadScope();
+    var name = plan ? plan.dataset.customerName || '' : '';
     if (window.closePlanModal) window.closePlanModal();
+    if (plan && plan.isConnected) return; // stylist kept the unsaved design open
     var context = hairBookingContext(bookingId, bookingDate, phone, '', '');
     window.showHairAnalysisPage(phone, context);
+    var modal = document.getElementById('hair-analysis-modal');
+    if (!modal) return;
+    modal._selectedArchive = {recordId:recordId,phone:phone,name:name,scope:scope};
+    var edits = hairArchiveEditStamp(modal);
     setTimeout(function() {
+      if (!modal.isConnected || owner !== customerReadOwner() || scope !== getCustomerReadScope() || edits!==hairArchiveEditStamp(modal)) return;
       window.loadCloudRecord(recordId, false, true);
     }, 220);
   };
@@ -10466,10 +10506,23 @@ function initApp() {
   window.loadCloudRecord = function(recordId, followUp, readOnly) {
     if (!recordId) return;
     if (window.switchHairView) window.switchHairView('form');
+    var modal=document.getElementById('hair-analysis-modal'), owner=customerReadOwner();
+    if (!modal) return;
+    var serial=modal._readRecordSeq=(modal._readRecordSeq || 0)+1, edits=hairArchiveEditStamp(modal);
+    function current(){return modal.isConnected && modal._readRecordSeq===serial && owner===customerReadOwner() && window._hairViewMode==='form' && edits===hairArchiveEditStamp(modal);}
     _followUpMode = followUp === true;
-    fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data,barber,technician,status,created_at&id=eq.' + encodeURIComponent(recordId) + '&status=neq.deleted&limit=1', {
+    var selected = modal._selectedArchive;
+    if (readOnly === true && (!selected || String(selected.recordId)!==String(recordId))) {alert('请从已验证的顾客档案中重新选择');return;}
+    var read = readOnly === true
+      ? fetchHairRecordsForCustomer(selected.phone,selected.name,0,{scope:selected.scope,view:'record',recordId:recordId}).then(function(list){
+        if (!list.length) throw new Error('档案不可用');
+        return [{record_data:list[0]}];
+      })
+      : fetch(SUPABASE_URL + '/rest/v1/hair_records?select=record_data,barber,technician,status,created_at&id=eq.' + encodeURIComponent(recordId) + '&status=neq.deleted&limit=1', {
       headers: { 'apikey': SUPABASE_KEY }
-    }).then(function(r) { return r.json(); }).then(function(rows) {
+    }).then(function(r) {if(!r.ok)throw new Error('档案不可用');return r.json();});
+    read.then(function(rows) {
+      if (!current()) return;
       if (!rows || rows.length === 0) return;
       var rec = (rows[0].record_data) || {};
       // 用SQL层的barber/technician覆盖JSON数据，确保角色判断正确
@@ -10481,13 +10534,13 @@ function initApp() {
       rec._cloudRecordId = recordId;
       if (window.loadHairRecordData) window.loadHairRecordData(rec);
       if (readOnly === true && window.applyHairArchiveReadOnlyMode) {
-        setTimeout(window.applyHairArchiveReadOnlyMode, 0);
+        setTimeout(function(){if(current())window.applyHairArchiveReadOnlyMode();},0);
       }
       // 滚动到表单位置
       var formEl = document.getElementById('hair-analysis-section');
       if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }).catch(function(){
-      if (readOnly === true) alert('完整发质档案加载失败，请重试');
+      if (current()) alert('档案未能读取，请重新打开核对');
     });
   };
 
@@ -12822,6 +12875,14 @@ function initApp() {
     var listEl = document.getElementById('profile-list');
     var detailEl = document.getElementById('profile-detail');
     var versionEl = document.getElementById('profile-version');
+    if (!listEl) return;
+    if (detailEl && detailEl._customerDesignArchive && detailEl._customerDesignArchive.hasUnsavedChanges()) return;
+    var owner = customerReadOwner(), scope = getCustomerReadScope();
+    var seq = window._profileDirectorySeq = (window._profileDirectorySeq || 0) + 1;
+    function currentDirectory(){return seq === window._profileDirectorySeq && owner === customerReadOwner() && scope === getCustomerReadScope();}
+    window._profileDetailLoadSeq = (window._profileDetailLoadSeq || 0) + 1;
+    window._profileGroups = null;
+    if (detailEl && detailEl._customerDesignArchive) {detailEl._customerDesignArchive.destroy();detailEl._customerDesignArchive = null;}
     if (loadingEl) loadingEl.style.display = 'block';
     if (listEl) listEl.innerHTML = '';
     if (detailEl) detailEl.style.display = 'none';
@@ -12832,10 +12893,11 @@ function initApp() {
     var legacyQueuePromise = fetchAllSupabaseRows(legacyQueueUrl, 1000);
     var customerProfilesPromise = AUTHENTICATED_STAFF && AUTHENTICATED_STAFF.session_token
       ? employeeBookingsApi('customer_profiles', { session_token: AUTHENTICATED_STAFF.session_token, customer_scope: getCustomerReadScope(), limit: 1000 })
-        .then(function(data){ return data && Array.isArray(data.rows) ? data.rows : []; }).catch(function(){ return []; })
+        .then(function(data){ return data && Array.isArray(data.rows) ? data.rows : []; })
       : Promise.resolve([]);
 
     Promise.all([hairRecordsPromise, legacyQueuePromise, customerProfilesPromise]).then(function(results) {
+      if (!currentDirectory()) return;
       var hairRows = Array.isArray(results[0]) ? results[0] : [];
       var queueRows = Array.isArray(results[1]) ? results[1] : [];
       var customerRows = Array.isArray(results[2]) ? results[2] : [];
@@ -12877,9 +12939,10 @@ function initApp() {
       }
       for (var pi = 0; pi < customerRows.length; pi++) addCustomerProfileRow(customerRows[pi]);
       var normalizedHairRows = hairRows.map(normalizeHairCloudRecord);
-      enrichHairRecordsWithCareRows(normalizedHairRows).then(function(enrichedHairRows) {
-        for (var i = 0; i < enrichedHairRows.length; i++) {
-          addProfileRecord(hairRows[i] || {}, enrichedHairRows[i], 'hair_records');
+      // The directory uses identity and diagnosis summaries only. Retrieve care
+      // products when that customer's detail is opened, never for the whole store.
+        for (var i = 0; i < normalizedHairRows.length; i++) {
+          addProfileRecord(hairRows[i] || {}, normalizedHairRows[i], 'hair_records');
         }
         for (var qi = 0; qi < queueRows.length; qi++) {
           var r = queueRows[qi];
@@ -12895,9 +12958,11 @@ function initApp() {
           });
         }
         window._profileGroups = groups;
+        window._profileDirectoryOwner = owner;
+        window._profileDirectoryScope = scope;
         renderProfileList(groups);
-      });
     }).catch(function() {
+      if (!currentDirectory()) return;
       if (loadingEl) loadingEl.style.display = 'none';
       if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:13px;">❌ 加载失败</div>';
     });
@@ -12971,6 +13036,7 @@ function initApp() {
   window.showCustomerProfile = function(phone) {
     var groups = window._profileGroups;
     if (!groups || !groups[phone]) return;
+    if (window._profileDirectoryOwner && (window._profileDirectoryOwner !== customerReadOwner() || window._profileDirectoryScope !== getCustomerReadScope())) {window.loadCustomerProfiles();return;}
     var g = groups[phone];
     var existingDetail = document.getElementById('profile-detail');
     if (existingDetail && existingDetail._customerDesignArchive) {
@@ -12985,13 +13051,17 @@ function initApp() {
     var detailEl = document.getElementById('profile-detail');
     detailEl.style.display = 'block';
     detailEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;">正在加载完整消费和套餐记录...</div>';
-    fetchCustomerProfileRows(g.phone, g.name, 2000).then(function(rows) {
-      if (requestSeq !== window._profileDetailLoadSeq) return;
-      if (rows && rows.length) g.profileRows = rows;
+    var owner = customerReadOwner(), scope = getCustomerReadScope();
+    function currentDetail() {return requestSeq === window._profileDetailLoadSeq && owner === customerReadOwner() && scope === getCustomerReadScope();}
+    var ownRecords = g.records.filter(function(item){return item.source === 'hair_records';}).map(function(item){return item.rec;});
+    var careRead = ownRecords.length ? enrichHairRecordsWithCareRows(ownRecords) : Promise.resolve([]);
+    Promise.all([fetchCustomerProfileRows(g.phone, g.name, 2000, scope), careRead]).then(function(result) {
+      if (!currentDetail()) return;
+      g.profileRows = result[0];
       renderCustomerProfileDetail(g);
-    }).catch(function() {
-      if (requestSeq !== window._profileDetailLoadSeq) return;
-      renderCustomerProfileDetail(g);
+    }).catch(function(error) {
+      if (!currentDetail()) return;
+      renderCustomerProfileDetail(Object.assign({},g,{profileRows:[],profileReadError:error.message || '未能读取消费和套餐记录'}));
     });
   };
 
@@ -13008,8 +13078,11 @@ function initApp() {
 
     var consumptionArchive = renderCustomerConsumptionArchive(g.profileRows || []);
     var packagesArchive = renderCustomerPackagesArchive(g.profileRows || []);
-    html += hairArchiveSection('消费记录', consumptionArchive);
-    html += hairArchiveSection('剩余套餐项目', packagesArchive);
+    if (g.profileReadError) html += hairArchiveSection('消费与套餐尚未核实',esc(g.profileReadError)+' · 请返回列表重试。');
+    else {
+      html += hairArchiveSection('消费记录', consumptionArchive);
+      html += hairArchiveSection('剩余套餐项目', packagesArchive);
+    }
 
     if (g.records.length === 0) {
       html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;font-size:12px;color:var(--text-secondary);">暂无发质分析记录</div>';
@@ -13080,10 +13153,10 @@ function initApp() {
         html += '<div style="margin-top:8px;"><div style="font-size:10px;color:var(--text-secondary);margin-bottom:5px;">照片留档</div>';
         html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">';
         if (rec.serviceBeforePhoto) {
-          html += '<div><div style="font-size:9px;color:var(--text-secondary);margin-bottom:3px;">服务前</div><img src="' + escAttr(rec.serviceBeforePhoto) + '" alt="服务前照片" style="width:100%;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"></div>';
+          html += '<div><div style="font-size:9px;color:var(--text-secondary);margin-bottom:3px;">服务前</div><img loading="lazy" decoding="async" src="' + escAttr(rec.serviceBeforePhoto) + '" alt="服务前照片" style="width:100%;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"></div>';
         }
         if (rec.serviceAfterPhoto) {
-          html += '<div><div style="font-size:9px;color:var(--text-secondary);margin-bottom:3px;">服务后</div><img src="' + escAttr(rec.serviceAfterPhoto) + '" alt="服务后照片" style="width:100%;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"></div>';
+          html += '<div><div style="font-size:9px;color:var(--text-secondary);margin-bottom:3px;">服务后</div><img loading="lazy" decoding="async" src="' + escAttr(rec.serviceAfterPhoto) + '" alt="服务后照片" style="width:100%;height:120px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"></div>';
         }
         html += '</div></div>';
       }
@@ -13438,9 +13511,9 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<script defer src="data-read-client.js?v=689"></script>
-<script defer src="scoped-read-codec.js?v=689"></script>
-<script defer src="scoped-read-sync.js?v=689"></script>
-<script defer src="app-shell-client.js?v=689"></script>
+<script defer src="data-read-client.js?v=690"></script>
+<script defer src="scoped-read-codec.js?v=690"></script>
+<script defer src="scoped-read-sync.js?v=690"></script>
+<script defer src="app-shell-client.js?v=690"></script>
 </body>
 </html>

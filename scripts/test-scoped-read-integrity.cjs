@@ -2,10 +2,10 @@
 const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const crypto=require('node:crypto').webcrypto;
 const source=['scoped-read-codec.js','scoped-read-sync.js'].map(f=>fs.readFileSync(f,'utf8')).join('\n');
-function device(enabled,secret) {
+function device(enabled,secret,mode='opt-in',stored) {
   const tab=vm.createContext({crypto,TextEncoder,TextDecoder,Date,setTimeout,clearTimeout,URLSearchParams,
-    document:{documentElement:{getAttribute:k=>k==='data-read-sync-rollout'?'opt-in':'demo'}},
-    location:{search:enabled?'?read_preview=1':''},sessionStorage:new Map()});
+    document:{documentElement:{getAttribute:k=>k==='data-read-sync-rollout'?mode:'demo'}},
+    location:{search:typeof enabled==='string'?enabled:enabled?'?read_preview=1':''},sessionStorage:new Map(stored?[['zysyr-scoped-read-preview',stored]]:[])});
   tab.sessionStorage.getItem=tab.sessionStorage.get.bind(tab.sessionStorage);tab.sessionStorage.setItem=tab.sessionStorage.set.bind(tab.sessionStorage);
   vm.runInContext(source,tab);
   return {tab,read:send=>tab.ZysyrReadSync.read({scope:'store-and-day',secret,current:()=>true,send})};
@@ -13,6 +13,11 @@ function device(enabled,secret) {
 const secret='test-session-only-not-production-123456789', copy=x=>JSON.parse(JSON.stringify(x));
 (async()=>{
   const A=device(true,secret), B=device(true,secret+'-deviceB'), legacy=device(false,secret);
+  for(const [mode,query,stored,want] of [
+    ['default-on','',null,true],['default-on','?read_preview=0','1',false],
+    ['default-on','','0',false],['opt-in','',null,false],['opt-in','?read_preview=1',null,true],
+    ['off','?read_preview=1','1',false],[null,'','1',false]
+  ])assert.equal(device(query,secret,mode,stored).tab.ZysyrReadSync.enabled,want);
   const rows=Array.from({length:100},(_,i)=>({id:i,status:'confirmed',label:'样本'+i,memo:'a'.repeat(80)}));
   let data={rows},denied=false,offline=false;const calls=[];
   const send=async h=>{

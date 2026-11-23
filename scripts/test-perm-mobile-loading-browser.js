@@ -34,7 +34,9 @@ const engine = process.env.STARTUP_BROWSER || 'chromium';
           if (!staffReady) { heldStaff.push(route); return; }
           return route.fulfill({ json: [{ ...user, active: true, employment_status: 'active' }, { username: '测试助理', store: user.store, position: '技师助理', active: true, employment_status: 'active' }] });
         }
-        if (url.pathname.endsWith('/mgj_service_records') || (url.pathname.endsWith('/hair_records') && url.searchParams.get('select') !== 'record_data')) taskReads++;
+        // The active new form reads its sequence counter; do not count that as a hidden task list.
+        // No legacy fallback is expected against this successful synthetic server.
+        if (url.pathname.endsWith('/mgj_service_records') || (url.pathname.endsWith('/hair_records') && url.searchParams.get('select') !== 'seq:record_data->seq')) taskReads++;
         return route.fulfill({ json: [] });
       }
       if (url.pathname === '/blank') return route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>synthetic tab</title>' });

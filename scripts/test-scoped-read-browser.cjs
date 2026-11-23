@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
  const browser=await chromium.launch();
  try{
   const page=await browser.newPage(), ctx=page.context();
-  await ctx.route('**/*',r=>r.fulfill({contentType:'text/html',body:'<html lang="zh"></html>'}));
+  await ctx.route('**/*',r=>r.fulfill({contentType:'text/html',body:'<html lang="zh" data-read-sync-rollout="default-on"></html>'}));
   async function boot(){await page.goto('https://test.invalid/');for(const file of ['scoped-read-codec.js','scoped-read-sync.js'])await page.addScriptTag({content:fs.readFileSync(path.join(root,file),'utf8')});}
   await boot();
   const setup=async()=>page.evaluate(()=>{

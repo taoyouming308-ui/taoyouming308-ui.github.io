@@ -5,28 +5,36 @@ const CACHE = 'zysyr-public-shell-' + SHELL.version + '-' + SHELL.id;
 const FILES = new Map(SHELL.files.map(file => [new URL(file.path, ROOT).pathname, file]));
 const keyFor = file => new URL(file.path, ROOT).href;
 const COMPLETE = new URL('__zysyr_public_shell_complete__', ROOT).href;
+async function checkedPublicBytes(file, response) {
+  if (response.status !== 200 || response.type === 'opaque' || response.redirected) throw new Error('Static response unavailable');
+  const mime = (response.headers.get('Content-Type') || '').split(';')[0].trim();
+  if (!file.types.includes(mime)) throw new Error('Static content type mismatch');
+  const bytes = await response.arrayBuffer();
+  const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
+  if (hash !== file.sha256) throw new Error('Static release hash mismatch');
+  // Reconstruct from verified public bytes, never copy old headers, dates or cookies.
+  return new Response(bytes, { status: 200, headers: { 'Content-Type': mime, 'X-Zysyr-Shell': String(SHELL.version), 'Cache-Control': 'no-store' } });
+}
 async function verifiedDownload(file) {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), 15000);
   try {
     const response = await fetch(keyFor(file), { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: abort.signal });
-    if (response.status !== 200 || response.type === 'opaque' || response.redirected) throw new Error('Static response unavailable');
-    const mime = (response.headers.get('Content-Type') || '').split(';')[0].trim();
-    if (!file.types.includes(mime)) throw new Error('Static content type mismatch');
-    const bytes = await response.arrayBuffer();
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
-    if (hash !== file.sha256) throw new Error('Static release hash mismatch');
-    // Only immutable public bytes plus a tiny safe header set; never persist response cookies.
-    return new Response(bytes, { status: 200, headers: { 'Content-Type': mime, 'X-Zysyr-Shell': String(SHELL.version), 'Cache-Control': 'no-store' } });
+    return await checkedPublicBytes(file, response);
   } finally { clearTimeout(timer); }
 }
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     // A completed newer shell is a durable version floor until browser storage is cleared.
+    let prior = null, priorVersion = 0, sameVersion = false;
     for (const name of await caches.keys()) {
       if (!name.startsWith('zysyr-public-shell-')) continue;
-      const completed = await (await caches.open(name)).match(COMPLETE);
-      if (completed && Number(await completed.text()) > SHELL.version) throw new Error('Static shell downgrade refused');
+      const other = await caches.open(name), completed = await other.match(COMPLETE);
+      if (!completed) continue;
+      const version = Number(await completed.text());
+      if (version > SHELL.version) throw new Error('Static shell downgrade refused');
+      if (version === SHELL.version) sameVersion = true;
+      if (version > priorVersion && version < SHELL.version) { prior = other; priorVersion = version; }
     }
     const cache = await caches.open(CACHE);
     const alreadyComplete = !!(await cache.match(COMPLETE));
@@ -37,7 +45,14 @@ self.addEventListener('install', event => {
       const downloads = await Promise.allSettled(Array.from({ length: 3 }, async () => {
         while (next < SHELL.files.length) {
           const file = SHELL.files[next++];
-          await cache.put(keyFor(file), await verifiedDownload(file));
+          let response;
+          if (prior && !sameVersion && !file.path.endsWith('.html')) {
+            try {
+              const old = await prior.match(keyFor(file));
+              if (old) response = await checkedPublicBytes(file, old);
+            } catch (_) { /* Eviction, corruption or changed bytes: get this release's file. */ }
+          }
+          await cache.put(keyFor(file), response || await verifiedDownload(file));
         }
       }));
       if (downloads.some(result => result.status === 'rejected')) throw new Error('Incomplete static release');
