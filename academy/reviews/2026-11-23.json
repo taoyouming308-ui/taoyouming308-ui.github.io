@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-23",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（2026-11-23本轮AI课程来源、版权及隐私审校者，非独立第三方或真人化学工艺批准）",
+  "reviewedAt": "2026-11-23T00:51:00.000Z",
+  "approvalReference": "2026-11-23本轮已核对2013年J-STAGE DOI 10.2115/fiber.69.8与2021年PubMed PMID 34214523的题名作者时间与证据界限；确认模拟案例无顾客识别信息，逐图审查3张自制静态SVG不含外链、第三方图片或实验结果。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "已核对Effects of Some Waving Treatment Conditions on the Permanent Waving Performance of Human Hair、2013-01-10、https://www.jstage.jst.go.jp/article/fiber/69/1/69_8/_article/-char/en；2013年Sen'i Gakkaishi 69(1):8-12，DOI 10.2115/fiber.69.8，离体毛束、特定硫代乙醇酸铵溶液及卷绕初始应力对照；2026-11-23已核对期刊原文摘要。；支持：特定条件下卷绕初始应力与化学还原共同影响最终干态卷峰数量，说明不能单凭绕入圈数判断成品。；限制：未比较所有杠径、全部发质或真人两圈与两道S的对应关系，不能外推具体药剂浓度、操作时间和安全张力。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "已核对Perm-waved human hair: a thermorheologically complex shape memory composite、2021-06-30、https://pubmed.ncbi.nlm.nih.gov/34214523/；2021年6月30日在线、9月7日刊于Biophysical Journal 120(17):3831-3840，DOI 10.1016/j.bpj.2021.03.044；永久弯曲毛发形状记忆的受控材料研究，已核对PubMed和大学机构记录。；支持：还原氧化后的永久弯曲仍具有温度和时间依赖的复杂松弛表现，卷入几何不能直接等于最终垂落形态。；限制：不是法式大S真人卷杠圈数对照，也不证明有60摄氏度通用触发阈值或提供热烫机设定。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮AI编辑独立绘制的静态SVG；人工逐图审查不含第三方素材、外部链接、脚本、真实顾客资料或虚构的实验效果。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮AI编辑独立绘制的静态SVG；人工逐图审查不含第三方素材、外部链接、脚本、真实顾客资料或虚构的实验效果。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮AI编辑独立绘制的静态SVG；人工逐图审查不含第三方素材、外部链接、脚本、真实顾客资料或虚构的实验效果。"
+    }
+  ],
+  "contentSha256": "effa95f1a72aa950bbab0bcf877a670c24161fec7b29ef2adf92d9dc2e62fa87",
+  "assetSha256": {
+    "assets/2026-11-23/figure1.svg": "810434bc8e1449c13b2c0de6d7bd2a438c10058909ec10930dfea1dc889ec5f2",
+    "assets/2026-11-23/figure2.svg": "9412578a9d11df5ad7cf6a58044488ddb90ca2ec4179060337d5badbb71815a0",
+    "assets/2026-11-23/figure3.svg": "413bca7ad0377e0e79250f353283c44c8d5d6095aca62a3b24c2a76b820dfcdc"
+  }
+}
