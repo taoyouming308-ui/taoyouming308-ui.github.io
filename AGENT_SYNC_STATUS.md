@@ -1,3 +1,8 @@
+## 2026-11-23 · Three-app read performance (App version: v690; acceptance candidate)
+
+- Based on protected v689. Read paths and public shell only; no changes to server permissions, ledger mutations, historical records, migrations or live sync workers. App entries select the default-on mode in this candidate; per-tab read_preview=0 restores full-read transport.
+- Require the complete protected gate, actual phone acceptance, normal merge and deployed byte readback before marking this version live. A desktop browser timing is not a phone or production timing. Forward rollback must retain stored business data and in-progress work.
+
 ## 2026-11-23 · Administrator service binding (App version: v689; release candidate)
 
 - Owner: Codex. User selected 管理员; reuse only the current `staff.role=admin` custom backend session, not store_admin or operations/job-label inference. Confirmation does not grant photo viewing. Responsible staff is explicitly selected by stable account ID and creation instant.

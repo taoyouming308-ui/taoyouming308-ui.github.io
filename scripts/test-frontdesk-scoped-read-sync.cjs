@@ -101,6 +101,7 @@ const plain=x=>JSON.parse(JSON.stringify(x));
   // Exercise the real codec + cache runtime with the same Edge encoder and
   // old server fallback. Full private results must be identical on all paths.
   Object.assign(context,{crypto:require('node:crypto').webcrypto,TextDecoder,TextEncoder,setTimeout,clearTimeout});
+  require('./read-rollout-vm-fixture.cjs')(context,html);
   vm.runInContext(fs.readFileSync('scoped-read-codec.js','utf8'),env);
   vm.runInContext(fs.readFileSync('scoped-read-sync.js','utf8'),env);
   context.window.ZysyrReadSync=context.ZysyrReadSync;

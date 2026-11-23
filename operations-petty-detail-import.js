@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   var pending = null, busy = false, sequence = 0;
+  if(window.addEventListener)window.addEventListener('zysyr:report-session-ended',function(){pending=null;sequence++});
   var fields = {transaction_date:'日期（完整年月日）',amount:'支出金额',summary:'摘要 / 说明',category:'科目',recipient:'领款人',voucher_number:'凭证编号'};
   var aliases = {transaction_date:/日期|date/i,amount:/支出|贷方|金额|amount/i,summary:/摘要|说明|用途|summary/i,category:/科目|分类|category/i,recipient:/领款|经办|recipient/i,voucher_number:/凭证|编号|number/i};
   function defaultColumn(headers, field) {
@@ -15,7 +16,7 @@
   }
   window.ZysyrPettyScopeIdentity = function () {
     var claims={};try{claims=JSON.parse(atob(authAccessToken().split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));}catch(_){}
-    return JSON.stringify([state.session||'',claims.sub||(state.auth&&state.auth.user&&state.auth.user.id)||(state.user&&state.user.username)||'',claims.session_id||'']);
+    return JSON.stringify([state.session||'',claims.sub||(state.auth&&state.auth.user&&state.auth.user.id)||(state.user&&state.user.username)||'',claims.session_id||'',typeof reportPrincipal==='function'?reportPrincipal():null,typeof reportSyncEpoch==='number'?reportSyncEpoch:0]);
   };
   function scope() { return JSON.stringify([currentStore(),document.getElementById('month').value,window.ZysyrPettyScopeIdentity()]); }
   function current(p) { return pending===p && p.scope===scope() && document.getElementById('petty-detail-import-body'); }

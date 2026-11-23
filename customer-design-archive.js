@@ -122,9 +122,12 @@
       const reviewMarkup = '<section class="cda-review"><h4>完成复盘</h4><p class="cda-muted">结合上方原始照片与完成效果核对。</p>'+(hasFields(review)?'<div class="cda-review-values">'+REVIEW.map(([key,label])=>valueRow(label,review[key])).join('')+'</div>':'<p class="cda-workflow-empty">本次尚未记录完成复盘。</p>')+'</section>';
       return zones+processMarkup+reviewMarkup;
     }
-    function versionMarkup(version,open) {
+    function versionBody(version) {
       const link = chatLink(version.archive_url || version.chatgpt_url);
-      return '<details class="cda-version" data-version-id="'+esc(version.id)+'"'+(open?' open':'')+'><summary><span>'+esc(STATUS[version.status] || '当前方案')+'</span><span class="cda-muted">'+esc(formatDate(version.created_at))+'</span></summary><div class="cda-version-body"><p class="cda-byline">'+esc(author(version))+' · '+esc(sourceName(version.source))+'</p><div class="cda-version-photos">'+versionPhotosMarkup(version)+'</div>'+comparison(version)+workflowMarkup(version)+(link?'<a class="cda-link" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">打开 ChatGPT 协作档案 ↗</a>':'')+'</div></details>';
+      return '<p class="cda-byline">'+esc(author(version))+' · '+esc(sourceName(version.source))+'</p><div class="cda-version-photos">'+versionPhotosMarkup(version)+'</div>'+comparison(version)+workflowMarkup(version)+(link?'<a class="cda-link" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">打开 ChatGPT 协作档案 ↗</a>':'');
+    }
+    function versionMarkup(version,visible) {
+      return '<details class="cda-version" data-version-id="'+esc(version.id)+'" open><summary><span>'+esc(STATUS[version.status] || '当前方案')+'</span><span class="cda-muted">'+esc(formatDate(version.created_at))+'</span></summary><div class="cda-version-body">'+(visible?versionBody(version):'')+'</div></details>';
     }
     function historyMarkup() {
       if (!state.versions.length) return '<div class="cda-empty"><p>还没有结构化设计记录</p><span>上传原始照片，先做八步设计，再记录六区执行与完成复盘。</span></div>';
@@ -132,7 +135,7 @@
       state.versions.forEach(v => { const key = visitIdentity(v); if (!groups.has(key)) groups.set(key,[]); groups.get(key).push(v); });
       return Array.from(groups.values()).map((versions,index) => {
         const first = currentVisitVersion(versions), date = first.booking_date || first.service_date || first.visit_date || first.created_at;
-        return '<details class="cda-visit"'+(index===0?' open':'')+'><summary><span>'+esc(formatDate(date))+'<small>'+ (index===0?'最近一次设计':'历史到店')+'</small></span></summary><div class="cda-visit-body">'+versionMarkup(first,true)+'</div></details>';
+        return '<details class="cda-visit"'+(index===0?' open':'')+'><summary><span>'+esc(formatDate(date))+'<small>'+ (index===0?'最近一次设计':'历史到店')+'</small></span></summary><div class="cda-visit-body">'+versionMarkup(first,index===0)+'</div></details>';
       }).join('');
     }
     function input(group,key,value,label,zone) {
@@ -196,8 +199,14 @@
     async function loadVersionPhotos(el) {
       if (!el.open || !el.closest('.cda-visit')?.open || state.destroyed) return;
       const id=el.dataset.versionId,version=state.versions.find(v=>String(v.id)===id);
-      if (!version || state.signing.has(id))return;
-      const work=signPhotos(displayedVersionPhotos(version).photos);state.signing.set(id,work);await work;state.signing.delete(id);
+      if (!version)return;
+      const body=el.querySelector('.cda-version-body');
+      if(body && !body.firstElementChild)body.innerHTML=versionBody(version);
+      // A refresh can replace an element while its image URLs are in flight.
+      // The replacement still renders after that same promise settles.
+      let work=state.signing.get(id);
+      if(!work){work=signPhotos(displayedVersionPhotos(version).photos);state.signing.set(id,work);}
+      await work;if(state.signing.get(id)===work)state.signing.delete(id);
       if(state.destroyed || !root.contains(el))return;
       const target=el.querySelector('.cda-version-photos');if(target)target.innerHTML=versionPhotosMarkup(version);
     }
@@ -305,6 +314,16 @@
       viewer.showModal();
     }
     function click(event) {
+      // 'toggle' is queued after the native disclosure action. Materialize the
+      // text synchronously for pointer, keyboard and assistive-tech activation.
+      const summary=event.target.closest('summary'),visit=summary && summary.parentElement;
+      if(visit && visit.matches('.cda-visit') && !visit.open){
+        const el=visit.querySelector('.cda-version'),body=el && el.querySelector('.cda-version-body');
+        if(body && !body.firstElementChild){
+          const version=state.versions.find(v=>String(v.id)===el.dataset.versionId);
+          if(version)body.innerHTML=versionBody(version);
+        }
+      }
       const button=event.target.closest('button'); if(!button || !root.contains(button))return;
       if (button.dataset.photo) {openPhoto(button.dataset.photo);return;}
       if (button.dataset.removePhoto && state.draft && !state.saving) {

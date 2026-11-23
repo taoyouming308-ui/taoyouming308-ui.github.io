@@ -1,4 +1,4 @@
-/* Opt-in reads only. No fetch adapter of its own, outbox, credential store, or
+/* Selected reads only. No fetch adapter of its own, outbox, credential store, or
  * offline success path. The caller owns authentication and foreground state. */
 (function(g){
   'use strict';
@@ -6,11 +6,13 @@
   const memory=new Map(), inflight=new Map(), enc=new TextEncoder(), dec=new TextDecoder();
   let epoch=0, dbPromise, clearing=Promise.resolve();
   function rolloutEnabled(){
-    if(g.document?.documentElement?.getAttribute?.('data-read-sync-rollout')!=='opt-in')return true;
+    const mode=g.document?.documentElement?.getAttribute?.('data-read-sync-rollout');
+    if(mode!=='opt-in'&&mode!=='default-on')return false;
     try{
       const choice=new URLSearchParams(g.location.search).get('read_preview');
       if(choice==='0'||choice==='1')g.sessionStorage.setItem('zysyr-scoped-read-preview',choice);
-      return g.sessionStorage.getItem('zysyr-scoped-read-preview')==='1';
+      const stored=g.sessionStorage.getItem('zysyr-scoped-read-preview');
+      return stored==='1'||(mode==='default-on'&&stored!=='0');
     }catch{return false;}
   }
   const enabled=rolloutEnabled(),build=g.document?.documentElement?.getAttribute?.('data-version')||'1';

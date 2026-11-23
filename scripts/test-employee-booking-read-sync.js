@@ -50,6 +50,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   assert(edge.includes('payload.read_sync ? await encodeReadSync(payload.read_sync, result) : result'));
   // Then plug the real authenticated read transport into the same adapter; no database/auth network.
   Object.assign(c,{crypto:require('node:crypto').webcrypto,TextEncoder,TextDecoder,setTimeout,clearTimeout});
+  require('./read-rollout-vm-fixture.cjs')(c,fs.readFileSync('perm-app.html','utf8'));
   for (const name of ['scoped-read-codec.js','scoped-read-sync.js']) vm.runInContext(fs.readFileSync(name,'utf8'),c);
   c.window.ZysyrReadSync=c.ZysyrReadSync;
   c.AUTHENTICATED_STAFF={...auth,session_token:'mock-signed-in-token-with-over-24-chars'};

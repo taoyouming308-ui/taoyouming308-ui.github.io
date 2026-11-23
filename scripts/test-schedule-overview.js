@@ -46,8 +46,8 @@ detail.hair_scope_note='旧发质档案门店待确认，请在全部门店查�
             login:{session_token:'synthetic-only',user}, session:{user}, registration_options:{stores:[user.store]},
             business_details:{available:false,store:user.store,date:today},
             dashboard:{date:today,store:user.store,barbers,technicians:['小雨'],assistants:['小禾'],bookings:scenarioBookings.concat({barber_name:'林一',time_label:'12:00'}),services:[],reception:scenarioReception,synced_at:new Date().toISOString()},
-            customer_search:{results:[{name:'林女士',phone:'13800000000',last_visit:today,shops:[user.store],remaining_packages:2}]},
-            customer_detail:{...detail,customer_scope:data.customer_scope,packages:detail.packages.filter(pkg=>data.customer_scope==='all'||pkg.shop===user.store),hair_records:data.customer_scope==='all'?detail.hair_records:[]},ledger_records:{rows:ledger},import_batches:{batches:[]},
+            customer_search:{store:data.store,customer_scope:data.customer_scope,results:[{name:'林女士',phone:'13800000000',last_visit:today,shops:[user.store],remaining_packages:2}]},
+            customer_detail:{...detail,store:data.store,customer_scope:data.customer_scope,packages:detail.packages.filter(pkg=>data.customer_scope==='all'||pkg.shop===user.store),hair_records:data.customer_scope==='all'?detail.hair_records:[]},ledger_records:{rows:ledger},import_batches:{batches:[]},
             shampoo_qualification_stats:{month:today.slice(0,7),stats:[{assistant:'小禾',total:20,qualified:18,rate:90},{assistant:'小雨',total:12,qualified:8,rate:66.7}]}
           };
           if(!(data.operation in responses)) { unexpected.push(data.operation);return route.fulfill({status:400,json:{error:'Unexpected preview operation'}}); }

@@ -175,7 +175,8 @@ async function harness(browser, baseURL, width, options = {}) {
   await page.evaluate(({ store, reportId, holdPettyReport }) => {
     window.syntheticStore = store;
     window.currentStore = () => window.syntheticStore;
-    window.state = { session: 'synthetic-session-not-real', view: 'voucher-center',
+    // The real monthly evidence cards are mounted by the finance workbench, not the upload queue.
+    window.state = { session: 'synthetic-session-not-real', view: 'finance-workbench',
       user: { username: 'synthetic-finance', role: 'finance', can_manage_finance_workbench: true,
         can_match_expense_vouchers: true },
       data: { monthly_report: { id: reportId } }, trace: { address: '' },

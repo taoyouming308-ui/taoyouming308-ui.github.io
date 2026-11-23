@@ -3,6 +3,9 @@
   'use strict';
   var attempted=new Map(),monthlyCache=null,lastMonthlyCells=null,lastMonthlyScope=null,pettyViewGeneration=0;
   var pendingMonthlyAttachments=new Set();
+  if(root.addEventListener)root.addEventListener('zysyr:report-session-ended',function(){
+    monthlyCache=null;lastMonthlyCells=null;lastMonthlyScope=null;pettyViewGeneration++;attempted.clear();
+  });
   function scopeKey(){return JSON.stringify([currentStore(),document.getElementById('month').value,root.ZysyrPettyScopeIdentity?root.ZysyrPettyScopeIdentity():state.session]);}
   function monthlyData(data){return {source:data.source_selection,expense_voucher_targets:data.targets||[],expense_voucher_matches:(data.items||[]).filter(function(i){return i.confirmed_target_id;}).map(function(i){return {voucher_id:i.source_voucher_id||i.id,filename:i.original_filename,mode:i.expense_association&&i.expense_association.mode||'manual',target:(data.targets||[]).find(function(t){return t.id===i.confirmed_target_id&&t.target_kind===i.confirmed_target_kind;})};})};}
   function decorate(cells,data,key){

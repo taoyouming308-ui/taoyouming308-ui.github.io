@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="689" data-read-sync-rollout="opt-in">
+<html lang="zh-CN" data-version="690" data-read-sync-rollout="default-on">
 <head>
   <style>.frontdesk-scope-invalid body>:not(#frontdesk-scope-message){display:none!important}#frontdesk-scope-message{padding:30px;font:16px/1.7 system-ui}</style>
   <meta charset="utf-8">
@@ -178,7 +178,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=689" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=690" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -309,7 +309,7 @@
               <label class="drop" for="csv-file"><div class="mark" style="margin:auto">表</div><h3>选择历史消费表</h3><p>在 Excel / WPS 中将原表“另存为 CSV UTF‑8”，然后在这里选择。<br>导入前会先预览和检查，不会直接写入。</p><span class="primary" style="display:inline-flex">选择 CSV 文件</span><input id="csv-file" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values"></label>
               <div class="card preview hidden" id="preview-card"><div class="card-head"><h3 id="preview-title">导入预览</h3><small id="preview-summary"></small></div><div class="preview-wrap" id="preview-wrap"></div><div class="import-actions"><button class="primary" id="import-btn" type="button">确认导入</button><span class="import-status" id="import-status">尚未写入</span></div></div>
             </div>
-            <div class="card mapping"><h3>自动识别这些列</h3><table><tbody><tr><td>消费日期</td><td>必填</td></tr><tr><td>券码</td><td>可选</td></tr><tr><td>姓名 / 手机号</td><td>至少一项</td></tr><tr><td>客户项目</td><td>剪发、烫发、染发等</td></tr><tr><td>发型师 / 技师 / 助理</td><td>自动保存人员</td></tr><tr><td>消费金额</td><td>金额、点评、扣次卡说明</td></tr></tbody></table><button class="link-btn" id="template-btn" type="button">下载 CSV 模板</button><div class="section-title">最近导入<span>防重复写入</span></div><div class="batch-list" id="batch-list"><div class="empty" style="padding:20px">暂无导入记录</div></div></div>
+            <div class="card mapping"><h3>自动识别这些列</h3><table><tbody><tr><td>消费日期</td><td>必填</td></tr><tr><td>券码</td><td>可选</td></tr><tr><td>姓名 / 手机号</td><td>至少一项</td></tr><tr><td>客户项目</td><td>剪发、烫发、染发等</td></tr><tr><td>发型师 / 技师 / 助理</td><td>自动保存人员</td></tr><tr><td>消费金额</td><td>金额、点评、扣次卡说明</td></tr></tbody></table><button class="link-btn" id="template-btn" type="button">下载 CSV 模板</button><div class="section-title">最近导入<span id="batch-read-scope">按账号授权范围查看</span></div><div class="batch-list" id="batch-list"><div class="empty" style="padding:20px">暂无导入记录</div></div></div>
           </div>
         </details>
       </section>
@@ -326,7 +326,7 @@
   <div class="toast hidden" id="toast"></div>
 
   <script data-startup>window.ZysyrStartup.lock();</script>
-  <script src="frontdesk-business-details.js?v=689"></script>
+  <script src="frontdesk-business-details.js?v=690"></script>
   <script>
   (function(){
     'use strict';
@@ -350,7 +350,12 @@
     function isSessionInvalidError(error){return !!(error&&((error.code==='AUTH_SESSION_INVALID'||error.code==='AUTH_ACCOUNT_DISABLED')||((error.status===401||error.status===403)&&/^(请重新登录|登录已过期|账号已停用)/.test(error.message||''))))}
     async function api(operation,data){
       var send=function(){return apiRequest(operation,data);};
-      return window.ZysyrReadFlights ? window.ZysyrReadFlights.request('frontdesk',operation==='dashboard'||operation==='business_details',JSON.stringify([operation,data,state.session&&state.session.session_token,state.store]),send) : send();
+      // In-flight only, never reuse a settled detail/search result or replay a mutation.
+      var read=operation==='dashboard'||operation==='business_details'||operation==='customer_detail'||operation==='customer_search'||operation==='ledger_records'||operation==='import_batches'||operation==='shampoo_qualification_stats';
+      function invalidate(){state.secondaryEpoch=(state.secondaryEpoch||0)+1;state.searchChecked=state.detailChecked=0;}
+      if(!read)invalidate();
+      var promise=window.ZysyrReadFlights ? window.ZysyrReadFlights.request('frontdesk',read,JSON.stringify([operation,data,state.session&&state.session.session_token,state.store]),send) : send();
+      return read?promise:promise.finally(invalidate);
     }
     async function apiRequest(operation,data){
       if(state.frontdeskScopeBlocked)throw new Error('前台会话已变化，请重新打开页面');
@@ -381,10 +386,12 @@
       state.dashboardRequest=(state.dashboardRequest||0)+1;state.ledgerRequest++;state.drawerRequest++;state.customerRequest++;state.searchRequest++;
       document.documentElement.classList.add('frontdesk-scope-invalid');
       state.selected=null;state.drawerData=null;state.drawerCustomer=null;state.ledgerReadScope='';
+      state.resultKey=null;state.detailKey=null;
+      if(window.FrontdeskBusinessDetails)window.FrontdeskBusinessDetails.clear();
       // Remove previous read results as well as hiding the shell. Do not submit or reset unsaved forms.
       ['head-user','scope-user','scope-store','today-list','ledger-table','ledger-count','customer-results','customer-detail',
         'customer-drawer-content','shampoo-table','batch-list','consumption-status'].forEach(function(id){
-          var el=document.getElementById(id);if(el)el.textContent='';
+          var el=document.getElementById(id);if(el){el.onclick=null;el.textContent='';}
         });
       if(window.ZysyrReadSync)window.ZysyrReadSync.clear();
       var note=document.createElement('p');note.id='frontdesk-scope-message';note.setAttribute('role','alert');
@@ -408,6 +415,7 @@
       state.dashboardRequest=(state.dashboardRequest||0)+1;state.dashboard=null;state.store='';state.session=null;
       businessUI.clear();state.customerRequest++;state.drawerRequest++;state.searchRequest++;
       state.selected=null;state.drawerCustomer=null;state.drawerData=null;
+      clearSecondaryReads();state.activeSearch='';$('customer-query').value='';
       ['ledger-table','ledger-count','today-list','consumption-status','sync-label','customer-results','customer-detail','customer-drawer-content'].forEach(function(id){$(id).textContent=''});
       ['customer-drawer','today-form-overlay','ledger-form-overlay'].forEach(function(id){$(id).classList.add('hidden')});
       $('today-form').reset();$('ledger-form').reset();
@@ -426,6 +434,7 @@
       $('login').classList.add('hidden'); $('head-user').textContent=(state.store||user.store||'请选择分店')+' · '+user.username;
       $('scope-store').textContent=state.store||user.store||'请选择分店'; $('scope-user').textContent=user.username+' · '+(user.position||user.role||'员工');
       $('import-denied').classList.toggle('hidden',!!user.can_import); $('import-tools').classList.toggle('hidden',!user.can_import);
+      $('batch-read-scope').textContent=user.role==='admin'?'全部门店 · 最近 30 批':'账号所属门店 · 最近 30 批';
       loadDashboard(); if(state.view==='import'&&user.can_import)loadBatches();
     }
 
@@ -472,10 +481,33 @@
       catch(e){$('register-error').textContent=e.message;}finally{setBusy(btn,false);}
     });
     $('logout-btn').addEventListener('click',async function(){try{await api('logout');}catch(e){}clearSession();});
-    $('store-select').addEventListener('change',function(){state.store=this.value;localStorage.setItem(STORE_KEY,state.store);$('scope-store').textContent=state.store;$('head-user').textContent=state.store+' · '+state.session.user.username;state.drawerRequest++;state.drawerCustomer=null;$('customer-drawer').classList.add('hidden');if(state.selected)openCustomer(state.selected);if($('customer-query').value.trim().length>=2)searchCustomers();loadDashboard();if(state.view==='import'){loadLedger();if(state.session.user.can_import)loadBatches();}});
+    function recentCustomerRead(at){var age=Date.now()-at;return !!at&&age>=0&&age<15000;}
+    function clearSecondaryReads(){
+      state.detailChecked=state.searchChecked=0;state.viewScroll={};
+      state.resultKey=null;state.detailKey=null;state.resultLimit=0;$('customer-results').onclick=null;
+      state.batchRequest=(state.batchRequest||0)+1;state.statsRequest=(state.statsRequest||0)+1;state.searchRequest++;state.customerRequest++;
+      ['batch-list','shampoo-table','shampoo-caption','customer-results','customer-detail','customer-drawer-content','ledger-table','ledger-count'].forEach(function(id){$(id).textContent='';});
+      setBusy($('shampoo-stats-btn'),false);setBusy($('customer-search-btn'),false);
+    }
+    $('store-select').addEventListener('change',function(){state.store=this.value;localStorage.setItem(STORE_KEY,state.store);$('scope-store').textContent=state.store;$('head-user').textContent=state.store+' · '+state.session.user.username;clearSecondaryReads();state.drawerRequest++;state.drawerCustomer=null;state.drawerData=null;state.selected=null;state.ledgerRequest++;state.ledgerRows=[];state.ledgerReadScope='';$('customer-drawer').classList.add('hidden');businessUI.clear();if(state.view==='customers'&&state.activeSearch&&state.activeSearch===$('customer-query').value.trim())searchCustomers();loadDashboard();if(state.view==='import'){loadLedger();if(state.session.user.can_import)loadBatches();}});
 
     document.querySelectorAll('.nav-btn').forEach(function(button){button.addEventListener('click',function(){showView(button.dataset.view);});});
-    function showView(name){state.view=name;document.querySelectorAll('.nav-btn').forEach(function(btn){btn.classList.toggle('on',btn.dataset.view===name);});document.querySelectorAll('.view').forEach(function(view){view.classList.add('hidden');});$('view-'+name).classList.remove('hidden');if(isMobileView()&&typeof window.scrollTo==='function')window.scrollTo(0,0);if(name==='import'&&state.session){loadLedger();if(state.session.user.can_import)loadBatches();}}
+    function showView(name){
+      if(name===state.view)return;
+      var mobile=isMobileView()&&typeof window.scrollTo==='function',positions=state.viewScroll||(state.viewScroll={});
+      if(mobile)positions[state.view]=window.scrollY||0;
+      state.view=name;document.querySelectorAll('.nav-btn').forEach(function(btn){btn.classList.toggle('on',btn.dataset.view===name);});
+      document.querySelectorAll('.view').forEach(function(view){view.classList.add('hidden');});$('view-'+name).classList.remove('hidden');
+      if(mobile)window.scrollTo(0,positions[name]||0);
+      if(!state.session)return;
+      if(name==='import'){loadLedger();if(state.session.user.can_import)loadBatches();}
+      else if(name==='today')loadDashboard({silent:true});
+      else if(name==='customers'){
+        // Reuse the already visible, read-only DOM briefly; explicit Refresh and all writes always go online.
+        if(state.activeSearch&&state.activeSearch===$('customer-query').value.trim()&&(!state.resultKey||!recentCustomerRead(state.searchChecked)))searchCustomers();
+        if(state.selected&&(!state.detailKey||!recentCustomerRead(state.detailChecked)))openCustomer(state.selected,true);
+      }
+    }
 
     function itemNames(items){return (Array.isArray(items)?items:[]).map(function(item){return typeof item==='string'?item:(item&&((item.name||item.itemname)))||'';}).filter(Boolean);}
     function customerKey(row){return phone(row.customer_phone)||(row.customer_name?'n:'+row.customer_name:'');}
@@ -588,24 +620,64 @@
       catch(e){if(request===state.dashboardRequest){$('consumption-status').textContent=state.dashboard?'读取失败，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';if(!silent)toast(e.message,true);}}
       finally{if(request===state.dashboardRequest){state.dashboardLoading=false;setBusy(btn,false);}}
     }
-    $('today-date').value=localDate();$('today-date').addEventListener('change',loadDashboard);$('refresh-btn').addEventListener('click',function(){if(state.view==='today')loadDashboard();else if(state.view==='customers'&&state.selected)openCustomer(state.selected);else{loadLedger();if(state.session&&state.session.user.can_import)loadBatches();}});
+    $('today-date').value=localDate();$('today-date').addEventListener('change',loadDashboard);$('refresh-btn').addEventListener('click',function(){if(state.view==='today')loadDashboard();else if(state.view==='customers'){if(state.selected)openCustomer(state.selected);else if($('customer-query').value.trim().length>=2)searchCustomers();else toast('输入客户姓名或手机号后查询。');}else if(state.view==='import'){loadLedger();if(state.session&&state.session.user.can_import)loadBatches();}});
     $('schedule-mode').addEventListener('click',function(){state.scheduleDetailed=!state.scheduleDetailed;this.textContent=state.scheduleDetailed?'全天总览':'详细时间轴';this.setAttribute('aria-pressed',String(!!state.scheduleDetailed));$('view-today').classList.toggle('is-detailed',!!state.scheduleDetailed);if(state.dashboard)renderToday(state.dashboard);});
     $('schedule-left').addEventListener('click',function(){$('today-list').scrollBy({left:-520,behavior:'smooth'});});$('schedule-right').addEventListener('click',function(){$('today-list').scrollBy({left:520,behavior:'smooth'});});
 
-    async function searchCustomers(){var request=++state.searchRequest,query=$('customer-query').value.trim(),btn=$('customer-search-btn');if(query.length<2){toast('至少输入两个字或两位手机号',true);return;}setBusy(btn,true,'查询中…');$('customer-results').innerHTML='<div class="empty">正在查询完整客户索引…</div>';try{var data=await api('customer_search',{query:query,customer_scope:state.customerScope});if(request!==state.searchRequest)return;renderResults(data.results||[]);}catch(e){if(request===state.searchRequest)$('customer-results').innerHTML='<div class="empty danger">'+esc(e.message)+'</div>';}finally{if(request===state.searchRequest)setBusy(btn,false);}}
-    function renderResults(rows){if(!rows.length){$('customer-results').innerHTML='<div class="empty"><b>没有查到客户</b>请检查姓名或手机号</div>';return;}$('customer-results').innerHTML=rows.map(function(row,index){return '<button class="result" type="button" data-index="'+index+'"><div class="result-top"><span class="result-name">'+esc(row.name||'未命名客户')+'</span><span class="result-phone">'+esc(row.phone||'无手机号')+'</span></div><div class="result-meta"><span>最近 '+esc(row.last_visit||'—')+'</span><span>'+esc((row.shops||[]).join('、'))+'</span>'+(row.remaining_packages?'<span style="color:var(--gold2)">'+esc(row.remaining_packages)+' 个套餐有余项</span>':'')+'</div></button>';}).join('');$('customer-results').querySelectorAll('.result').forEach(function(button){button.addEventListener('click',function(){var row=rows[Number(button.dataset.index)];$('customer-results').querySelectorAll('.result').forEach(function(el){el.classList.remove('on');});button.classList.add('on');openCustomer(row);});});}
+    function secondaryIdentity(){return JSON.stringify([state.session&&state.session.session_token,state.store,state.customerScope]);}
+    function verifyCustomerReadScope(reply){
+      if(!reply||reply.store!==state.store||reply.customer_scope!==state.customerScope){lockFrontdeskScope();throw new Error('返回的门店或查档范围与当前选择不符，请重新登录核对。');}
+    }
+    async function searchCustomers(){
+      var epoch=state.secondaryEpoch,request=++state.searchRequest,query=$('customer-query').value.trim(),btn=$('customer-search-btn'),identity=secondaryIdentity(),key=identity+'|'+query;
+      var current=function(){return request===state.searchRequest&&identity===secondaryIdentity()&&query===$('customer-query').value.trim();};
+      state.activeSearch=query.length>=2?query:'';
+      if(query.length<2){setBusy(btn,false);toast('至少输入两个字或两位手机号',true);return;}
+      setBusy(btn,true,'查询中…');if(state.resultKey!==key){state.resultKey=null;state.resultLimit=24;$('customer-results').innerHTML='<div class="empty">正在查询完整客户索引…</div>';}
+      try{var data=await api('customer_search',{query:query,customer_scope:state.customerScope});if(!current())return;verifyCustomerReadScope(data);if(epoch!==state.secondaryEpoch)throw new Error('资料有更新，请重新查询。');state.resultKey=key;state.searchChecked=Date.now();renderResults(data.results||[]);}
+      catch(e){if(current()){state.resultKey=null;$('customer-results').innerHTML='<div class="empty danger">'+esc(e.message)+'</div>';}}
+      finally{if(request===state.searchRequest)setBusy(btn,false);}
+    }
+    function renderResults(rows){
+      var target=$('customer-results');if(!rows.length){target.innerHTML='<div class="empty"><b>没有查到客户</b>请检查姓名或手机号</div>';return;}
+      var shown=0;target.textContent='';
+      function appendPage(end){
+        end=Math.min(end,rows.length);var html='';
+        for(var i=shown;i<end;i++){var row=rows[i];html+='<button class="result" type="button" data-index="'+i+'"><div class="result-top"><span class="result-name">'+esc(row.name||'未命名客户')+'</span><span class="result-phone">'+esc(row.phone||'无手机号')+'</span></div><div class="result-meta"><span>最近 '+esc(row.last_visit||'—')+'</span><span>'+esc((row.shops||[]).join('、'))+'</span>'+(row.remaining_packages?'<span style="color:var(--gold2)">'+esc(row.remaining_packages)+' 个套餐有余项</span>':'')+'</div></button>';}
+        shown=end;state.resultLimit=shown;
+        target.insertAdjacentHTML('beforeend',html+(shown<rows.length?'<button type="button" class="ghost customer-result-more">查看更多（'+shown+' / '+rows.length+'）</button>':''));
+      }
+      appendPage(Math.max(24,state.resultLimit||0));
+      target.onclick=function(event){var more=event.target.closest('.customer-result-more');if(more){more.remove();appendPage(shown+24);return;}var button=event.target.closest('.result');if(!button||!target.contains(button))return;target.querySelectorAll('.result.on').forEach(function(el){el.classList.remove('on');});button.classList.add('on');openCustomer(rows[Number(button.dataset.index)]);};
+    }
+    $('customer-query').addEventListener('input',function(){state.searchRequest++;state.activeSearch='';state.resultKey=null;state.resultLimit=0;$('customer-results').onclick=null;$('customer-results').textContent='';setBusy($('customer-search-btn'),false);});
     $('customer-search-btn').addEventListener('click',searchCustomers);$('customer-query').addEventListener('keydown',function(event){if(event.key==='Enter')searchCustomers();});
 
-    function customerReadPayload(customer){return {phone:customer.phone||'',name:customer.name||'',profile_id:customer.profile_id||'',import_id:customer.import_id||'',customer_scope:state.customerScope};}
-    function changeCustomerScope(scope){state.customerScope=scope==='store'?'store':'all';$('customer-scope').value=state.customerScope;if($('customer-query').value.trim().length>=2)searchCustomers();if(state.selected)openCustomer(state.selected);if(state.drawerCustomer&&!$('customer-drawer').classList.contains('hidden'))openTodayCustomer(state.drawerCustomer);}
+    function customerReadPayload(customer){return {phone:customer.phone||'',name:customer.name||'',profile_id:customer.profile_id||'',import_id:customer.import_id||'',customer_scope:state.customerScope,archive_projection:'outline-v1'};}
+    function changeCustomerScope(scope){state.customerScope=scope==='store'?'store':'all';$('customer-scope').value=state.customerScope;state.resultKey=null;state.detailKey=null;state.searchRequest++;state.resultLimit=0;$('customer-results').onclick=null;$('customer-results').textContent='';setBusy($('customer-search-btn'),false);if(state.activeSearch&&state.activeSearch===$('customer-query').value.trim())searchCustomers();if(state.selected)openCustomer(state.selected);if(state.drawerCustomer&&!$('customer-drawer').classList.contains('hidden'))openTodayCustomer(state.drawerCustomer);}
     $('customer-scope').addEventListener('change',function(){changeCustomerScope(this.value);});
-    async function openCustomer(customer){var request=++state.customerRequest;state.selected=customer;state.showingAll=false;$('customer-detail').innerHTML='<div class="detail-empty">正在读取客户共享档案…</div>';try{var data=await api('customer_detail',customerReadPayload(customer));if(request!==state.customerRequest)return;renderCustomer(data,'customer-detail');scrollCustomerDetailIntoView();}catch(e){if(request===state.customerRequest)$('customer-detail').innerHTML='<div class="detail-empty danger">'+esc(e.message)+'</div>';}}
+    async function openCustomer(customer,background){
+      var epoch=state.secondaryEpoch,request=++state.customerRequest,payload=customerReadPayload(customer),key=secondaryIdentity()+'|'+JSON.stringify(payload),target=$('customer-detail'),keep=key===state.detailKey;
+      var current=function(){return request===state.customerRequest&&key===secondaryIdentity()+'|'+JSON.stringify(customerReadPayload(customer));};
+      state.selected=customer;if(!keep){state.showingAll=false;state.detailKey=null;target.innerHTML='<div class="detail-empty">正在读取客户共享档案…</div>';}target.setAttribute('aria-busy','true');
+      try{var data=await api('customer_detail',payload);if(!current())return;verifyCustomerReadScope(data);if(epoch!==state.secondaryEpoch)throw new Error('资料有更新，请刷新客户档案。');
+        var opened=keep?Array.from(target.querySelectorAll('details[open][data-archive-key]')).map(function(el){return el.dataset.archiveKey;}):[];
+        renderCustomer(data,'customer-detail');state.detailKey=key;state.detailChecked=Date.now();
+        if(opened.length)target.querySelectorAll('[data-archive-key]').forEach(function(el){if(opened.indexOf(el.dataset.archiveKey)>=0)el.open=true;});
+        if(!background&&state.view==='customers')scrollCustomerDetailIntoView();
+      }catch(e){if(current()){state.detailKey=null;target.innerHTML='<div class="detail-empty danger">'+esc(e.message)+'</div>';}}
+      finally{if(current())target.removeAttribute('aria-busy');}
+    }
     function isPortraitPhone(){ return typeof window!=='undefined' && window.matchMedia && window.matchMedia('(max-width:680px)').matches; } function scrollCustomerDetailIntoView(){if(!isPortraitPhone())return;setTimeout(function(){var detail=$('customer-detail');if(detail&&detail.scrollIntoView)detail.scrollIntoView({behavior:'smooth',block:'start'});},80);}
     function renderSharedHairArchives(data){
-      var rows=data.hair_records||[],labels={'hair-form-name':'客户','hair-form-phone':'手机号','hair-form-barber':'发型师','hair-form-technician':'技师 / 助理','hair-form-perm-notes':'烫发备注','hair-form-color-notes':'染发备注','hair-form-target-color':'目标色','hair-form-tone':'色调','hair-form-follow-date':'回访日期','hair-form-follow-msg':'回访记录'};
+      var rows=data.hair_records||[];
+      return '<div class="section-title"><b>发质分析与照片留档</b><span>'+rows.length+' 份 · 只读</span></div><p class="sub">'+esc(data.hair_scope_note||'')+'</p>'+(!rows.length?'<div class="empty">当前范围暂无已匹配的发质档案</div>':rows.map(function(row,index){var rec=row.record_data||{};return '<details class="package" data-archive-index="'+index+'" data-archive-key="'+esc(row.id||JSON.stringify([row.archive_store,row.created_at,index]))+'" style="margin:10px 0"><summary style="cursor:pointer;overflow-wrap:anywhere">'+esc(rec.visitDate||rec.bookingDate||rec.date||(row.created_at||'').slice(0,10))+' · '+esc(row.archive_store||'门店待确认')+' · '+esc([row.barber||rec.barber,row.technician||rec.technician].filter(Boolean).join(' / '))+'</summary><div class="archive-body"></div></details>';}).join(''));
+    }
+    function renderArchiveBody(rec){
+      var labels={'hair-form-name':'客户','hair-form-phone':'手机号','hair-form-barber':'发型师','hair-form-technician':'技师 / 助理','hair-form-perm-notes':'烫发备注','hair-form-color-notes':'染发备注','hair-form-target-color':'目标色','hair-form-follow-date':'回访日期','hair-form-follow-msg':'回访记录'};
       function text(value){if(value==null)return '';if(typeof value==='object')return JSON.stringify(value);return String(value);}
       function photo(value,label){var url=String(value||'');if(!/^data:image\/(?:png|jpe?g|webp);base64,/i.test(url)&&!/^https:\/\/pdssrmpeiuwvxzsgschm\.supabase\.co\/storage\//.test(url))return '';return '<figure style="margin:0;min-width:0"><figcaption>'+label+'</figcaption><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer"><img src="'+esc(url)+'" alt="'+label+'照片" loading="lazy" style="width:100%;max-height:260px;object-fit:contain;border-radius:8px"></a></figure>';}
-      return '<div class="section-title"><b>发质分析与照片留档</b><span>'+rows.length+' 份 · 只读</span></div><p class="sub">'+esc(data.hair_scope_note||'')+'</p>'+(!rows.length?'<div class="empty">当前范围暂无已匹配的发质档案</div>':rows.map(function(row){var rec=row.record_data||{},fields=rec.formFields||{},details=Object.keys(fields).filter(function(key){return fields[key]!==''&&fields[key]!=null&&fields[key]!==false;}).map(function(key){return '<div><dt style="color:var(--muted)">'+esc(labels[key]||key.replace(/^hair-(?:form-)?/,''))+'</dt><dd style="margin:0;white-space:pre-wrap;overflow-wrap:anywhere">'+esc(text(fields[key]))+'</dd></div>';}).join('');var other=[['基础发质',rec.baseInfo],['三段诊断',rec.threeSection],['烫发备注',rec.permNotes],['染发备注',rec.colorNotes],['护理记录',rec.careUsage]].filter(function(pair){return pair[1]&&text(pair[1])!=='{}'&&text(pair[1])!=='[]';}).map(function(pair){return '<p style="overflow-wrap:anywhere"><b>'+pair[0]+'：</b>'+esc(text(pair[1]))+'</p>';}).join('');return '<details class="package" style="margin:10px 0"><summary style="cursor:pointer;overflow-wrap:anywhere">'+esc(rec.visitDate||rec.bookingDate||rec.date||(row.created_at||'').slice(0,10))+' · '+esc(row.archive_store||'门店待确认')+' · '+esc([row.barber||rec.barber,row.technician||rec.technician].filter(Boolean).join(' / '))+'</summary><dl style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">'+details+'</dl>'+other+'<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">'+photo(rec.serviceBeforePhoto,'服务前')+photo(rec.serviceAfterPhoto,'服务后')+'</div></details>';}).join(''));
+      var fields=rec.formFields||{},details=Object.keys(fields).filter(function(key){return fields[key]!==''&&fields[key]!=null&&fields[key]!==false;}).map(function(key){return '<div><dt style="color:var(--muted)">'+esc(labels[key]||key.replace(/^hair-(?:form-)?/,''))+'</dt><dd style="margin:0;white-space:pre-wrap;overflow-wrap:anywhere">'+esc(text(fields[key]))+'</dd></div>';}).join('');var other=[['基础发质',rec.baseInfo],['三段诊断',rec.threeSection],['烫发备注',rec.permNotes],['染发备注',rec.colorNotes],['护理记录',rec.careUsage]].filter(function(pair){return pair[1]&&text(pair[1])!=='{}'&&text(pair[1])!=='[]';}).map(function(pair){return '<p style="overflow-wrap:anywhere"><b>'+pair[0]+'：</b>'+esc(text(pair[1]))+'</p>';}).join('');return '<dl style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">'+details+'</dl>'+other+'<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">'+photo(rec.serviceBeforePhoto,'服务前')+photo(rec.serviceAfterPhoto,'服务后')+'</div>';
     }
     function renderCustomer(data,targetId,today){
       targetId=targetId||'customer-detail';var target=$(targetId);
@@ -617,12 +689,35 @@
       var todayHtml=today?'<div class="today-summary"><div><label>今日发型师</label><b>'+esc(today.barber||'未分配')+'</b></div><div><label>到店时间</label><b>'+esc(minuteLabel(timeMinutes(today.time))||'未填写')+'</b></div><div><label>技师 / 助理</label><b>'+esc([today.technician,today.assistant].filter(Boolean).join(' / ')||'未填写')+'</b></div><div><label>今日项目</label><b>'+esc(today.service||'未填写')+'</b></div><div><label>金额 / 说明</label><b>'+esc(today.reception?ledgerAmountLabel(today.reception):'未填写')+'</b></div><div><label>前台状态</label><b>'+esc(today.reception?({waiting:'等待接待',arrived:'已经到店',in_service:'服务中',completed:'今日完成',cancelled:'取消/未到'}[today.reception.status]||'已登记'):'尚未登记')+'</b></div><div><label>当天备注</label><b>'+esc(today.notes||'无')+'</b></div></div>'+todaySourceTip+'<div class="drawer-actions"><button class="primary edit-today-record" type="button">'+(today.reception?'编辑当天信息':'添加当天信息')+'</button><button class="new-customer-btn'+(today.reception&&today.reception.is_new_customer?' on':'')+'" type="button">'+(today.reception&&today.reception.is_new_customer?'新客 ✓':'新客')+'</button><button class="shampoo-btn'+(today.reception&&today.reception.shampoo_qualified?' on':'')+'" type="button">'+(today.reception&&today.reception.shampoo_qualified?'洗发合格 ✓':'洗发合格')+'</button>'+(today.reception&&today.reception.id?'<button class="delete-btn delete-today-record" type="button">删除当天记录</button>':'')+'</div>':'';
       target.innerHTML='<div class="detail-content">'+todayHtml+'<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px">查档范围 <select class="ledger-filter detail-customer-scope" aria-label="当前客户资料查看范围"><option value="all">全部门店</option><option value="store">本店</option></select></label><p class="sub">跨店仅查看；套餐使用及今日接待仍按原门店规则。</p>'+(data.identity_warning?'<div class="notice">'+esc(data.identity_warning)+'</div>':'')+'<div class="customer-title"><div class="avatar">'+esc(initial)+'</div><div><h3>'+esc(customer.name||'未命名客户')+'</h3><p>'+esc(customer.phone||'未留手机号')+'</p></div></div><div class="summary-grid"><div class="summary-box"><label>当前范围档案次数</label><strong>'+esc(summary.visits||0)+'</strong></div><div class="summary-box"><label>当前范围档案金额</label><strong>'+esc(money(summary.consumption||0))+'</strong></div><div class="summary-box"><label>最近到店</label><strong style="font-size:14px">'+esc(summary.last_visit||'—')+'</strong></div><div class="summary-box"><label>历史表格补入</label><strong>'+esc(legacy.rows||0)+' 条</strong></div></div>'+(quality.summary_without_history?'<div class="notice"><strong>美管加历史明细尚未完整回传</strong>'+esc(quality.message||'当前仅展示已经同步的逐笔记录。')+'</div>':'')+'<div class="section-title"><b>套餐余项</b><span>'+packages.filter(function(pkg){return !pkg.expired;}).length+' 个未过期 · '+packages.filter(function(pkg){return pkg.expired;}).length+' 个已过期</span></div><div class="packages">'+packageHtml+'</div><div class="section-title"><b>全部已同步消费记录</b><span>共 '+timeline.length+' 条 · 美管加与历史表格分源展示</span></div><div class="timeline">'+timelineHtml+'</div>'+(timeline.length>80&&!state.showingAll?'<button class="ghost show-all show-all-history" type="button">显示全部 '+timeline.length+' 条记录</button>':'')+((data.notes||[]).length?'<div class="section-title"><b>客户备注</b></div><p style="white-space:pre-wrap">'+esc(data.notes.join('\n'))+'</p>':'')+renderSharedHairArchives(data)+'</div>';
       var scopeSelect=target.querySelector('.detail-customer-scope');scopeSelect.value=data.customer_scope||state.customerScope;scopeSelect.addEventListener('change',function(){changeCustomerScope(this.value);});
+      var identity=secondaryIdentity(),source=today||state.selected;
+      target.querySelectorAll('[data-archive-index]').forEach(function(el){
+        var body=el.querySelector('.archive-body'),row=(data.hair_records||[])[Number(el.dataset.archiveIndex)];
+        function current(){return !!state.session&&!state.frontdeskScopeBlocked&&identity===secondaryIdentity()&&target.contains(el)&&el.isConnected;}
+        async function fill(){
+          if(!row||!current()||body.dataset.phase==='loading'||body.dataset.phase==='ready'||body.dataset.phase==='failed')return;
+          if(row.archive_deferred!==true){body.innerHTML=renderArchiveBody(row.record_data||{});body.dataset.phase='ready';return;}
+          body.dataset.phase='loading';body.textContent='正在读取本份档案及照片…';
+          try{
+            if(!source)throw new Error('缺少当前客户来源，请重新打开档案。');
+            var id=String(row.id),payload=Object.assign(customerReadPayload(source),{archive_id:id,archive_projection:'body-v1'});
+            var detail=await api('customer_detail',payload);
+            if(!current())return;
+            verifyCustomerReadScope(detail);
+            if(detail.archive_projection!=='body-v1'||detail.archive_id!==id||!detail.record_data||typeof detail.record_data!=='object')throw new Error('档案版本或范围已变更，请刷新客户资料。');
+            body.innerHTML=renderArchiveBody(detail.record_data);body.dataset.phase='ready';
+          }catch(error){
+            if(!current())return;body.dataset.phase='failed';body.innerHTML='<p class="danger" role="alert">'+esc(error.message||'本份档案未能读取')+'</p><button type="button" class="ghost">重试本份档案</button>';
+            body.querySelector('button').onclick=function(){body.dataset.phase='';fill();};
+          }
+        }
+        el.querySelector('summary').addEventListener('click',function(){if(!el.open)fill();});el.addEventListener('toggle',function(){if(el.open)fill();});
+      });
       var all=target.querySelector('.show-all-history');if(all)all.addEventListener('click',function(){state.showingAll=true;renderCustomer(data,targetId,today);});var edit=target.querySelector('.edit-today-record');if(edit)edit.addEventListener('click',function(){openTodayForm(today);});var newBtn=target.querySelector('.new-customer-btn');if(newBtn)newBtn.addEventListener('click',function(){toggleNewCustomer(today);});var shampooBtn=target.querySelector('.shampoo-btn');if(shampooBtn)shampooBtn.addEventListener('click',function(){toggleShampooQualified(today);});var deleteBtn=target.querySelector('.delete-today-record');if(deleteBtn)deleteBtn.addEventListener('click',function(){deleteTodayRecord(today);});
     }
 
     async function openTodayCustomer(row){
       var request=++state.drawerRequest;state.drawerCustomer=row;state.showingAll=false;state.drawerData=null;$('customer-drawer').classList.remove('hidden');$('customer-drawer-content').innerHTML='<div class="detail-empty" style="min-height:320px">正在读取客户消费与套餐余项…</div>';
-      try{var data=await api('customer_detail',customerReadPayload(row));if(request!==state.drawerRequest)return;state.drawerData=data;renderCustomer(data,'customer-drawer-content',row);}catch(e){if(request===state.drawerRequest)$('customer-drawer-content').innerHTML='<div class="detail-empty danger" style="min-height:320px">'+esc(e.message)+'</div>';}
+      try{var data=await api('customer_detail',customerReadPayload(row));if(request!==state.drawerRequest)return;verifyCustomerReadScope(data);state.drawerData=data;renderCustomer(data,'customer-drawer-content',row);}catch(e){if(request===state.drawerRequest)$('customer-drawer-content').innerHTML='<div class="detail-empty danger" style="min-height:320px">'+esc(e.message)+'</div>';}
     }
     async function toggleNewCustomer(today){
       today=today||{};var rec=today.reception||null,on=!!(rec&&rec.is_new_customer),payload={is_new_customer:!on};
@@ -646,7 +741,7 @@
       try{await api('today_customer_delete',{id:rec.id});closeOverlay('customer-drawer');toast('已删除当天接待记录');await Promise.all([loadDashboard(),loadLedger()]);}
       catch(e){toast(e.message,true);}
     }
-    function closeOverlay(id){$(id).classList.add('hidden');}
+    function closeOverlay(id){$(id).classList.add('hidden');if(id==='customer-drawer'){state.drawerRequest++;state.drawerData=state.drawerCustomer=null;$('customer-drawer-content').textContent='';}}
     document.querySelectorAll('[data-close]').forEach(function(button){button.addEventListener('click',function(){closeOverlay(button.dataset.close);});});
     document.querySelectorAll('.overlay').forEach(function(overlay){overlay.addEventListener('click',function(event){if(event.target===overlay)closeOverlay(overlay.id);});});
     function openTodayForm(row){
@@ -731,10 +826,12 @@
     function renderPreview(){var rows=state.importRows.slice(0,30);$('preview-wrap').innerHTML='<table><thead><tr><th>日期</th><th>客户</th><th>手机号</th><th>项目</th><th>发型师</th><th>技师</th><th>助理</th><th>金额/说明</th></tr></thead><tbody>'+rows.map(function(row){return '<tr><td>'+esc(row.visit_date)+'</td><td>'+esc(row.customer_name)+'</td><td>'+esc(row.customer_phone)+'</td><td>'+esc(row.service_items)+'</td><td>'+esc(row.barber_name)+'</td><td>'+esc(row.technician_name)+'</td><td>'+esc(row.assistant_name)+'</td><td>'+esc(row.payment_summary||money(row.amount))+'</td></tr>';}).join('')+'</tbody></table>'+(state.importRows.length>30?'<div class="empty" style="padding:12px">预览前 30 条，确认后导入全部 '+state.importRows.length+' 条</div>':'');}
     $('import-btn').addEventListener('click',async function(){if(!state.importRows.length)return;var btn=this,batch=crypto.randomUUID(),done=0,imported=0,duplicates=0;setBusy(btn,true,'正在导入…');try{for(var i=0;i<state.importRows.length;i+=200){var chunk=state.importRows.slice(i,i+200),last=i+200>=state.importRows.length;var result=await api('import_rows',{batch_id:batch,filename:state.importFile,rows:chunk,complete:last});done+=chunk.length;imported+=Number(result.imported||0);duplicates+=Number(result.duplicates||0);$('import-status').textContent='已处理 '+done+' / '+state.importRows.length;}$('import-status').textContent='完成：新增 '+imported+' 条，跳过重复 '+duplicates+' 条';toast('历史数据导入完成');await Promise.all([loadBatches(),loadLedger()]);}catch(e){$('import-status').textContent='导入中断：'+e.message;toast(e.message,true);}finally{setBusy(btn,false);}});
     $('template-btn').addEventListener('click',function(){var csv='消费日期,券码,姓名,手机号,客户项目,发型师,技师,助理,消费金额\n2026-01-01,,示例客户,13800000000,洗剪吹,示例发型师,,示例助理,128\n';var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='前台历史消费导入模板.csv';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);});
-    async function loadBatches(){if(!state.session||!state.session.user||!state.session.user.can_import)return;try{var data=await api('import_batches'),rows=data.batches||[];$('batch-list').innerHTML=rows.length?rows.map(function(row){return '<div class="batch"><div><b>'+esc(row.original_filename)+'</b><br><small>'+esc(new Date(row.created_at).toLocaleString('zh-CN'))+' · '+esc(row.imported_by)+'</small></div><div style="text-align:right">新增 '+esc(row.imported_rows)+'<br><small>重复 '+esc(row.duplicate_rows)+'</small></div></div>';}).join(''):'<div class="empty" style="padding:20px">暂无导入记录</div>';}catch(e){$('batch-list').innerHTML='<div class="empty danger" style="padding:20px">'+esc(e.message)+'</div>';}}
+    async function loadBatches(){if(state.view!=='import'||!$('import-tools').open||!state.session||!state.session.user||!state.session.user.can_import)return;var id=state.batchRequest=(state.batchRequest||0)+1,session=state.session,store=state.store,valid=function(){return id===state.batchRequest&&session===state.session&&store===state.store&&state.view==='import'&&$('import-tools').open;};try{var data=await api('import_batches'),rows=data.batches||[];if(!valid())return;$('batch-list').innerHTML=rows.length?rows.map(function(row){return '<div class="batch"><div><b>'+esc(row.original_filename)+'</b><br><small>'+esc(new Date(row.created_at).toLocaleString('zh-CN'))+' · '+esc(row.imported_by)+' · '+esc(row.store||'门店未标注')+'</small></div><div style="text-align:right">新增 '+esc(row.imported_rows)+'<br><small>重复 '+esc(row.duplicate_rows)+'</small></div></div>';}).join(''):'<div class="empty" style="padding:20px">暂无导入记录</div>';}catch(e){if(!valid())return;$('batch-list').innerHTML='<div class="empty danger" style="padding:20px">'+esc(e.message)+'</div>';}}
+    $('import-tools').addEventListener('toggle',function(){if(this.open)loadBatches();});
 
     (function(){var now=new Date(),y=now.getFullYear(),m=now.getMonth(),opts=[];for(var i=0;i<12;i++){var d=new Date(y,m-i,1),yy=d.getFullYear(),mm=String(d.getMonth()+1).padStart(2,'0');opts.push('<option value="'+yy+'-'+mm+'">'+yy+'年'+mm+'月</option>');}$('shampoo-month').innerHTML=opts.join('');})();$('shampoo-stats-btn').addEventListener('click',loadShampooStats);
-    async function loadShampooStats(){var month=$('shampoo-month').value;if(!month){toast('请选择月份',true);return;}var btn=$('shampoo-stats-btn');setBusy(btn,true,'统计中…');$('shampoo-table').innerHTML='<div class="empty">正在统计…</div>';try{var data=await api('shampoo_qualification_stats',{month:month});renderShampooStats(data);}catch(e){$('shampoo-table').innerHTML='<div class="empty danger">'+esc(e.message)+'</div>';}finally{setBusy(btn,false);}}
+    async function loadShampooStats(){var month=$('shampoo-month').value;if(!month){toast('请选择月份',true);return;}var id=state.statsRequest=(state.statsRequest||0)+1,session=state.session,store=state.store,valid=function(){return id===state.statsRequest&&session===state.session&&store===state.store&&month===$('shampoo-month').value;},btn=$('shampoo-stats-btn');setBusy(btn,true,'统计中…');$('shampoo-table').innerHTML='<div class="empty">正在统计…</div>';try{var data=await api('shampoo_qualification_stats',{month:month});if(valid())renderShampooStats(data);}catch(e){if(valid())$('shampoo-table').innerHTML='<div class="empty danger">'+esc(e.message)+'</div>';}finally{if(id===state.statsRequest)setBusy(btn,false);}}
+    $('shampoo-month').addEventListener('change',function(){state.statsRequest=(state.statsRequest||0)+1;setBusy($('shampoo-stats-btn'),false);$('shampoo-caption').textContent='';$('shampoo-table').textContent='请点击统计查看所选月份。';});
     function renderShampooStats(data){var stats=data.stats||[];$('shampoo-caption').textContent=(data.month||'')+' · '+stats.length+' 位助理';if(!stats.length){$('shampoo-table').innerHTML='<div class="empty">该月暂无带助理的接待记录</div>';return;}if(isMobileView()){$('shampoo-table').innerHTML='<div class="mobile-stats-list">'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<article class="mobile-stat-card"><div><b>'+esc(s.assistant)+'</b><span>洗发 '+s.total+' 次 · 合格 '+s.qualified+' 次</span></div><strong style="color:'+tone+'">'+s.rate+'%</strong></article>';}).join('')+'</div>';}else{$('shampoo-table').innerHTML='<table class="ledger-table"><thead><tr><th>助理</th><th>洗发次数</th><th>合格次数</th><th>合格率</th></tr></thead><tbody>'+stats.map(function(s){var tone=s.rate>=80?'var(--green)':(s.rate>=60?'var(--gold)':'var(--red)');return '<tr><td><b>'+esc(s.assistant)+'</b></td><td>'+s.total+'</td><td>'+s.qualified+'</td><td style="color:'+tone+';font-weight:800">'+s.rate+'%</td></tr>';}).join('')+'</tbody></table>';}}
     document.addEventListener('visibilitychange',function(){
       if(document.hidden||!state.session)return;
@@ -748,9 +845,9 @@
     Promise.all([restoreSession(),startupStyleReady]).then(function(){startupStyle.media='all';window.ZysyrStartup.finish();},window.ZysyrStartup.failed);
   })();
   </script>
-<script defer src="data-read-client.js?v=689"></script>
-<script defer src="scoped-read-codec.js?v=689"></script>
-<script defer src="scoped-read-sync.js?v=689"></script>
-<script defer src="app-shell-client.js?v=689"></script>
+<script defer src="data-read-client.js?v=690"></script>
+<script defer src="scoped-read-codec.js?v=690"></script>
+<script defer src="scoped-read-sync.js?v=690"></script>
+<script defer src="app-shell-client.js?v=690"></script>
 </body>
 </html>

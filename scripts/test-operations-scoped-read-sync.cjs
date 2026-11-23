@@ -37,6 +37,7 @@ async function test() {
     dailySheetDirtyCount:()=>0,isSessionInvalidError:()=>false,isLocalPreview:()=>false,addEventListener(){},
     dailyOverviewRequest:0,dailyOpenState:null,renderDailyReportCalendar:()=>{$('daily-report-calendar').textContent='online'},beijingTimeNow:()=>''});
   vm.runInContext('window=globalThis',env);
+  require('./read-rollout-vm-fixture.cjs')(env,html);
   vm.runInContext(file('scoped-read-codec.js'),env);vm.runInContext(file('scoped-read-sync.js'),env);
   const core=env.ZysyrReadSync;
   env.ZysyrReadSync={enabled:true,clear:core.clear,read:o=>{spyOptions=o;return core.read(o)}};

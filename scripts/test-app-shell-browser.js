@@ -6,7 +6,12 @@ const runtime = fs.readFileSync(path.join(__dirname, 'app-shell-worker-runtime.j
 const base = Number(fs.readFileSync(path.join(root, 'version.txt'), 'utf8'));
 const types = { html:'text/html', js:'application/javascript', css:'text/css', json:'application/json', png:'image/png' };
 let release = base, corrupt = '', runtimeSuffix = '', networkDown = false, delay = 60, requests = [], posts = 0;
-function bytes(file) { let b=fs.readFileSync(path.join(root,file)); if(file.endsWith('.html')) b=Buffer.from(b.toString().replaceAll('data-version="'+base+'"','data-version="'+release+'"').replaceAll('?v='+base,'?v='+release)); return b; }
+// The SW can intercept fetch before browser automation routes see it. Keep the
+// synthetic HTML itself offline-safe in both engines, including after cache activation.
+const sourceBytes=new Map(paths.map(f=>[f,fs.readFileSync(path.join(root,f))]));
+function bytes(file) { let b=sourceBytes.get(file); if(file.endsWith('.html')) b=Buffer.from(b.toString()
+ .replace(/<head\b[^>]*>/i,"$&<meta http-equiv=\"Content-Security-Policy\" content=\"connect-src 'self'\">")
+ .replaceAll('data-version="'+base+'"','data-version="'+release+'"').replaceAll('?v='+base,'?v='+release)); return b; }
 function worker() {
  const files=paths.map(file=>({path:file,sha256:crypto.createHash('sha256').update(bytes(file)).digest('hex'),types:[types[file.split('.').pop()]],versions:[String(release),...(file==='staff-access-client.js'?['539']:[])]}));
  return 'const SHELL='+JSON.stringify({version:release,id:crypto.createHash('sha256').update(JSON.stringify(files)+runtime+runtimeSuffix).digest('hex').slice(0,16),files})+';\n'+runtime+runtimeSuffix;
@@ -52,18 +57,19 @@ async function waitFor(page,fn,arg){
   assert.equal(keys.length,paths.length+1);assert.ok(keys.every(k=>!k.includes('?')&&!k.includes('api/')));
   // Offline opens the real three entry documents but never treats a stored credential as verified.
   await page.locator('#identity-modal').waitFor(); // Finish the preceding page's empty-session check before seeding an offline fixture.
+  await page.goto(origin+'/harness'); // Seed from a neutral document; pending empty-session checks in a live app must not race fixture setup.
   await page.evaluate(()=>localStorage.setItem('booking-session',JSON.stringify({session_token:'synthetic',username:'test',store:'test',loggedAt:Date.now()})));
   if(engine==='webkit') networkDown=true; else await context.setOffline(true);
   for(const entry of ['perm-app.html','frontdesk.html','operations.html']){
    await page.goto(origin+'/'+entry,{waitUntil:'load'});assert.equal(await page.evaluate(()=>document.documentElement.dataset.version),String(base));
-   if(entry==='perm-app.html'){await page.locator('#identity-recovery').waitFor().catch(async e=>{console.log('identity-debug',await page.evaluate(()=>({token:localStorage.getItem('booking-session'),startup:document.getElementById('app-startup')?.outerHTML,gate:document.getElementById('identity-modal')?.outerHTML,recovery:document.getElementById('identity-recovery')?.outerHTML,auth:typeof AUTHENTICATED_STAFF})));throw e;});assert.equal(await page.locator('#hair-analysis-modal').count(),0);assert.ok(await page.evaluate(()=>localStorage.getItem('booking-session')));}
+   if(entry==='perm-app.html'){await page.locator('#identity-recovery').waitFor();assert.equal(await page.locator('#hair-analysis-modal').count(),0);assert.ok(await page.evaluate(()=>localStorage.getItem('booking-session')));}
   }
   assert.equal(await page.evaluate(()=>fetch('/api/private',{method:'POST',body:'synthetic'}).then(()=>false,()=>true)),true,'offline write is a real network failure');
   if(engine==='webkit') networkDown=false; else await context.setOffline(false);await page.goto(origin+'/frontdesk.html');
   await page.locator('#login-user').fill('unsaved synthetic');
   stage='offline-complete';console.log(stage);
   // Failed installation leaves old complete worker active and old input untouched.
-  release=base+1;corrupt='operations-time.js';
+  release=base+1;corrupt='operations.html';
   await page.evaluate(async()=>{
     const reg=await navigator.serviceWorker.getRegistration();window.__installStates=[];
     const observe=sw=>{if(!sw)return;const record=()=>window.__installStates.push(sw.state);record();sw.addEventListener('statechange',record);};
@@ -76,6 +82,11 @@ async function waitFor(page,fn,arg){
   await waitFor(page,async()=>(await caches.keys()).length===1);
   assert.equal(await page.evaluate(async()=>(await caches.keys()).length),1,'failed partial cache removed after all downloads settle');
   stage='bad-install-complete';console.log(stage);
+  // Corruption in the *old* cache must force a refetch even for an unchanged public script.
+  await page.evaluate(async()=>{const [n]=await caches.keys(),cache=await caches.open(n);
+    window.undoSyntheticDamage = await cache.match(new URL('/operations-time.js',location.href));
+    await cache.put(new URL('/operations-time.js',location.href),new Response('synthetic broken old JS',{headers:{'Content-Type':'application/javascript'}}));});
+  const beforeUpgrade=requests.length;
   corrupt='';await page.evaluate(async()=>(await navigator.serviceWorker.getRegistration()).update());
   await waitFor(page,async()=>!!(await navigator.serviceWorker.getRegistration()).installing);
   // Repeated button/online events must not queue another update while installation is running.
@@ -87,6 +98,11 @@ async function waitFor(page,fn,arg){
   }),0,'installing worker must not receive duplicate update jobs');
   assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');
   await waitFor(page,async()=>!!(await navigator.serviceWorker.getRegistration()).waiting);
+  const downloaded=requests.slice(beforeUpgrade).filter(r=>paths.includes(r.path)).map(r=>r.path);
+  assert.deepEqual([...new Set(downloaded)].sort(),[...paths.filter(f=>f.endsWith('.html')),'operations-time.js'].sort(),
+    'Only new entry HTML and damaged public assets should be downloaded');
+  console.log('Synthetic release upgrade: '+downloaded.length+' static downloads vs '+paths.length+' in full shell.');
+  await page.evaluate(async()=>{const [n]=await caches.keys();await (await caches.open(n)).put(new URL('/operations-time.js',location.href),window.undoSyntheticDamage);delete window.undoSyntheticDamage;});
   assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');
   await page.evaluate(()=>window.ZysyrAppShell.requestUpdate());assert.equal(await page.locator('#login-user').inputValue(),'unsaved synthetic');
   assert.equal(await page.locator('#app-shell-notice').getAttribute('data-state'),'waiting');
