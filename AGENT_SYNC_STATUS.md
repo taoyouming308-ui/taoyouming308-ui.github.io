@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:9920473a375425a99ed089e1e5faa693a5547451b884bdd9ab969ec91465d420 -->
+## 2026-11-23 · Reviewed academy publication candidate (App version: v685 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main d40a8799498e2e96bcf16986bf3d0a25688097fc.
+- Dates: 2026-11-23. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-22 · Aesthetic training: shoulder-neck collision and posterior weight (App version: v685 unchanged)
 
 - Current owner: Codex content publisher. Continue the existing focused aesthetic-training PR on protected `github/main` `5baf4ec0`/v685; do not create a duplicate PR. The earlier exact-head run passed the dedicated aesthetic governance and browser coverage but was blocked by four customer-history resume tests. Their independently reviewed fix has since landed on `main`; this content candidate only integrates that protected baseline and does not alter customer-sync code.
