@@ -17,14 +17,14 @@ for (const id of ['home-page', 'app-content', 'tab-bookings', 'tab-showcase']) {
   }});
 }
 const timers = new Map(), listeners = {}, sessionWaiters = [];
-let id = 0, galleryReads = 0, bookingReads = 0;
+let id = 0, galleryReads = 0, bookingReads = 0, bookingMemoryViews = 0;
 const c = vm.createContext({
   document: { hidden: false, getElementById: key => elements.get(key), body: {classList: {toggle(){}, remove(){}}},
     querySelectorAll: () => [elements.get('tab-showcase'), elements.get('tab-bookings')],
     addEventListener: (event, fn) => { listeners[event] = fn; } },
-  window: {}, sessionStorage: {setItem(){},removeItem(){}}, BOOKING_INTERVAL: null,
+  window: {}, sessionStorage: {setItem(){},removeItem(){}}, BOOKING_INTERVAL: null, bookingReadGeneration: 0,
   setInterval: fn => { timers.set(++id, fn); return id; }, clearInterval: key => timers.delete(key),
-  renderDateStrip(){}, checkIdentity: () => new Promise(resolve => sessionWaiters.push(resolve)),
+  renderDateStrip(){}, showBookingHistory(){bookingMemoryViews++;}, checkIdentity: () => new Promise(resolve => sessionWaiters.push(resolve)),
   loadShowcase: () => galleryReads++, loadBookings: () => bookingReads++
 });
 vm.runInContext(source('    function isForegroundFeature(', '    </script>'), c);
@@ -41,6 +41,7 @@ const settle = () => new Promise(r => setImmediate(r));
   c.window.goHome(); visibility(true); visibility(false); tick();
   assert.equal(galleryReads, 3, 'home does not resume an invisible active tab'); assert.equal(timers.size, 0);
   c.window.openFeature('bookings'); assert.equal(bookingReads, 0, 'wait for verified identity');
+  assert.equal(bookingMemoryViews,1,'same verified scope may be painted before the background read');
   c.window.goHome(); sessionWaiters.shift()(true); await settle(); tick();
   assert.equal(bookingReads, 0, 'late verification on home does not fetch bookings');
   c.window.openFeature('bookings'); sessionWaiters.shift()(true); await settle(); assert.equal(bookingReads, 1);

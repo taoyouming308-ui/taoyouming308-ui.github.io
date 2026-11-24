@@ -31,7 +31,15 @@ async function fixtures(browser){
 }
 async function scenario(browser,dir,variant,app,overview,trial,extra=false){
  const c=cfg[app],ctx=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Asia/Shanghai',serviceWorkers:'block'});
- const calls=[],errors=[],unexpected=[],out=[];let holdSession=false,releaseSession;let revoked=false,sessionWaiter,otherDeviceEdited=false;
+ const calls=[],errors=[],unexpected=[],out=[];let holdSession=false,releaseSession;let revoked=false,sessionWaiter,otherDeviceEdited=false,holdView='';
+ let viewResponse;
+ function holdNext(operation){
+   assert(!holdView);holdView=operation;
+   return new Promise((resolve,reject)=>{
+     const timeout=setTimeout(()=>reject(Error('Expected synthetic read: '+operation)),8000);
+     viewResponse=reply=>{clearTimeout(timeout);resolve(reply);};
+   });
+ }
  await ctx.route('**/*',async r=>{const req=r.request(),u=new URL(req.url());
  if(u.origin===origin&&u.pathname==='/no-script-benchmark-sibling')return r.fulfill({contentType:'text/html',body:'<!doctype html><title>合成测试标签</title>'});
  if(u.origin===origin)return local(r,dir,u);
@@ -53,6 +61,11 @@ async function scenario(browser,dir,variant,app,overview,trial,extra=false){
  else if(op==='bootstrap'&&u.pathname.endsWith('/aesthetic-study'))answer={user:{id:99,username:employee.username,store:shop},server_time:Date.now(),cases:[],rows:[]};
  else{unexpected.push(op);status=403;answer={error:'unrecognized synthetic read; no writes are implemented'};}
  if(body.read_sync&&[c.op,'daily_sheet_month','daily_sheet_read'].includes(op))answer=await globalThis.ZysyrReadCodec.encode(body.read_sync,answer);
+ if(op===holdView){
+   holdView='';
+   const override=await new Promise(resolve=>viewResponse(resolve));
+   if(override){status=override.status;answer={error:'synthetic unavailable'};}
+ }
  const json=JSON.stringify(answer);q.rx=Buffer.byteLength(json);await wait(delay+1000*(q.tx+q.rx)/bps);
  q.done=true;await r.fulfill({status,contentType:'application/json',body:json}).catch(()=>{});
  });
@@ -114,9 +127,46 @@ async function scenario(browser,dir,variant,app,overview,trial,extra=false){
        dataHint:target.some(x=>x.hint),opCounts:Object.fromEntries([...new Set(req.map(x=>x.op))].map(k=>[k,req.filter(x=>x.op===k).length]))});
    }
  }
+ if(extra&&process.env.BENCH_RETURN_CHECK==='1'&&app==='report'){
+   const to=async view=>{await page.evaluate(v=>{void showView(v)},view);await page.locator('#view-'+view).waitFor();};
+   await page.locator('#daily-readonly-back').click();
+   await to('monthly');
+   await page.waitForFunction(()=>state.monthlyOverviewReady);
+   await page.evaluate(()=>{window.keptMonthly=document.querySelector('#monthly-sheet td')});
+   await to('daily-report');
+   await page.waitForFunction(()=>!document.getElementById('daily-report-calendar').inert&&!!document.querySelector('#daily-report-calendar [data-draft-id]'));
+   await page.evaluate(()=>{window.keptDaily=document.querySelector('#daily-report-calendar [data-draft-id]')});
+   const pendingMonth=holdNext('overview');
+   await to('monthly');const monthReply=await pendingMonth;
+   assert(await page.evaluate(()=>keptMonthly===document.querySelector('#monthly-sheet td')&&document.getElementById('view-monthly').inert));
+   monthReply();
+   await page.waitForFunction(()=>state.monthlyOverviewReady&&!document.getElementById('view-monthly').inert);
+   assert(await page.evaluate(()=>keptMonthly===document.querySelector('#monthly-sheet td')),'unchanged month kept its table');
+   const pendingCalendar=holdNext('daily_sheet_month');
+   await to('daily-report');const calendarReply=await pendingCalendar;
+   assert(await page.evaluate(()=>keptDaily===document.querySelector('#daily-report-calendar [data-draft-id]')&&document.getElementById('daily-report-calendar').inert));
+   calendarReply();
+   await page.waitForFunction(()=>!document.getElementById('daily-report-calendar').inert);
+   assert(await page.evaluate(()=>keptDaily===document.querySelector('#daily-report-calendar [data-draft-id]')),'unchanged calendar kept its cards');
+   console.error('PASS monthly overview and daily calendar visible before verification, unchanged DOM, actions locked');
+ }
  if(extra&&app==='frontdesk'){
    // Fresh context = fresh device (also true for every cold sample); server revocation gate on reload before any preview.
    assert(!out[0].dataHint&&out[0].cacheSummaryMs===null);
+   if(process.env.BENCH_RETURN_CHECK==='1'){
+     await page.evaluate(()=>{window.keptSchedule=document.querySelector('.schedule-event');document.querySelector('.nav-btn[data-view=customers]').click()});
+     const pending=holdNext('dashboard');
+     await page.evaluate(()=>document.querySelector('.nav-btn[data-view=today]').click());const reply=await pending;
+     assert(await page.evaluate(()=>keptSchedule===document.querySelector('.schedule-event')&&document.getElementById('today-list').inert));
+     reply();
+     await page.waitForFunction(()=>!document.getElementById('today-list').inert);
+     assert(await page.evaluate(()=>keptSchedule===document.querySelector('.schedule-event')),'unchanged roster kept the same schedule');
+     const failure=holdNext('dashboard');
+     await page.evaluate(()=>{document.querySelector('.nav-btn[data-view=customers]').click();document.querySelector('.nav-btn[data-view=today]').click()});(await failure)({status:503});
+     await page.locator('#consumption-status').getByText(/未能更新/).waitFor();
+     assert(await page.evaluate(()=>keptSchedule===document.querySelector('.schedule-event')&&document.getElementById('today-list').inert));
+     console.error('PASS frontdesk visible before verification, unchanged DOM, stale-list offline guard');
+   }
    // Same account, simulated external authoritative change: delta must replace stale values on refresh.
    otherDeviceEdited=true;await page.locator('#refresh-btn').click();await page.locator('.schedule-event').filter({hasText:'跨设备模拟改名'}).first().waitFor({timeout:4000});
    // Real browser storage event from a sibling tab; an old document must no longer expose the loaded roster.

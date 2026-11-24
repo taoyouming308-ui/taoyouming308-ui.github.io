@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-version="691" data-read-sync-rollout="default-on">
+<html lang="zh-CN" data-version="692" data-read-sync-rollout="default-on">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1066,8 +1066,8 @@ body {
   body.hair-modal-open{background:var(--soft-app-page)!important}
   body.hair-modal-open #hair-analysis-modal{background:var(--soft-app-page)}
 </style>
-<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=691" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
-<link rel="stylesheet" href="customer-design-archive.css?v=691" media="print" onload="this.media='all'">
+<link id="perm-startup-style" rel="stylesheet" href="perm-academy.css?v=692" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+<link rel="stylesheet" href="customer-design-archive.css?v=692" media="print" onload="this.media='all'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -1923,6 +1923,7 @@ body {
       <button type="button" class="shop-switch on" id="shop-btn-ziyou" onclick="switchShop('自由手艺人')">自由手艺人</button>
       <button type="button" class="shop-switch" id="shop-btn-xiangli" onclick="switchShop('向里造型')">向里造型</button>
     </div>
+    <div id="booking-read-notice" role="status"></div>
     <div id="booking-list"><div role="status" aria-label="正在核对预约"></div></div>
   </section>
 
@@ -3154,14 +3155,14 @@ body {
 
 <script data-startup>window.ZysyrStartup.lock(['home-page','app-content']);</script>
 <script src="staff-access-client.js?v=539"></script>
-<script src="employee-reports.js?v=691"></script>
-<script src="customer-design-archive.js?v=691"></script>
-<script defer src="aesthetic-study.js?v=691"></script>
-<script defer src="aesthetic-daily.js?v=691"></script>
-<script defer src="hair-calculator-dialog.js?v=691"></script>
-<script src="aesthetic-knowledge.v1.js?v=691"></script>
-<script src="hair-vision-training.v1.js?v=691"></script>
-<script src="aesthetic-growth.v2.js?v=691"></script>
+<script src="employee-reports.js?v=692"></script>
+<script src="customer-design-archive.js?v=692"></script>
+<script defer src="aesthetic-study.js?v=692"></script>
+<script defer src="aesthetic-daily.js?v=692"></script>
+<script defer src="hair-calculator-dialog.js?v=692"></script>
+<script src="aesthetic-knowledge.v1.js?v=692"></script>
+<script src="hair-vision-training.v1.js?v=692"></script>
+<script src="aesthetic-growth.v2.js?v=692"></script>
 <script>
 /* ─────────────────────────────────────────
    DATA STORE
@@ -5543,7 +5544,7 @@ function initApp() {
       // 方案、预约和美感训练使用白底
       document.body.classList.toggle('plan-white-mode', tabName === 'plans' || tabName === 'bookings' || tabName === 'aesthetic');
       if (tabName === 'plans') { loadPermData(); switchPlan('academy'); }
-      if (tabName === 'bookings') { renderDateStrip(); checkIdentity().then(function(valid){ if(valid && isForegroundFeature('bookings')) loadBookings(true); }); }
+      if (tabName === 'bookings') { renderDateStrip(); bookingReadGeneration++; showBookingHistory(); checkIdentity().then(function(valid){ if(valid && isForegroundFeature('bookings')) loadBookings(true); }); }
       if (tabName === 'showcase') { startShowcasePoll(); }
       if (tabName === 'aesthetic') { initAestheticTraining(); }
     }
@@ -6672,7 +6673,8 @@ function initApp() {
     BOOKINGS_CACHE = [];
     window._bookingSig = '';
     var list = document.getElementById('booking-list'), picker = document.getElementById('hair-booking-picker-list');
-    if (list) {list.textContent = ''; list._verifiedBookingScope = null;}
+    if (list) {list.textContent = ''; list._verifiedBookingScope = null;list._bookingViewEntry=null;list.inert=false;}
+    var notice=document.getElementById('booking-read-notice');if(notice&&notice!==picker)notice.textContent='';
     if (picker) picker.textContent = '';
   }
   window.addEventListener('storage', function(event){
@@ -6888,6 +6890,29 @@ function initApp() {
     loadBookings();
   };
 
+  function bookingViewKey(auth) {
+    var expiry=auth&&auth.expires_at?Date.parse(auth.expires_at):Infinity;
+    return auth&&Date.now()<expiry&&Date.now()-Number(auth.loggedAt||0)<=APP_SESSION_MAX_AGE
+      ?JSON.stringify(['employee-view',auth.session_token,auth.username,auth.position,BOOKING_SHOP,BOOKING_DATE,BOOKING_BARBER]):'';
+  }
+  function showBookingHistory() {
+    var list = document.getElementById('booking-list'), view=window.ZysyrReadSync&&window.ZysyrReadSync.view;
+    if(!list)return null;
+    var key=bookingViewKey(verifiedEmployeeSession());
+    var entry=view&&view.get(key);
+    if(entry){
+      if(list._bookingViewEntry!==entry) renderBookings(JSON.parse(entry.text),list,true);
+      list._bookingViewEntry=entry;list.inert=true;
+    }else{
+      list._bookingViewEntry=null;
+      list.innerHTML='<div role="status" aria-label="正在核对预约"></div>';
+      list.inert=false;
+    }
+    list._verifiedBookingScope=null;
+    var notice=document.getElementById('booking-read-notice');if(notice)notice.textContent='';
+    return {view:view,key:key,entry:entry};
+  }
+
   function loadBookings(showLoading) {
     if (!verifiedEmployeeSession()) return;
     var list = document.getElementById('booking-list');
@@ -6902,13 +6927,20 @@ function initApp() {
     }
     var readGeneration = ++bookingReadGeneration, requestedDate = BOOKING_DATE, requestedBarber = BOOKING_BARBER;
     var scope = JSON.stringify([sessionToken,shopName,requestedDate,requestedBarber]);
+    var cached=null;
     if (showLoading !== false || list._verifiedBookingScope !== scope) {
-      list._verifiedBookingScope = null;
-      window._bookingSig = '';
-      list.innerHTML = '<div role="status" aria-label="正在核对预约"></div>';
+      if(window.ZysyrReadSync&&window.ZysyrReadSync.view)cached=showBookingHistory();
+      else {
+        list._verifiedBookingScope = null;
+        window._bookingSig = '';
+        list.innerHTML = '<div role="status" aria-label="正在核对预约"></div>';
+      }
     }
+    var notice=document.getElementById('booking-read-notice');
+    var view=window.ZysyrReadSync&&window.ZysyrReadSync.view,viewKey=view&&bookingViewKey(AUTHENTICATED_STAFF);
+    var authTag=AUTHENTICATED_STAFF.position;
     var previewCount = null;
-    function currentRead() { var identity = verifiedEmployeeSession(); return identity && identity.session_token === sessionToken && readGeneration === bookingReadGeneration && BOOKING_SHOP === shopName && BOOKING_DATE === requestedDate && BOOKING_BARBER === requestedBarber; }
+    function currentRead() { var identity = verifiedEmployeeSession(); return identity && identity.session_token === sessionToken && identity.position===authTag && readGeneration === bookingReadGeneration && BOOKING_SHOP === shopName && BOOKING_DATE === requestedDate && BOOKING_BARBER === requestedBarber; }
     employeeBookingsApi('today_bookings', { session_token: sessionToken, date: requestedDate }, {current: currentRead, preview:function(summary){
       if (!currentRead() || !summary || !Number.isSafeInteger(summary.count) || summary.count < 0) return;
       previewCount = summary.count;
@@ -6916,17 +6948,25 @@ function initApp() {
     .then(function(data){
       if (!currentRead()) return;
       if (!data || !Array.isArray(data.rows)) throw new Error('预约数据返回格式异常');
+      if((data.date&&data.date!==requestedDate)||(data.store&&data.store!==shopName)||(data.barber&&data.barber!==requestedBarber)){
+        if(view)view.remove(viewKey);
+        throw new Error('预约数据范围不符');
+      }
       var rows = data.rows;
       rows = rows.filter(isVisibleCustomerBooking);
       if (BOOKING_BARBER) {
         rows = rows.filter(function(r){ return r.barber_name === BOOKING_BARBER; });
       }
       // ★ 数据签名：只有数据变了才更新DOM，避免每5秒闪屏
-      var sig = BOOKING_SHOP + ':' + BOOKING_DATE + ':' + (BOOKING_BARBER || 'all') + '|' + rows.map(function(r){return r.id+':'+r.status+':'+(r.customer_name||'')+':'+(r.customer_phone||'')+':'+(r.time_label||'')+':'+(r.reservation_time||'')+':'+(r.service_name||'')+':'+(r.notes||'')+':'+(r.barber_name||'')+':'+(r.source||'')}).join('|');
-      if (list._verifiedBookingScope === scope && sig === window._bookingSig) { return; }
+      var sig = JSON.stringify(rows);
+      var entry=view&&data.date===requestedDate&&data.store===shopName&&data.barber===requestedBarber&&view.save(viewKey,rows),visiblySame=entry&&list._bookingViewEntry===entry;
+      var sameVerified=list._verifiedBookingScope===scope&&sig===window._bookingSig;
       window._bookingSig = sig;
       list._verifiedBookingScope = scope;
       BOOKINGS_CACHE = rows;
+      list._bookingViewEntry=entry||null;list.inert=false;
+      if(notice)notice.textContent='';
+      if(visiblySame||sameVerified){if(cached&&cached.entry&&window.loadHairTagStatuses)window.loadHairTagStatuses();return;}
       renderBookings(rows, list, false);
     }).catch(function(e){
       if (!currentRead()) return;
@@ -6937,6 +6977,12 @@ function initApp() {
         return;
       }
       list._verifiedBookingScope = null; window._bookingSig = ''; BOOKINGS_CACHE = [];
+      var retained=view&&view.get(viewKey);
+      if(notice&&retained&&retained===list._bookingViewEntry&&(!e||e.status!==401&&e.status!==403)){
+        list.inert=true;notice.textContent='未能更新，当前显示上次结果。请选择日期重试。';return;
+      }
+      if(view)view.remove(viewKey);
+      list._bookingViewEntry=null;list.inert=false;
       list.textContent = (previewCount === null ? '' : '上次读取有 ' + previewCount + ' 条预约 · ') + '尚未核实，请重新选择日期重试';
     });
   }
@@ -6989,7 +7035,7 @@ function initApp() {
       html += '</div></div></div>';
     });
     list.innerHTML = html;
-    if (window.loadHairTagStatuses) window.loadHairTagStatuses();
+    if (!isOffline && window.loadHairTagStatuses) window.loadHairTagStatuses();
   }
 
   function bookingNeedsHairAnalysis(row) {
@@ -13508,9 +13554,9 @@ window.renderHairServicePhoto = function(photoType) {
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<script defer src="data-read-client.js?v=691"></script>
-<script defer src="scoped-read-codec.js?v=691"></script>
-<script defer src="scoped-read-sync.js?v=691"></script>
-<script defer src="app-shell-client.js?v=691"></script>
+<script defer src="data-read-client.js?v=692"></script>
+<script defer src="scoped-read-codec.js?v=692"></script>
+<script defer src="scoped-read-sync.js?v=692"></script>
+<script defer src="app-shell-client.js?v=692"></script>
 </body>
 </html>

@@ -1,3 +1,8 @@
+## 2026-11-24 · Three-app memory return (App version: v692; candidate)
+
+- Based on protected v691. Scope: employee appointment list, frontdesk schedule, daily calendar and monthly overview. Exact identity, store and date/month snapshots use bounded UI memory; normal revalidation uses established auth and conditional read routes. Cached data grants no edit permissions. Cold reload and detailed finance writes/originals retain their existing paths.
+- Require full repository/PR validation and Pages public readback; no migrations, Edge deployments, business data writes or forced refresh.
+
 ## 2026-11-23 · Quiet employee bookings check (App version: v691; candidate)
 
 - Display-only change in the employee booking list. Normal checks show no visible cache message; preserve authenticated verification, verified empty states and the existing retry/sign-in paths. No backend, appointment or accounting changes.
