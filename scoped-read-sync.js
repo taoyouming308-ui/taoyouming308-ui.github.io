@@ -43,7 +43,7 @@
     const d=await db();if(!d)return;
     return new Promise(resolve=>{const tx=d.transaction('reads','readwrite');tx.objectStore('reads').clear();tx.oncomplete=tx.onerror=tx.onabort=resolve;});
   }
-  function clear(){epoch++;memory.clear();inflight.clear();clearing=clearDisk().catch(()=>{});return clearing;}
+  function clear(){epoch++;memory.clear();inflight.clear();viewMemory.clear();clearing=clearDisk().catch(()=>{});return clearing;}
   async function sessionKey(secret,id){
     const raw=await g.crypto.subtle.digest('SHA-256',enc.encode('zysyr-read/aes-v1\0'+id+'\0'+secret));
     return g.crypto.subtle.importKey('raw',raw,'AES-GCM',false,['encrypt','decrypt']);
@@ -143,5 +143,28 @@
     } catch(e){if(live()&&isAuthError(e))clear();throw e;}
     finally{if(!ticket.storing&&inflight.get(id)===ticket)inflight.delete(id);}
   }
-  g.ZysyrReadSync=Object.freeze({enabled,read,clear});
+  // Synchronous, short-lived view snapshots. This is separate from the delta
+  // transport: no storage, no authentication, and never a write authority.
+  const viewMemory=new Map(), VIEW_TTL=300000, MAX_VIEW_TEXT=1024*1024;
+  const view=Object.freeze({
+    remove(key){viewMemory.delete(key);},
+    get(key){
+      const now=Date.now();
+      for(const [scope,item] of viewMemory)if(now>=item.until)viewMemory.delete(scope);
+      const entry=key&&viewMemory.get(key);
+      return entry||null;
+    },
+    save(key,data){
+      if(!key)return null;
+      const text=JSON.stringify(data);
+      if(!text||text.length>MAX_VIEW_TEXT){viewMemory.delete(key);return null;}
+      const old=this.get(key);
+      if(old&&old.text===text){old.until=Date.now()+VIEW_TTL;return old;}
+      const entry={text,until:Date.now()+VIEW_TTL};
+      viewMemory.delete(key);viewMemory.set(key,entry);
+      if(viewMemory.size>6)viewMemory.delete(viewMemory.keys().next().value);
+      return entry;
+    }
+  });
+  g.ZysyrReadSync=Object.freeze({enabled,read,clear,view:enabled?view:undefined});
 })(globalThis);

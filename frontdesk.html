@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-version="691" data-read-sync-rollout="default-on">
+<html lang="zh-CN" data-version="692" data-read-sync-rollout="default-on">
 <head>
   <style>.frontdesk-scope-invalid body>:not(#frontdesk-scope-message){display:none!important}#frontdesk-scope-message{padding:30px;font:16px/1.7 system-ui}</style>
   <meta charset="utf-8">
@@ -178,7 +178,7 @@
       .mobile-ledger-head{align-items:flex-start;flex-direction:column}
     }
   </style>
-  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=691" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
+  <link id="frontdesk-startup-style" rel="stylesheet" href="frontdesk-minimal.css?v=692" media="print" onload="this.dataset.loaded='true';this.media='all'" onerror="this.dataset.failed='true'">
 </head>
 <body>
 <!-- Visible before any startup dependency; no account or business data is stored here. -->
@@ -326,7 +326,7 @@
   <div class="toast hidden" id="toast"></div>
 
   <script data-startup>window.ZysyrStartup.lock();</script>
-  <script src="frontdesk-business-details.js?v=691"></script>
+  <script src="frontdesk-business-details.js?v=692"></script>
   <script>
   (function(){
     'use strict';
@@ -382,7 +382,7 @@
     }
     function lockFrontdeskScope(){
       if(state.frontdeskScopeBlocked)return;
-      state.frontdeskScopeBlocked=true;state.session=null;state.store='';state.dashboard=null;state.ledgerRows=[];state.todayRows=[];
+      state.frontdeskScopeBlocked=true;state.session=null;state.store='';state.dashboard=null;state.dashboardViewEntry=null;state.ledgerRows=[];state.todayRows=[];
       state.dashboardRequest=(state.dashboardRequest||0)+1;state.ledgerRequest++;state.drawerRequest++;state.customerRequest++;state.searchRequest++;
       document.documentElement.classList.add('frontdesk-scope-invalid');
       state.selected=null;state.drawerData=null;state.drawerCustomer=null;state.ledgerReadScope='';
@@ -412,7 +412,7 @@
       if(window.ZysyrReadSync)window.ZysyrReadSync.clear();
       checkFrontdeskStored();if(state.frontdeskScopeBlocked)return;
       state.ledgerRequest++;state.ledgerRows=[];state.ledgerReadScope='';state.todayRows=[];
-      state.dashboardRequest=(state.dashboardRequest||0)+1;state.dashboard=null;state.store='';state.session=null;
+      state.dashboardRequest=(state.dashboardRequest||0)+1;state.dashboard=null;state.dashboardViewEntry=null;state.dashboardViewPending=false;state.store='';state.session=null;
       businessUI.clear();state.customerRequest++;state.drawerRequest++;state.searchRequest++;
       state.selected=null;state.drawerCustomer=null;state.drawerData=null;
       clearSecondaryReads();state.activeSearch='';$('customer-query').value='';
@@ -501,7 +501,7 @@
       if(mobile)window.scrollTo(0,positions[name]||0);
       if(!state.session)return;
       if(name==='import'){loadLedger();if(state.session.user.can_import)loadBatches();}
-      else if(name==='today')loadDashboard({silent:true});
+      else if(name==='today')loadDashboard({silent:true,returning:true});
       else if(name==='customers'){
         // Reuse the already visible, read-only DOM briefly; explicit Refresh and all writes always go online.
         if(state.activeSearch&&state.activeSearch===$('customer-query').value.trim()&&(!state.resultKey||!recentCustomerRead(state.searchChecked)))searchCustomers();
@@ -591,16 +591,25 @@
     }
     async function loadDashboard(options){
       if(!state.session||!state.store)return;
+      if(state.session.expires_at&&Date.parse(state.session.expires_at)<=Date.now()){clearSession();return;}
       var request=state.dashboardRequest=(state.dashboardRequest||0)+1,store=state.store,date=$('today-date').value||localDate(),btn=$('refresh-btn');
+      var session=state.session,scope=frontdeskReadScope('dashboard',store,date),view=window.ZysyrReadSync&&window.ZysyrReadSync.view;
+      var viewKey=scope&&JSON.stringify([scope,session.session_token]),entry=view&&view.get(viewKey);
       var silent=options&&options.silent===true;
       state.dashboardLoading=true;if(!silent)setBusy(btn,true,'刷新中…');
-      if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date){
+      if(entry){
+        var keepInteractive=silent&&!options.returning&&state.dashboardViewEntry===entry&&!state.dashboardViewPending;
+        if(state.dashboardViewEntry!==entry||!state.dashboard){state.dashboard=JSON.parse(entry.text);renderToday(state.dashboard);}
+        state.dashboardViewEntry=entry;
+        state.dashboardViewPending=!keepInteractive;$('today-list').inert=!keepInteractive;
+      }else if(!state.dashboard||state.dashboard.store!==store||state.dashboard.date!==date||view){
+        state.dashboardViewEntry=null;state.dashboardViewPending=false;$('today-list').inert=false;
         state.dashboard=null;renderToday({store:store,date:date});
         $('kpi-bookings').textContent='—';$('today-caption').textContent='正在读取排班与客户列表…';
         $('today-list').textContent='正在读取排班…';$('consumption-status').textContent='正在读取本店当日数据…';
+        $('today-list')._scheduleSignature=null;
       }
       businessUI.refresh();
-      var session=state.session,scope=frontdeskReadScope('dashboard',store,date);
       var current=function(){return session===state.session&&request===state.dashboardRequest&&store===state.store&&date===($('today-date').value||localDate())&&scope===frontdeskReadScope('dashboard',store,date)};
       try{
         var data=await frontdeskDayRead(scope,current,function(hint){
@@ -615,9 +624,16 @@
         });
         if(!current())return;
         if(!data||data.store!==store||data.date!==date)throw new Error('返回的分店或日期不符，请刷新重试');
-        state.dashboard=data;updateStaffOptions(data);renderToday(data);
+        var next=view&&view.save(viewKey,data),unchanged=next&&state.dashboardViewEntry===next;
+        state.dashboard=data;state.dashboardViewEntry=next;state.dashboardViewPending=false;$('today-list').inert=false;
+        if(!unchanged||state.dashboardReadFailed){updateStaffOptions(data);renderToday(data);}
+        state.dashboardReadFailed=false;
       }
-      catch(e){if(request===state.dashboardRequest){$('consumption-status').textContent=state.dashboard?'读取失败，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';if(!silent)toast(e.message,true);}}
+      catch(e){if(current()){
+        if(e&&(e.status===401||e.status===403)){if(window.ZysyrReadSync)window.ZysyrReadSync.clear();state.dashboard=null;state.dashboardViewEntry=null;state.todayRows=[];renderToday({store:store,date:date});$('today-list')._scheduleSignature=null;$('today-list').textContent='无法读取当前门店的预约';}
+        state.dashboardReadFailed=true;state.dashboardViewPending=!!state.dashboard;$('today-list').inert=!!state.dashboard;
+        $('consumption-status').textContent=state.dashboard?'未能更新，当前显示上次结果，请稍后刷新核对。':'读取失败，暂时无法核实本店该日数据。';$('sync-label').textContent='数据读取失败 · 待更新';if(!silent)toast(e.message,true);
+      }}
       finally{if(request===state.dashboardRequest){state.dashboardLoading=false;setBusy(btn,false);}}
     }
     $('today-date').value=localDate();$('today-date').addEventListener('change',loadDashboard);$('refresh-btn').addEventListener('click',function(){if(state.view==='today')loadDashboard();else if(state.view==='customers'){if(state.selected)openCustomer(state.selected);else if($('customer-query').value.trim().length>=2)searchCustomers();else toast('输入客户姓名或手机号后查询。');}else if(state.view==='import'){loadLedger();if(state.session&&state.session.user.can_import)loadBatches();}});
@@ -745,6 +761,7 @@
     document.querySelectorAll('[data-close]').forEach(function(button){button.addEventListener('click',function(){closeOverlay(button.dataset.close);});});
     document.querySelectorAll('.overlay').forEach(function(overlay){overlay.addEventListener('click',function(event){if(event.target===overlay)closeOverlay(overlay.id);});});
     function openTodayForm(row){
+      if(state.dashboardViewPending){toast('请先刷新核对当天预约，再修改接待。',true);return;}
       row=row||{};var rec=row.reception||row;
       $('today-form-title').textContent=rec.id?'编辑当天客户信息':'添加今日客户';$('today-record-id').value=rec.id||'';$('today-record-date').value=rec.business_date||row.business_date||$('today-date').value||localDate();
       $('today-customer-name').value=rec.customer_name||row.name||'';$('today-customer-phone').value=rec.customer_phone||row.phone||'';$('today-barber').value=rec.barber_name||row.barber||'';$('today-technician').value=rec.technician_name||row.technician||'';$('today-assistant').value=rec.assistant_name||row.assistant||'';
@@ -845,9 +862,9 @@
     Promise.all([restoreSession(),startupStyleReady]).then(function(){startupStyle.media='all';window.ZysyrStartup.finish();},window.ZysyrStartup.failed);
   })();
   </script>
-<script defer src="data-read-client.js?v=691"></script>
-<script defer src="scoped-read-codec.js?v=691"></script>
-<script defer src="scoped-read-sync.js?v=691"></script>
-<script defer src="app-shell-client.js?v=691"></script>
+<script defer src="data-read-client.js?v=692"></script>
+<script defer src="scoped-read-codec.js?v=692"></script>
+<script defer src="scoped-read-sync.js?v=692"></script>
+<script defer src="app-shell-client.js?v=692"></script>
 </body>
 </html>
