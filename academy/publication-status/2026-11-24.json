@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-24",
+  "state": "preflight_requested",
+  "published": false,
+  "baseSha": "327f93e51a0734a35e833347817e8be3e6e96025",
+  "scope": "Immutable main SHA backup using existing Academy publication preflight only; no lesson inputs before success",
+  "note": "Connected publisher requests baseline preflight, not approval or publication."
+}
