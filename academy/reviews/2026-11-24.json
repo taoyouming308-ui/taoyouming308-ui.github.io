@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-24",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI课程来源、版权及隐私审校，非独立第三方或真人工艺批准）",
+  "reviewedAt": "2026-11-24T00:19:31.486Z",
+  "approvalReference": "本轮已核对Scientific Reports期刊正文、Wiley期刊正文、Wella瑞典专业站产品说明；检查论据边界，案例完全虚构，三图由本轮独立绘制并检查静态内容，无第三方素材。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "Scientific Reports 9:9834，DOI 10.1038/s41598-019-46370-x；原始毛束清洗、色谱与显微实验；本轮核对期刊正文。 支持：特定表活清洗影响不同非共价脂质；研究条件下共价18-MEA未显著改变。 边界：非真人烫前洗发对照；不能决定洗几遍、指定洗发产品或证明去脂后更好烫。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "International Journal of Cosmetic Science 48(2):379–393（2026刊载）；原始电动学、湿梳力及ATR-FTIR研究，本轮核对Wiley正文。 支持：不同阳离子表活沉积与湿梳表现不同；未观察到氧化损伤逆转。 边界：不能证明任意护发膜阻止烫发，也不能推定药剂渗透速度、药力或具体配伍。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "厂家产品使用说明，网页未标发布日期；2026-11-24本轮核对。针对特定产品系列，非独立科研。 支持：该系列要求洗发、毛巾吸水，对敏感区域使用指定Perm Pre-treatment，并明确禁忌与测试卷。 边界：仅该系列及当地版本，不可套用到其他冷烫、热烫、快速烫或泛化为普通护发素。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "AI编辑逐图检查静态SVG文本、形状、标注与版权，未包含脚本、外链、真人或第三方图。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "AI编辑逐图检查静态SVG文本、形状、标注与版权，未包含脚本、外链、真人或第三方图。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "AI编辑逐图检查静态SVG文本、形状、标注与版权，未包含脚本、外链、真人或第三方图。"
+    }
+  ],
+  "contentSha256": "9e7c143a779a3a933dd54a7c3d6b3c22d9be5b2768f52df36e4768d92954294b",
+  "assetSha256": {
+    "assets/2026-11-24/figure1.svg": "3e0d2e0b139b7d5884f7083e1d7ea20a620accf0ffc8514ef4bc5430124dd222",
+    "assets/2026-11-24/figure2.svg": "b2b9fe94ec4ab3a230f8effdb4b4f0c0b261dbff4522e65a963d81a6edbab1f3",
+    "assets/2026-11-24/figure3.svg": "a230f43e230974767e1a85f6794f88e23c00bad16b5db35e7506d4b1486f6b13"
+  }
+}
