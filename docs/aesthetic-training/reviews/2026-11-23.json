@@ -1,0 +1,42 @@
+{
+  "batch": "aesthetic-2026-11-23",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "327f93e51a0734a35e833347817e8be3e6e96025",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, real hair diameter or density, growth response, home reproducibility, or that any proposed haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional men's high-taper versus proportion-and-growth-cycle case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All forty-six earlier feed objects remain preserved; one unique stable November 23 ID is appended",
+      "Visible current four-view outline and shoulder-neck relationships are separated from fictional texture, occupation, routine and preference settings plus live confirmation needs",
+      "A/B benefits, costs, priority, stop conditions and first-wash/fourth-week/eighth-week switch signals are explicit; no proposed haircut is presented as a completed makeover",
+      "Generated four-view image shows one consistent fictional adult man, current neutral dry state, complete head, baseline, neck and shoulders without depicting the reference or a design result",
+      "No user answer is invented; all five recap fields are unscored and state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Actual skull, neck and shoulder dimensions, hair density/diameter, growth direction, short-length rebound and eight-week evolution are not established by the image; case-only settings require live verification",
+      "Two-minute styling, collar contact and staged growth checks cannot reproduce every product, humidity, sleep, wash or maintenance condition",
+      "Preparer audit is not independent scientific, medical, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain mandatory"
+    ]
+  },
+  "imageReview": {
+    "file": "img/aesthetic-training/2026-11-23-mens-high-taper-proportion.webp",
+    "sha256": "c9bae18463aa0935c2001bb77d1c23bf793e350612169a796862b664f80a44f9",
+    "dimensions": "2172x724",
+    "bytes": 104362,
+    "rights": "Original AI-generated fictional teaching image; no real customer or business data"
+  },
+  "hashes": {
+    "feedRawSha256": "a6f00a875f365dee90e482ff1876b2359ba3872915aacfea01a22da21b78e869",
+    "caseCanonicalSha256": "bdd1e5a589ae33127f9e9bedb3992d15cc4e1fe0930da4b4fb688c89aedcafb0"
+  },
+  "localChecks": {
+    "content": "check-version-sync, release-integrity, smoke-test-app, academy publication verification, test-aesthetic-daily, aesthetic-system, study protocol and study Edge handler pass with 47 cases; the local SQL stage cannot start because Docker is absent, so the complete shared gate remains required in protected CI",
+    "browser": "test-aesthetic-daily-browser and the local pre-push browser stage cannot launch because the pinned Chromium executable is absent locally; the identical browser regression remains mandatory in protected exact-head CI",
+    "protectedCI": "pending exact-head pull-request run; no pass is claimed"
+  }
+}

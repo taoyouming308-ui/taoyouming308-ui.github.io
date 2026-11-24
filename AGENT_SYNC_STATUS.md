@@ -3,6 +3,20 @@
 - Based on protected v691. Scope: employee appointment list, frontdesk schedule, daily calendar and monthly overview. Exact identity, store and date/month snapshots use bounded UI memory; normal revalidation uses established auth and conditional read routes. Cached data grants no edit permissions. Cold reload and detailed finance writes/originals retain their existing paths.
 - Require full repository/PR validation and Pages public readback; no migrations, Edge deployments, business data writes or forced refresh.
 
+## 2026-11-24 · Aesthetic training: swim-cap compression, double whorls and nape growth (App version: v692 unchanged)
+
+- Current owner: Codex content publisher. Continue focused aesthetic-training PR #185; do not create a duplicate PR. Preserve all forty-seven prepared cases through November 23 and append only unique stable ID `aesthetic-2026-11-24`; the content candidate now integrates protected `github/main` `07422e42`/v692 without changing App code.
+- The new case trains a sleek pixie reference against two conflicting crown whorls, upward nape growth, frequent swimming and 60–90 minute cap compression, two-minute no-product recovery and a six-to-eight-week maintenance interval. It includes one original AI-generated fictional current-state four-view WebP, five explicit conditions, one core A/B question, six conditional reference answers and five unscored recaps.
+- Scope remains the aesthetic feed, matching fictional image, transparent review record and public change/handoff notes only. No App/runtime/version, retired academy feed, calculator, customer, finance, database/backend, login/permissions, business sync or automation changes.
+- PR #185's prior exact-head CI failed only in four existing customer-history backlog tests at `ResumeInvalid`; no aesthetic assertion failed, and the isolated seven-test backlog suite now passes. Do not bypass or merge until the latest-main protected run is fully successful. Pages and exact live feed/image/App readback remain mandatory before claiming synchronization.
+
+## 2026-11-23 · Aesthetic training: men's high taper, proportion and eight-week growth (App version: v691 unchanged)
+
+- Current owner: Codex content publisher. Fresh isolated branch from protected `github/main` `327f93e5`/v691; start gates and daily recovery archive completed before edits. Preserve all forty-six published cases through November 22 and append only unique stable ID `aesthetic-2026-11-23`.
+- The new case trains a men's reference-image conflict: high side taper and lifted front versus already strong vertical emphasis, short-neck/broad-shoulder relationship, coarse straight side rebound, product refusal and a seven-to-eight-week maintenance interval. It includes one original AI-generated fictional current-state four-view WebP, five explicit conditions, one core A/B question, six conditional reference answers and five unscored recaps.
+- Scope remains the aesthetic feed, matching fictional image, transparent review record and public change/handoff notes only. No App/runtime/version, retired academy feed, calculator, customer, finance, database/backend, login/permissions, business sync or automation changes.
+- Exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback are mandatory before claiming synchronization; if any protected check fails, preserve current production and report the blocker.
+
 ## 2026-11-23 · Quiet employee bookings check (App version: v691; candidate)
 
 - Display-only change in the employee booking list. Normal checks show no visible cache message; preserve authenticated verification, verified empty states and the existing retry/sign-in paths. No backend, appointment or accounting changes.

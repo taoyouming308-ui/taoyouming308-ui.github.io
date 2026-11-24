@@ -1,0 +1,42 @@
+{
+  "batch": "aesthetic-2026-11-24",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "327f93e51a0734a35e833347817e8be3e6e96025",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, actual whorl vectors, chlorine damage, cap-compression recovery, home reproducibility, or that any proposed haircut has been performed and maintained for eight weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional swim-cap, double-whorl and nape-growth conflict case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All forty-seven earlier feed objects remain preserved; one unique stable November 24 ID is appended",
+      "Visible current four-view outline and shoulder-neck relationships are separated from fictional texture, whorl, swimming, routine and preference settings plus live confirmation needs",
+      "A/B benefits, costs, priority, stop conditions and cap/wet/two-minute/first-swim/eighth-week switch signals are explicit; no proposed haircut is presented as a completed makeover",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry compressed state, complete head, baseline, neck and shoulders without depicting the reference, pool test or a design result",
+      "No user answer is invented; all five recap fields are unscored and state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Actual skull, neck and shoulder dimensions, whorl centers, hair density/diameter, nape growth, chlorine exposure and cap recovery are not established by the image; case-only settings require live verification",
+      "Short compression, spray-wet and two-minute drying simulations cannot reproduce every cap, pool, wash product, humidity or eight-week state",
+      "Preparer audit is not independent scientific, medical, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain mandatory"
+    ]
+  },
+  "imageReview": {
+    "file": "img/aesthetic-training/2026-11-24-swim-cap-whorl-pixie.webp",
+    "sha256": "e67d3d3f4775eff59a768544ea576a3c71db6ce6ff7e6248480be0db986029d6",
+    "dimensions": "2172x724",
+    "bytes": 89812,
+    "rights": "Original AI-generated fictional teaching image; no real customer or business data"
+  },
+  "hashes": {
+    "feedRawSha256": "05d1d490b398d7bcd9369cad4165048e8b0a09c26c65577bf35b0143c7478da7",
+    "caseCanonicalSha256": "e730ed00db481f92799747a9d1de75559e9d8a99a28bb9277012a2d8c72a10f1"
+  },
+  "localChecks": {
+    "content": "check-version-sync, release-integrity, smoke-test-app, test-aesthetic-daily, aesthetic-system, study protocol, study Edge handler, handoff and whitespace checks pass with 48 cases",
+    "browser": "test-aesthetic-daily-browser cannot launch because the pinned Chromium executable is absent locally; the identical browser regression remains mandatory in protected exact-head CI",
+    "protectedCI": "pending updated exact-head pull-request run; no pass is claimed"
+  }
+}
