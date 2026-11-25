@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:84516f6885e31c6360d400c0bfd24eba6df50e24f436ea4abb291358030afa21 -->
+## 2026-11-25 · Reviewed academy publication candidate (App version: v692 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 470b4d2815a066e6c932c4fed1ea54664ce344d1.
+- Dates: 2026-11-25. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-24 · Three-app memory return (App version: v692; candidate)
 
 - Based on protected v691. Scope: employee appointment list, frontdesk schedule, daily calendar and monthly overview. Exact identity, store and date/month snapshots use bounded UI memory; normal revalidation uses established auth and conditional read routes. Cached data grants no edit permissions. Cold reload and detailed finance writes/originals retain their existing paths.
