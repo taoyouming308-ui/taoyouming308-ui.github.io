@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-25",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI教学内容来源与版权审校者，非人工或真人化学安全批准）",
+  "reviewedAt": "2026-11-25T00:42:16.732Z",
+  "approvalReference": "本轮核实Wiley DOI 10.1111/ics.12796及MDPI DOI 10.3390/cosmetics12030093原文摘要、作者、日期、相关结果和适用限制；模拟案例隐私审核；三张原创静态SVG检查无脚本、外链、第三方图片或真实顾客资料。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "原始研究，受控毛束力学与统计分析；湿态模量对所选漂发与热处理较敏感；支持：干湿指标不能直接混用；限制：不能用手感替代仪器或制定真人软化终点"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "原始仪器毛束实验；特定干态对照中漂发样本模量高15%、断裂应力低11%；企业研发背景及发质条件限制；支持：刚度增加与断裂强度降低可以共存；限制：不外推到所有发质、药剂、热或时间"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "独立绘制，无第三方图片、真实顾客资料或外部资源。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "独立绘制，无第三方图片、真实顾客资料或外部资源。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "独立绘制，无第三方图片、真实顾客资料或外部资源。"
+    }
+  ],
+  "contentSha256": "aedf1e86703b7662b5345b06c20995a95832735ebcfcc7edf1ef1fce4110aa36",
+  "assetSha256": {
+    "assets/2026-11-25/figure1.svg": "82a8ec46af5e0117730fcb4c96e81fbf31b6885e5b07d9465f95e2892ab74680",
+    "assets/2026-11-25/figure2.svg": "106d941cf2f06eb68a78f2649bb0ec17e8fe5c79b9a3ab76c1688604a4391cc5",
+    "assets/2026-11-25/figure3.svg": "e8b71e91f78d9c4ad2ea8d6f9330c0f8e89f93fc6866a799638522a3e639c306"
+  }
+}
