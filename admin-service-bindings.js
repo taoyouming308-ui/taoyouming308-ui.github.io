@@ -62,6 +62,62 @@ export function openAdminServiceBinding({profileId,getSession,document:doc=globa
   pending=null;invalidate();notice('已查到原操作回执，当前绑定'+(r.state==='revoked'?'已撤销':'已保存')+'。如需修改，请重新核对。');
  });};
  el('close').onclick=close;modal.addEventListener('cancel',e=>{e.preventDefault();close();});
+ const archive=doc.createElement('button');archive.type='button';archive.textContent='核对跨店预约入档';
+ archive.onclick=()=>{if(!busy&&current()&&!pending){close();openCrossStoreArchive({profileId,getSession,doc});}};
+ el('close').parentElement.append(archive);
  doc.body.append(modal);modal.showModal();active={modal,close,canClose:()=>!busy};lock();
  return active;
+}
+
+function openCrossStoreArchive({profileId,getSession,doc}){
+ const owner=getSession()?.staffToken,modal=doc.createElement('dialog');
+ modal.setAttribute('aria-label','核对跨店预约入档');
+ modal.style.cssText='width:min(500px,92vw);max-height:90vh;overflow:auto;background:#171719;color:#eee;border:1px solid #555;border-radius:12px;padding:20px;box-sizing:border-box;';
+ modal.innerHTML='<h2>核对跨店预约入档</h2><p>只核对此次自由手艺人预约。不会转移顾客主档，也不会开启照片查看权限。</p><label>预约编号 <input data-id inputmode="numeric" maxlength="16"></label><p><label>服务日期 <input data-date type="date"></label></p><button data-check type="button">核对</button><p data-details style="white-space:pre-line"></p><label><input data-attest type="checkbox" disabled> 已核实原主档与本次预约属于同一顾客</label><p><label>说明 <input data-reason maxlength="500"></label></p><button data-approve type="button" disabled>只允许这次入档</button> <button data-revoke type="button" disabled>撤销本次确认</button> <button data-lookup type="button" hidden>查询原操作</button> <button data-close type="button">关闭</button><p data-status role="status"></p>';
+ const e=k=>modal.querySelector('[data-'+k+']'),current=()=>getSession()?.role==='admin'&&owner&&getSession()?.staffToken===owner;
+ const client=createAdminServiceBindingClient({getCredential:()=>current()?owner:null});
+ let busy=false,verified=null,pending=null;
+ const setStatus=text=>{e('status').textContent=text;};
+ const setControls=()=>{
+  for(const k of ['id','date','check','attest','reason','approve','revoke','lookup','close'])e(k).disabled=busy;
+  for(const k of ['id','date','check','attest','reason'])e(k).disabled=busy||!!pending||k==='attest'&&!verified;
+  e('approve').disabled=busy||!!pending||!verified||!e('attest').checked;
+  e('revoke').disabled=busy||!!pending||verified?.state!=='approved';
+  e('lookup').hidden=!pending;
+ };
+ const close=()=>{if(!busy){modal.remove();if(active?.modal===modal)active=null;}};
+ const reset=()=>{verified=null;e('attest').checked=false;e('details').textContent='';setControls();};
+ async function run(input,onResult){
+  if(busy||!current())return;
+  busy=true;setControls();
+  try{const r=await client.request(input);if(current())onResult(r);}
+  catch(error){if(current()){
+   if(pending&&error.outcome==='uncertain'){setStatus('回执未收到。请查询原操作，不要重复提交。');}
+   else if(input.action==='archive_status'&&pending){setStatus('暂时无法查询原操作，请稍后重试。');}
+   else{pending=null;reset();setStatus('核对未通过或资料已变化。请检查预约编号、日期和原档后重试。');}
+  }}finally{busy=false;if(!current())close();else setControls();}
+ }
+ const fields=()=>({profileId,bookingId:e('id').value.trim(),date:e('date').value});
+ for(const k of ['id','date'])e(k).oninput=reset;
+ e('attest').onchange=setControls;
+ e('check').onclick=()=>{reset();run({action:'archive_inspect',...fields()},r=>{
+  if(r.profileStore!=='向里造型'||r.serviceStore!=='自由手艺人'||r.date!==e('date').value){setStatus('返回的门店或日期不一致。');return;}
+  verified=r;
+  e('details').textContent='原主档：'+r.profileLabel+' · '+r.profileStore+'\n本次预约：'+r.bookingLabel+' · '+r.serviceStore+' · '+r.date+' '+(r.time||'')+'\n手机号尾号：'+r.phoneTail;
+  setStatus(r.current?'本次预约已确认可申请导入授权。':'请核对上面的顾客与预约，再填写说明确认。');
+ });};
+ function write(action){
+  if(!verified||busy||pending||!current()||action==='archive_confirm'&&!e('attest').checked)return;
+  const reason=e('reason').value.trim();if(!reason){setStatus('请填写说明。');return;}
+  pending={action,...fields(),requestId:crypto.randomUUID(),expectedRevision:verified.revision,reason,
+    ...(action==='archive_confirm'?{evidenceSha:verified.evidenceSha}:{})};
+  run(pending,r=>{pending=null;reset();setStatus(r.state==='approved'?'本次预约已确认。原档未修改；尚未写入照片或复盘。':'已撤销这次入档确认。');});
+ }
+ e('approve').onclick=()=>write('archive_confirm');e('revoke').onclick=()=>write('archive_revoke');
+ e('lookup').onclick=()=>{if(pending)run({action:'archive_status',...fields(),requestId:pending.requestId},r=>{
+  if(!r.committed){setStatus('暂未找到原操作回执，不会自动重提。');return;}
+  pending=null;reset();setStatus(r.state==='approved'?'已查到确认回执。尚未写入照片或复盘。':'已查到回执：本次确认已撤销。');
+ });};
+ e('close').onclick=close;modal.addEventListener('cancel',ev=>{ev.preventDefault();close();});
+ doc.body.append(modal);modal.showModal();active={modal,close,canClose:()=>!busy};setControls();
 }

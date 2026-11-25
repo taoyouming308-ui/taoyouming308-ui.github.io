@@ -83,6 +83,20 @@ async function rejects(fn,code,status){await assert.rejects(fn,e=>e instanceof a
  await run('ingest cannot change customer, booking or service date',async()=>{for(const change of [{customer_profile_id:2},{booking_id:11},{booking_date:'2026-11-09'}])await rejects(()=>api.handleCustomerDesign({...common,...change,operation:'customer_design_history',ingest_token:'s'.repeat(64)},null,fixture().deps),'DESIGN_INGEST_DENIED',403);});
  await run('history latest version is selected visit, not global newest',async()=>{const f=fixture();f.versions=[{...scope,id:A,version_no:2,photo_ids:[]},{...scope,id:B,booking_id:11,visit_key:'booking:11',version_no:9,photo_ids:[]}];const r=await api.handleCustomerDesign({...common,operation:'customer_design_history'},session,f.deps);assert.equal(r.latest_version_id,A);assert.equal(r.versions.length,2);});
  await run('ingest history is restricted to fixed visit',async()=>{const f=fixture();f.versions=[{...scope,id:A,version_no:1,photo_ids:[]},{...scope,id:B,booking_id:11,visit_key:'booking:11',version_no:1,photo_ids:[]}];const r=await api.handleCustomerDesign({...common,operation:'customer_design_history',ingest_token:'s'.repeat(64)},null,f.deps);assert.deepEqual(r.versions.map(v=>v.id),[A]);});
+ await run('cross-store approval requires a separate visit ingest grant before photo signing or write',async()=>{
+   const f=fixture(),ingest_token='synthetic-cross-visit-'.repeat(3);
+   f.profiles[0].shop_name='向里造型';f.contexts[10].cross_store_archive=true;
+   const withoutGrant={...common,customer_scope:'all'};
+   await rejects(()=>api.handleCustomerDesign({...withoutGrant,operation:'customer_design_photo_urls',asset_ids:[A]},session,f.deps),'DESIGN_INGEST_DENIED',403);
+   await rejects(()=>api.handleCustomerDesign({...upload(),customer_scope:'all'},session,f.deps),'DESIGN_INGEST_DENIED',403);
+   assert.equal(f.storagePosts,0);
+   const photo=await api.handleCustomerDesign({...upload(),ingest_token},null,f.deps);
+   assert.equal(photo.asset.store,'自由手艺人');
+   const saved=await api.handleCustomerDesign({...draft(),ingest_token,photo_ids:[A],review:{achieved:'Synthetic review'}},null,f.deps);
+   assert.equal(saved.version.visit_key,'booking:10');assert.equal(saved.version.review.achieved,'Synthetic review');
+   f.assets.push({...photo.asset,id:C,visit_key:'booking:11',booking_id:11});
+   await rejects(()=>api.handleCustomerDesign({...common,operation:'customer_design_photo_urls',ingest_token,asset_ids:[C]},null,f.deps),'DESIGN_PHOTO_SCOPE_DENIED',403);
+ });
  await run('manual dated visit has stable independent concurrency key',async()=>{const f=fixture(),p={...draft(),booking_id:null};const r=await api.handleCustomerDesign(p,session,f.deps);assert.equal(r.version.visit_key,'manual:2026-11-08');assert.equal(r.version.booking_id,null);});
  await run('every nonempty changed optimized field requires its reason',async()=>{const p=draft();p.optimized.steps.layers='低层次';await rejects(()=>api.handleCustomerDesign(p,session,fixture().deps),'DESIGN_INVALID');p.reasons.layers='保留重量';assert.equal((await api.handleCustomerDesign(p,session,fixture().deps)).saved,true);});
  await run('outline and root flow require reasons; blank draft remains valid',async()=>{for(const key of ['outline','root_flow']){const p=draft();p.optimized[key]='调整';await rejects(()=>api.handleCustomerDesign(p,session,fixture().deps),'DESIGN_INVALID');}assert.equal((await api.handleCustomerDesign(draft(),session,fixture().deps)).saved,true);});

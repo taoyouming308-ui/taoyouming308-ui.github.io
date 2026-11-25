@@ -1,5 +1,5 @@
 /** Fixed custom-session service binding API. No photo, model or Storage I/O. */
-import {SERVICE_BINDING_URL,SERVICE_BINDING_APP,validateServiceBindingInput} from '../../../packages/shared/design-service-binding-contract.mjs';
+import {SERVICE_BINDING_URL,SERVICE_BINDING_APP,validateServiceBindingInput,isServiceBindingMutation} from '../../../packages/shared/design-service-binding-contract.mjs';
 export {SERVICE_BINDING_URL,SERVICE_BINDING_APP,validateServiceBindingInput};
 const plain=v=>v!==null&&typeof v==='object'&&!Array.isArray(v)&&Object.getPrototypeOf(v)===Object.prototype;
 /** @param {{enabled?:boolean,rpc?:(q:{credential:string,input:Record<string,unknown>,signal:AbortSignal})=>Promise<Record<string,unknown>>}} config */
@@ -34,7 +34,7 @@ export function createServiceBindingHandler({enabled=false,rpc}={}){
    const credential=input.action==='resolve'?employee:admin;
    if(input.action==='resolve'?credential.length<32||credential.length>200||/[\s\u0000-\u001f\u007f]/.test(credential):!/^[a-fA-F0-9-]{72}$/.test(credential))return reply(403,'DESIGN_SERVICE_DENIED');
    if(request.signal.aborted)return reply(400,'DESIGN_SERVICE_INVALID');
-   write=['confirm','revoke'].includes(input.action);sent=true;
+   write=isServiceBindingMutation(input.action);sent=true;
    const result=await rpc({credential,input,signal:request.signal});
    const encoded=JSON.stringify(result);
    if(!plain(result)||encoded.length>256*1024||encoded.includes(credential))throw Error('DESIGN_SERVICE_RESPONSE_INVALID');
