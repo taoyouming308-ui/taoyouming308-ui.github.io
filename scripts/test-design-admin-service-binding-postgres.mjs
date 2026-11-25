@@ -70,5 +70,47 @@ try{
  holder.stdin.end(`begin;select pg_advisory_xact_lock(hashtextextended('design-service-binding:${visit}',0));select 'LOCKED';select pg_sleep(2);commit;`);await lockReady;
  const start=Date.now();assert.throws(()=>call(prepare()));assert(Date.now()-start<1500);sql("update bookings set updated_at=clock_timestamp()");await new Promise(r=>holder.once('exit',r));pass('private ledger contention fails promptly while existing booking source remains writable');
  const meta=JSON.parse(sql(`select jsonb_build_object('definer',prosecdef,'anon',has_function_privilege('anon',oid,'execute'),'authenticated',has_function_privilege('authenticated',oid,'execute'))from pg_proc where oid='public.design_service_binding(text,jsonb)'::regprocedure;`));assert.deepEqual(meta,{definer:false,anon:false,authenticated:false});pass('installed public RPC is invoker-only, bounded and inaccessible to browser database roles');
+ sql(`create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+ insert into customer_profiles values(13,'Synthetic cross customer','13000000013','向里造型','unmodified source');
+ insert into bookings values(1002,'synthetic-shop','自由手艺人','2026-11-23',3,'ext','synthetic A','Synthetic cross customer','13000000013','cut',2,'11:00',now());
+ update frontdesk_today_customers set status='completed',customer_name='Synthetic cross customer';`);
+ for(const file of ['20261108052541_customer_design_archive.sql','20261108124519_customer_design_six_zone_execution.sql'])
+   sql(readFileSync(new URL('../supabase/migrations/'+file,import.meta.url),'utf8'));
+ const preparedSource=sourceSnapshot();
+ sql(readFileSync(new URL('../supabase/migrations/20261125125359_design_cross_store_archive_approval.sql',import.meta.url),'utf8'));
+ const target={profileId:'13',bookingId:'1002',date:'2026-11-23'};
+ const cross=(action,extra={},token=admin,role='service_role')=>JSON.parse(sql(`select public.design_cross_store_archive_approval(${q(token)},${q(JSON.stringify({action,...target,...extra}))}::jsonb);`,role));
+ const context=(booking=1002,date='2026-11-23',profile=13)=>JSON.parse(sql(`select public.customer_design_resolve_context(${profile},${booking},${q(date)});`,'service_role'));
+ const validate=tokenHash=>JSON.parse(sql(`select public.validate_customer_design_ingest_grant(${q(tokenHash)});`,'service_role'));
+ const original=hash('synthetic scoped ingest');
+ const mint=tokenHash=>JSON.parse(sql(`select public.register_customer_design_ingest_grant(${q(tokenHash)},13,1002,'2026-11-23');`,'service_role'));
+ assert.throws(()=>mint(original));assert.throws(()=>context());
+ assert.equal(context(1001,'2026-11-23',11).store,'自由手艺人');
+ for(const token of [manager,a])assert.throws(()=>cross('archive_inspect',{},token));
+ for(const role of ['anon','authenticated'])assert.throws(()=>cross('archive_inspect',{},admin,role));
+ for(const changed of [{date:'2026-11-24'},{profileId:'12'},{bookingId:'1001'}])assert.throws(()=>cross('archive_inspect',changed));
+ const preview=cross('archive_inspect');assert.equal(preview.phoneTail,'0013');assert(!JSON.stringify(preview).includes('13000000013'));
+ const confirmation={expectedRevision:preview.revision,requestId:randomUUID(),reason:'Synthetic verified archive',evidenceSha:preview.evidenceSha};
+ assert.throws(()=>cross('archive_confirm',{...confirmation,evidenceSha:'0'.repeat(64)}));
+ assert.equal(cross('archive_confirm',confirmation).revision,1);
+ assert.equal(cross('archive_confirm',confirmation).revision,1);
+ assert.throws(()=>cross('archive_confirm',{...confirmation,reason:'changed intent'}));
+ assert.equal(cross('archive_status',{requestId:confirmation.requestId}).committed,true);
+ assert.equal(context().cross_store_archive,true);assert.equal(context().store,'自由手艺人');
+ assert.throws(()=>context(1002,'2026-11-24'));assert.equal(mint(original).store,'自由手艺人');assert.equal(validate(original).visit_key,'booking:1002');
+ const payload={request_id:randomUUID(),customer_profile_id:13,booking_id:1002,booking_date:target.date,visit_key:'booking:1002',store:'自由手艺人',status:'completed',expected_latest_version_id:null,
+   baseline:{outline:'Synthetic original'},optimized:{},reasons:{},execution:{},process:{},review:{achieved:'Synthetic signed visit'},photo_ids:[]};
+ const v=JSON.parse(sql(`select public.append_customer_design_version(${q(JSON.stringify(payload))}::jsonb,'ChatGPT','chatgpt');`,'service_role')).version;
+ assert.equal(v.store,'自由手艺人');assert.equal(v.visit_key,'booking:1002');
+ assert.equal(sourceSnapshot(),preparedSource);pass('cross-store approval permits exact archived service with scoped ingest; source customers, appointments and receptions unchanged');
+ sql("update frontdesk_today_customers set status='waiting'");assert.throws(()=>validate(original));
+ sql("update frontdesk_today_customers set status='completed'");
+ const revokeArchive={expectedRevision:1,requestId:randomUUID(),reason:'Synthetic revoke'};
+ assert.equal(cross('archive_revoke',revokeArchive).state,'revoked');assert.throws(()=>validate(original));
+ assert.equal(cross('archive_confirm',confirmation).state,'revoked');
+ assert.equal(cross('archive_confirm',{...confirmation,expectedRevision:2,requestId:randomUUID()}).revision,3);
+ assert.throws(()=>validate(original));assert.equal(mint(hash('new synthetic scoped ingest')).store,'自由手艺人');
+ assert.equal(sql("select count(*) from customer_design_versions where booking_id=1002;"),'1');
+ pass('source change, revocation and reapproval cannot revive the old ingest token or duplicate versions');
  console.log(JSON.stringify({passed:count,productionBusinessWrites:0,models:0}));
 }finally{if(created)run(['rm','--force',container]);}

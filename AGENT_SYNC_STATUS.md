@@ -1,3 +1,8 @@
+## 2026-11-25 · Single confirmed archive import (App version: v693; local candidate)
+
+- One exact appointment may be reviewed by the existing verified company administrator, with original customer master unchanged. Only the configured direction and a unique completed reception with exact full identity qualify. Confirming an exception does not issue a media or ingest permission; the original short-lived import gate still applies.
+- The approval journal is private, append-only, and unseeded. Preserve same-store RPC behavior, deny revoked or stale evidence plus previous approval tokens, and deploy the employee archive guard before enabling admin approval. No real business row, photo, or replay in release testing. See docs/customer-design-import.md for scope and rollback.
+
 ## 2026-11-24 · Three-app memory return (App version: v692; candidate)
 
 - Based on protected v691. Scope: employee appointment list, frontdesk schedule, daily calendar and monthly overview. Exact identity, store and date/month snapshots use bounded UI memory; normal revalidation uses established auth and conditional read routes. Cached data grants no edit permissions. Cold reload and detailed finance writes/originals retain their existing paths.

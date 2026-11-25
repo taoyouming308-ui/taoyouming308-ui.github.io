@@ -1,4 +1,4 @@
-import {SERVICE_BINDING_URL,validateServiceBindingInput} from '../shared/design-service-binding-contract.mjs';
+import {SERVICE_BINDING_URL,validateServiceBindingInput,isServiceBindingMutation} from '../shared/design-service-binding-contract.mjs';
 export class AdminServiceBindingError extends Error{
  constructor(code,outcome='not_sent'){super(code);this.code=code;this.outcome=outcome;this.retryable=false;}
 }
@@ -7,7 +7,7 @@ export function createAdminServiceBindingClient({getCredential,fetchImplementati
   try{validateServiceBindingInput(input);}catch{throw new AdminServiceBindingError('DESIGN_SERVICE_INVALID');}
   const credential=typeof getCredential==='function'?getCredential():null;
   if(typeof credential!=='string'||!/^[a-fA-F0-9-]{72}$/.test(credential)||typeof fetchImplementation!=='function')throw new AdminServiceBindingError('DESIGN_SERVICE_DENIED');
-  let sent=false;const write=['confirm','revoke'].includes(input.action),deadline=AbortSignal.timeout(10000);
+  let sent=false;const write=isServiceBindingMutation(input.action),deadline=AbortSignal.timeout(10000);
   try{
    sent=true;const response=await fetchImplementation(SERVICE_BINDING_URL,{method:'POST',headers:{'content-type':'application/json','x-design-admin-session':credential},body:JSON.stringify(input),credentials:'omit',redirect:'error',cache:'no-store',referrerPolicy:'no-referrer',signal:deadline});
    if(response.url!==SERVICE_BINDING_URL||response.redirected||!response.headers.get('content-type')?.startsWith('application/json')||!/\bprivate\b/i.test(response.headers.get('cache-control')??'')||!/\bno-store\b/i.test(response.headers.get('cache-control')??'')||Number(response.headers.get('content-length'))>262144)throw Error('INVALID_RESPONSE');

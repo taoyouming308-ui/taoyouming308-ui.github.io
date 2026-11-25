@@ -3,7 +3,8 @@ const PROJECT='https://pdssrmpeiuwvxzsgschm.supabase.co';
 const handle=createServiceBindingHandler({enabled:true,async rpc({credential,input,signal}:{credential:string,input:Record<string,unknown>,signal:AbortSignal}){
  const origin=Deno.env.get('SUPABASE_URL'),key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
  if(origin!==PROJECT||!key)throw Error('UNAVAILABLE');
- const url=PROJECT+'/rest/v1/rpc/design_service_binding';
+ const archiveAction=['archive_inspect','archive_confirm','archive_revoke','archive_status'].includes(String(input.action));
+ const url=PROJECT+'/rest/v1/rpc/'+(archiveAction?'design_cross_store_archive_approval':'design_service_binding');
  const response=await fetch(url,{method:'POST',headers:{apikey:key,authorization:'Bearer '+key,'content-type':'application/json'},body:JSON.stringify({p_credential:credential,p_input:input}),redirect:'error',credentials:'omit',cache:'no-store',signal:AbortSignal.any([signal,AbortSignal.timeout(4500)])});
  if(response.url!==url||response.redirected||!response.headers.get('content-type')?.startsWith('application/json')||Number(response.headers.get('content-length'))>262144)throw Error('UNAVAILABLE');
  const reader=response.body?.getReader();if(!reader)throw Error('UNAVAILABLE');

@@ -110,6 +110,7 @@ async function actorContext(payload: Row, session: Row | null, deps: DesignDepen
   const profile = profiles[0];
   const context = await rpc(deps, 'customer_design_resolve_context', { p_customer_profile_id: Number(profile.id), p_booking_id: booking, p_booking_date: bookingDate, p_visit_key: grant?.visit_key || text(payload.visit_key) || null });
   if (!context || Number(context.customer_profile_id) !== Number(profile.id) || !stores.includes(context.store)) fail('客户预约门店超出访问范围', 403, 'DESIGN_SCOPE_DENIED');
+  if (context.cross_store_archive === true && !grant) fail('跨店预约仅能使用本次服务的短期导入授权', 403, 'DESIGN_INGEST_DENIED');
   if (booking !== (context.booking_id == null ? null : Number(context.booking_id)) || (bookingDate && bookingDate !== context.booking_date)) fail('预约日期与档案不一致', 403, 'DESIGN_SCOPE_DENIED');
   if (grant && !sameVisit(context, grant)) fail('导入授权与档案范围不一致', 403, 'DESIGN_INGEST_DENIED');
   return { context, stores, grant, source: grant ? 'chatgpt' : 'manual', author: grant ? 'ChatGPT' : session!.username, canWrite: grant ? true : context.store === session!.store };

@@ -11,7 +11,7 @@ const browser=await chromium.launch({headless:true});
 try{
  for(const width of [390,1280]){
   const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'}),writes=[],seen=[],errors=[];
-  let revision=0,state=null,loseAck=false,identityHold=null,releaseInspect;
+  let revision=0,state=null,loseAck=false,identityHold=null,releaseInspect,archiveWrites=0;
   const target={profileId:'11',profileLabel:'合成顾客',profilePhoneTail:'0011',profileSha:sha,staffId:'2',staffCreatedAt:'2026-01-01T00:00:00.000000Z',staffLabel:'合成负责员工',staffSha:sha};
   const source={visitKey:'booking:101',store:'自由手艺人',date:'2026-11-23',sourceSha:sha,customerLabel:'合成顾客',phoneTail:'0011',barberLabel:'源服务员工标注',status:0};
   const handle=createServiceBindingHandler({enabled:true,rpc:async({input})=>{
@@ -21,6 +21,12 @@ try{
    if(input.action==='confirm'){writes.push(input);revision++;state='active';if(loseAck){loseAck=false;throw Error('synthetic lost acknowledgement');}return {committed:true,savedRevision:revision,revision,state};}
    if(input.action==='revoke'){writes.push(input);revision++;state='revoked';return {committed:true,savedRevision:revision,revision,state};}
    if(input.action==='status')return {committed:true,savedRevision:revision,revision,state};
+   if(input.action==='archive_inspect'){
+    assert.equal(input.bookingId,'1002');assert.equal(input.date,'2026-11-23');
+    return {profileLabel:'<img src=x>合成顾客',bookingLabel:'合成顾客',profileStore:'向里造型',serviceStore:'自由手艺人',phoneTail:'0011',date:input.date,time:'11:00',revision:0,state:null,evidenceSha:sha};
+   }
+   if(input.action==='archive_confirm'){archiveWrites++;assert.equal(input.evidenceSha,sha);throw Error('synthetic lost acknowledgement');}
+   if(input.action==='archive_status'){return {committed:true,state:'approved',revision:1};}
    throw Error('unexpected action');
   }});
   await context.routeWebSocket('**/*',route=>route.close());
@@ -64,6 +70,19 @@ try{
   await dialog.getByRole('button',{name:'核对绑定',exact:true}).click();await dialog.locator('[data-attest]:enabled').waitFor();await dialog.getByRole('button',{name:'撤销绑定',exact:true}).click();await dialog.locator('[data-status]').filter({hasText:'绑定已撤销'}).waitFor();assert.equal(writes.length,2);assert.equal(writes[1].action,'revoke');pass(width+'px explicit revocation uses the current reviewed revision and preserves confirmation history');
   identityHold=new Promise(r=>releaseInspect=r);await dialog.getByRole('button',{name:'核对绑定',exact:true}).click();
   await page.evaluate(()=>{const s=JSON.parse(localStorage.getItem('perm_admin'));s.staffToken='c'.repeat(72);localStorage.setItem('perm_admin',JSON.stringify(s));});releaseInspect();await dialog.waitFor({state:'detached'});pass(width+'px response from the previous administrator is discarded after account switch');
+  await page.evaluate(token=>{const s=JSON.parse(localStorage.getItem('perm_admin'));s.staffToken=token;localStorage.setItem('perm_admin',JSON.stringify(s));},token);
+  await entry.click();await dialog.getByRole('button',{name:'核对跨店预约入档',exact:true}).click();
+  const archive=page.getByRole('dialog',{name:'核对跨店预约入档'});
+  await archive.locator('[data-id]').fill('1002');await archive.locator('[data-date]').fill('2026-11-23');
+  await archive.getByRole('button',{name:'核对',exact:true}).click();
+  await archive.locator('[data-attest]:enabled').waitFor();
+  assert.equal(await archive.locator('img').count(),0);
+  assert(await archive.locator('[data-approve]').isDisabled());
+  await archive.locator('[data-attest]').check();await archive.locator('[data-reason]').fill('已核对这次服务');
+  await archive.locator('[data-approve]').click();await archive.locator('[data-lookup]').waitFor();
+  await archive.locator('[data-lookup]').click();
+  await archive.locator('[data-status]').filter({hasText:'尚未写入照片或复盘'}).waitFor();
+  assert.equal(archiveWrites,1);pass(width+'px exact cross-store review and one confirmation; timeout does not resubmit');
   assert.equal(errors.length,0,errors.join('\n'));await context.close();
  }
  console.log(JSON.stringify({passed,productionRequests:0,realCustomers:0,models:0}));
