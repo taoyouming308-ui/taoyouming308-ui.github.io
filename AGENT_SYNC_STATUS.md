@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:090ae466fa09d48e3f0c124ec8809cac8efffa05aac12dc713ba40edcbbdd714 -->
+## 2026-11-26 · Reviewed academy publication candidate (App version: v693 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main 6fcd598107f85f6cf8e0516d5c08d58b749c7bcc.
+- Dates: 2026-11-26. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-25 · Single confirmed archive import (App version: v693; local candidate)
 
 - One exact appointment may be reviewed by the existing verified company administrator, with original customer master unchanged. Only the configured direction and a unique completed reception with exact full identity qualify. Confirming an exception does not issue a media or ingest permission; the original short-lived import gate still applies.

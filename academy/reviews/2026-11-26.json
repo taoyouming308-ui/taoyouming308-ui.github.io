@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-26",
+  "status": "approved",
+  "reviewedBy": "ChatGPT AI内容编辑（本轮来源、版权、隐私与适用边界自审；非独立人工或科学审查）",
+  "reviewedAt": "2026-11-26T00:47:07Z",
+  "approvalReference": "PR #191 本轮AI编辑审校：已核对PubMed PMID 22148012及PMC全文摘要、Wiley DOI 10.1111/ics.12806；两项研究边界明确；全为模拟案例，原创静态图，无真实顾客或第三方图像。用户授权日更审校通过后正常发布；此记录不冒充用户或独立审稿人。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "PubMed与PMC核对作者、发表日期、30轮处理、各组条件及显微结果；未推广为通用参数。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "Wiley原始摘要核对发表日期、研究对象、结果与限制。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "本轮原创几何示意，逐图检查只有静态SVG图元、文字，无外链、脚本或真实个人资料。"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "本轮原创几何示意，逐图检查只有静态SVG图元、文字，无外链、脚本或真实个人资料。"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "本轮原创几何示意，逐图检查只有静态SVG图元、文字，无外链、脚本或真实个人资料。"
+    }
+  ],
+  "contentSha256": "d15c975381326b30076f0a80e29aa064d7a25ca70ebc24d58e43f069cd10a367",
+  "assetSha256": {
+    "assets/2026-11-26/figure1.svg": "7a2f13b6c9c2bb18b251b99f2464aaf50ef12ec9e05275704ad5b30041b81f04",
+    "assets/2026-11-26/figure2.svg": "9dda7e3d3bfe0d216eac03314412b60b5052c404f0e58d1ccece624a3a565ba1",
+    "assets/2026-11-26/figure3.svg": "35eaae77fdc4b51f91d1e4fb16e2211027ba77feb050f1c5d5cc8eace13aab57"
+  }
+}
