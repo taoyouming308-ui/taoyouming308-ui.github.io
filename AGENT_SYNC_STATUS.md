@@ -1,3 +1,10 @@
+## 2026-11-25 · Aesthetic training: grown-out hidden undercut and staged bob (App version: v693 unchanged)
+
+- Current owner: Codex content publisher. Fresh isolated branch from protected `github/main` `6fcd5981`/v693; start version/integrity/handoff gates and the daily recovery archive completed before edits. Preserve all forty-eight published cases through November 24 and append only unique stable ID `aesthetic-2026-11-25`.
+- The new case trains a thick jaw-length bob reference against a grown-out hidden nape undercut, upward nape growth, dense ear-behind zones, three-minute no-product styling, an eight-week trim interval and a future low-tie goal. It includes one original AI-generated fictional current-state four-view WebP, five explicit conditions, one core A/B question, six conditional reference answers and five unscored recaps.
+- Scope remains the aesthetic feed, matching fictional image, transparent review record and public change/handoff notes only. No App/runtime/version, retired academy feed, calculator, customer, finance, database/backend, login/permissions, business sync or automation changes.
+- Exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback are mandatory before claiming synchronization; if any protected check fails, preserve current production and report the blocker.
+
 ## 2026-11-25 · Single confirmed archive import (App version: v693; local candidate)
 
 - One exact appointment may be reviewed by the existing verified company administrator, with original customer master unchanged. Only the configured direction and a unique completed reception with exact full identity qualify. Confirming an exception does not issue a media or ingest permission; the original short-lived import gate still applies.

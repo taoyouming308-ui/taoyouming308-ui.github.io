@@ -1,0 +1,43 @@
+{
+  "batch": "aesthetic-2026-11-25",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "6fcd598107f85f6cf8e0516d5c08d58b749c7bcc",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, actual undercut boundaries, hair density or diameter, natural growth rate, future tieability, home reproducibility, or that any proposed haircut has been performed and maintained for six months",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional grown-out hidden-undercut and staged-bob conflict case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All forty-eight earlier feed objects remain preserved; one unique stable November 25 ID is appended",
+      "Visible current outer outline and shoulder-neck relationships are separated from fictional lifted-section history, zonal texture, routine and preference settings plus live confirmation needs",
+      "A/B benefits, costs, priority, stop conditions and first-wash/fourth-week/eighth-week switch signals are explicit; no proposed haircut is presented as a completed makeover",
+      "Generated four-view image shows one consistent fictional adult, current neutral dry state, complete head, baseline, neck and shoulders without depicting the reference, lifted hidden section or a design result",
+      "No user answer is invented; all five recap fields are unscored and state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Actual skull, neck and shoulder dimensions, hidden undercut height, zonal density/diameter, nape growth, regrowth speed and future tieability are not established by the image; case-only settings require live verification",
+      "Lifted-section, movement and temporary tie simulations cannot prove every wash, collar, humidity or six-month state",
+      "Preparer audit is not independent scientific, medical, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain mandatory"
+    ]
+  },
+  "imageReview": {
+    "file": "img/aesthetic-training/2026-11-25-grown-undercut-staged-bob.webp",
+    "sha256": "d42f8a2f237c12e25bd044b171db1bc9cd7c218fa5d420789dacc35e817f35c7",
+    "dimensions": "2172x724",
+    "bytes": 109700,
+    "rights": "Original AI-generated fictional teaching image; no real customer or business data"
+  },
+  "hashes": {
+    "feedRawSha256": "81ea82c16de7e79031cd47eebe3f66ac35807d981aaca14273dd44411372a294",
+    "caseCanonicalSha256": "1e0bfec18fb8fae4b2dbc0c740a40afb81499f2425758075beada5d640159cf1"
+  },
+  "localChecks": {
+    "content": "passed: test-aesthetic-daily (49 cases), test-aesthetic-system, test-aesthetic-study, test-aesthetic-study-edge, check-version-sync (v693), check-release-integrity, smoke-test-app, check-agent-sync-status and git diff --check",
+    "browser": "not runnable locally: pinned Playwright Chromium executable is absent; exact protected CI browser gate remains mandatory",
+    "sql": "not runnable locally: Docker executable is absent; exact protected CI SQL gate remains mandatory",
+    "protectedCI": "pending exact-head pull-request run; no pass is claimed"
+  }
+}
