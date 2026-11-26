@@ -1,3 +1,11 @@
+## 2026-11-26 · Aesthetic training: visual symmetry, ear-zone flow and headset storage (App version: v693 unchanged)
+
+- Current owner: Codex content publisher. Fresh isolated branch from protected `github/main` `ac71ca83`/v693; start version/integrity/handoff gates and the daily recovery archive completed before edits. Preserve all forty-nine published cases through November 25 and append only unique stable ID `aesthetic-2026-11-26`.
+- Scope is content-only: one original AI-generated fictional current-state four-view image, five explicit condition groups, one A/B structure question, six conditional reference-answer sections and five unscored recap fields. The case separates visible static outline/eyewear from fictional zonal texture, opposing ear-flow, work-headset routine and live multi-state checks.
+- Default reasoning favors an outwardly ordered bob with slight hidden functional asymmetry over mechanically equal strands, while documenting A's benefit, B's maintenance cost, switch conditions and stop signals. No haircut, headset trial, home reproducibility or ten-week result is claimed as performed or proven; no user score is invented.
+- Restricted files remain untouched: no legacy academy feed or entry, calculator, customer, finance, database, permissions, business synchronization, scheduler or automation changes. Daily-content publication keeps app shell/version v693 unchanged.
+- Exact-head protected CI, normal PR merge, GitHub Pages success and exact live feed/image/App readback are mandatory before reporting the case synchronized to the App.
+
 ## 2026-11-25 · Aesthetic training: grown-out hidden undercut and staged bob (App version: v693 unchanged)
 
 - Current owner: Codex content publisher. Fresh isolated branch from protected `github/main` `6fcd5981`/v693; start version/integrity/handoff gates and the daily recovery archive completed before edits. Preserve all forty-eight published cases through November 24 and append only unique stable ID `aesthetic-2026-11-25`.
