@@ -1,0 +1,43 @@
+{
+  "batch": "aesthetic-2026-11-26",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "ac71ca83d1950b98d48945c788ef20ca1be3b97a",
+  "reviewStatus": "preparer_checked_pending_normal_pr",
+  "publicationStatus": "candidate_not_yet_deployed",
+  "scientificValidation": false,
+  "evidenceStrength": "Original conditional design reasoning, not proof of measured anatomy, actual zonal diameter or density, natural flow, headset pressure, home reproducibility, or that any proposed haircut has been performed and maintained for ten weeks",
+  "contentReview": {
+    "reviewer": "Codex preparer; not independent human expert certification",
+    "scope": "One fictional visual-symmetry, opposing-ear-flow and work-headset conflict case, six conditional reference answers and five unscored recaps",
+    "checks": [
+      "All forty-nine earlier feed objects remain preserved; one unique stable November 26 ID is appended",
+      "Visible current outline, eyewear and shoulder-neck relationships are separated from fictional zonal texture, opposing flow, work routine and live confirmation needs",
+      "A/B benefits, costs, priority, stop conditions and first-wash/fifth-week/tenth-week switch signals are explicit; no proposed haircut is presented as a completed makeover",
+      "Generated four-view image shows one consistent fictional adult in a current neutral dry state, with complete head, baseline, neck and shoulders; it does not depict the reference or a design result",
+      "No user answer is invented; all five recap fields are unscored and state that personal performance cannot yet be evaluated"
+    ],
+    "limits": [
+      "Actual skull, neck, shoulder and ear dimensions, zonal density or diameter, flow strength, dry shrinkage, device pressure and recovery time are not established by the image; case-only settings require live verification",
+      "Short in-salon wear and movement checks cannot prove every work shift, wash, humidity state or ten-week result",
+      "Preparer audit is not independent scientific, medical, trichological or human expert approval",
+      "Exact-head protected CI, normal merge, Pages success and exact live feed/image/App readback remain mandatory"
+    ]
+  },
+  "imageReview": {
+    "file": "img/aesthetic-training/2026-11-26-asymmetric-ear-flow-headset-bob.webp",
+    "sha256": "832cb57cd8288c88606f04e887df4df91c0ca7953e2435ba2de32df81c413e67",
+    "dimensions": "2172x724",
+    "bytes": 115788,
+    "rights": "Original AI-generated fictional teaching image; no real customer or business data"
+  },
+  "hashes": {
+    "feedRawSha256": "d518987f9a8a31b59fe2afc747c9c7f248a6a7aadb2108bdeca02a22cd01fac5",
+    "caseCanonicalSha256": "e137f29d49033bbb4b346cc24c0d92804989cbd3d17f03bf8ffdb5369fb285a7"
+  },
+  "localChecks": {
+    "content": "passed: test-aesthetic-daily (50 cases), test-aesthetic-system, test-aesthetic-study, test-aesthetic-study-edge, check-version-sync (v693), check-release-integrity, smoke-test-app, check-agent-sync-status and git diff --check",
+    "browser": "not runnable locally: pinned Playwright Chromium executable is absent; exact protected CI browser gate remains mandatory",
+    "sql": "not runnable locally: Docker executable is absent; exact protected CI SQL gate remains mandatory",
+    "protectedCI": "pending exact-head pull-request run; no pass is claimed"
+  }
+}
