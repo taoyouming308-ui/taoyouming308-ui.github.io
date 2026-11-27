@@ -1,3 +1,12 @@
+<!-- academy-reviewed-inputs:cc22f334a1d00e51c628fc7e43eee5d357352656508f1003263fed06059ace95 -->
+## 2026-11-27 · Reviewed academy publication candidate (App version: v693 unchanged)
+
+- Current owner: ChatGPT content publisher. Last synchronized base checked: github/main ac71ca83d1950b98d48945c788ef20ca1be3b97a.
+- Dates: 2026-11-27. Original reviewed drafts and local figures are preserved; no new scientific approval is generated.
+- Dated HTML, complete descending catalog and known-course fallback are rendered with the trusted main publisher. Existing lessons and all business code stay unchanged.
+- Cloud baseline backup is a prerequisite. Full pre-push, exact-head protected Validate shared app, normal merge and main/Pages readback are still required. Preparation is not publication.
+- A GITHUB_TOKEN preparation commit alone does not trigger the protected PR checks; the connected publisher must make the final status commit, then verify its exact head.
+
 ## 2026-11-25 · Aesthetic training: grown-out hidden undercut and staged bob (App version: v693 unchanged)
 
 - Current owner: Codex content publisher. Fresh isolated branch from protected `github/main` `6fcd5981`/v693; start version/integrity/handoff gates and the daily recovery archive completed before edits. Preserve all forty-eight published cases through November 24 and append only unique stable ID `aesthetic-2026-11-25`.
