@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-27",
+  "status": "approved",
+  "reviewedBy": "ChatGPT AI编辑审核（非独立人工或科研审查）",
+  "reviewedAt": "2026-11-27T08:49:15+08:00",
+  "approvalReference": "用户授权日更内容编辑审核；本轮检索核对 DOI、发表时间、摘要、证据边界；模拟案例与原创SVG，无真人隐私；不代表厂家批准或科学验证。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "已核对出版方/机构摘要及 DOI；不是烫发配方试验，不能给出统一细软发药力或全头密度。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "已核对出版方/机构摘要及 DOI；其约3平方厘米感知阈值仅适用于该实验，不能用作真人头型、去量或烫发验收标准。"
+    },
+    {
+      "id": "s3",
+      "verified": true,
+      "basis": "已核对出版方/机构摘要及 DOI；圆截面四次方关系仅是理想模型，不代表真人还原能力或最终卷度。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "fig1",
+      "verified": true,
+      "basis": "本轮原创静态SVG，未引用外部图像。"
+    },
+    {
+      "id": "fig2",
+      "verified": true,
+      "basis": "本轮原创静态SVG，未引用外部图像。"
+    },
+    {
+      "id": "fig3",
+      "verified": true,
+      "basis": "本轮原创静态SVG，未引用外部图像。"
+    }
+  ],
+  "contentSha256": "49a7320bdfd1c8700f73dfb7caef4530a89190fcf97fa8c26d3ff7f01fa1a80f",
+  "assetSha256": {
+    "assets/2026-11-27/figure1.svg": "b61e0749ed2e34497b20090a21ac9c65a4c64507ccc6cca0de0d3ec8b078e2e2",
+    "assets/2026-11-27/figure2.svg": "ccb1fe9bec1988195f58caa2566c95f5bbf1ce77fae0fe3a476e55d3e499ff04",
+    "assets/2026-11-27/figure3.svg": "bc476360c5535ee28d1fc3d6e87b1ac5fc29a4b96010fcfdc2d79cb6a4bc9283"
+  }
+}
