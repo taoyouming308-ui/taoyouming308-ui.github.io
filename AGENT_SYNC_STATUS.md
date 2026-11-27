@@ -1,3 +1,11 @@
+## 2026-11-27 · Aesthetic training: low-bun routine, mixed texture and zonal weight (App version: v693 unchanged)
+
+- Current owner: Codex content publisher. Focused branch continues the exact November 26 content candidate while its protected rerun finishes, and includes protected `github/main` `ac71ca83`/v693; start version/integrity/handoff gates and the November 27 recovery archive completed before edits. Preserve all fifty prepared cases through November 26 and append only unique stable ID `aesthetic-2026-11-27`.
+- Scope is content-only: one original AI-generated fictional current-state four-view image, five explicit condition groups, one A/B structure question, six conditional reference-answer sections and five unscored recap fields. The case separates visible low crown/heavy perimeter/shoulder-neck relationship from fictional zonal texture, old color history, low-bun routine and live recovery checks.
+- Default reasoning favors a stable outer perimeter with zonal weight/release over uniform high layers and thinning. It documents A's immediate reference similarity, B's structural complexity, customer priorities, switch conditions and stop signals. No haircut, bun-recovery trial, home reproducibility or twelve-week result is claimed as performed or proven; no user score is invented.
+- Restricted files remain untouched: no legacy academy feed or entry, calculator, customer, finance, database, permissions, business synchronization, scheduler or automation changes. Daily-content publication keeps app shell/version v693 unchanged.
+- Exact-head protected CI, normal PR merge, GitHub Pages success and exact live feed/image/App readback are mandatory before reporting the case synchronized to the App.
+
 ## 2026-11-26 · Aesthetic training: visual symmetry, ear-zone flow and headset storage (App version: v693 unchanged)
 
 - Current owner: Codex content publisher. Fresh isolated branch from protected `github/main` `ac71ca83`/v693; start version/integrity/handoff gates and the daily recovery archive completed before edits. Preserve all forty-nine published cases through November 25 and append only unique stable ID `aesthetic-2026-11-26`.
