@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-28",
+  "status": "approved",
+  "reviewedBy": "ChatGPT（本轮AI教学内容来源及版权审校，非独立人工审稿或真人化学安全批准）",
+  "reviewedAt": "2026-11-28T00:21:21.710Z",
+  "approvalReference": "2026-11-28本轮查核KoreaScience/RISS 2026年研究摘要、J-STAGE 1998年原始研究摘要；明确混杂变量及外推限制，模拟人物无个人数据，三张原创SVG无外链与活动内容；核对正文与素材哈希。",
+  "privacyVerified": true,
+  "sourceChecks": [
+    {
+      "id": "s1",
+      "verified": true,
+      "basis": "原始离体毛束研究；KoreaScience期刊摘要及RISS元数据核对；比较化学海娜受损发的特定霜/凝胶复合工艺，各组配方、pH与施加顺序同时变化。；特定复合工艺的卷曲效率与力学表现不同；剂型和工艺整体需要考虑。；不能独立归因于黏度，不能外推旧漂发或跨品牌混配，更不能照搬pH和时间。"
+    },
+    {
+      "id": "s2",
+      "verified": true,
+      "basis": "J-STAGE原始研究摘要，卷32期1页43–51，页面卷年1997、发表日1998-03-20；测定硫醇分配系数、酸解离和模型反应速率，有企业研发背景。；毛发还原与分子迁移有关，不仅取决于溶液内反应速率。；不证明低黏度一定渗透更快，不提供市售产品安全用量或真人软化终点。"
+    }
+  ],
+  "rightsChecks": [
+    {
+      "id": "principle",
+      "verified": true,
+      "basis": "独立绘制静态SVG，无第三方图像、外链、真人或实验数据"
+    },
+    {
+      "id": "technical",
+      "verified": true,
+      "basis": "独立绘制静态SVG，无第三方图像、外链、真人或实验数据"
+    },
+    {
+      "id": "aesthetic",
+      "verified": true,
+      "basis": "独立绘制静态SVG，无第三方图像、外链、真人或实验数据"
+    }
+  ],
+  "contentSha256": "f5eb544c93d2f91ec9dc3cf137c7af5f5c5e016c6cb47adb2fe231af8ddf4f93",
+  "assetSha256": {
+    "assets/2026-11-28/figure1.svg": "fa3c8bf1a0a89a0d9b4bbcef230c8b58e4ce52c6c4e785db09d0d94e5a811dec",
+    "assets/2026-11-28/figure2.svg": "074dc2b70d96ee9d4ce94a2cdaeabfb790787ac52c21261ccd2245a0d1c6449a",
+    "assets/2026-11-28/figure3.svg": "3acb9749bc953205846e98cf9791295f6a5d20a066df6d8daec780c9b90e458a"
+  }
+}
